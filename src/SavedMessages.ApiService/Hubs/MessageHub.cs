@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using SavedMessages.ApiService.Services;
 
 namespace SavedMessages.ApiService.Hubs;
 
 /// <summary>
 /// SignalR hub mounted at /hubs/messages.
-/// Every authenticated client joins a group keyed by their UserId so the server
+/// Authenticated clients join a group keyed by their UserId so the server
 /// can push events to all of a user's connected devices simultaneously.
+/// Anonymous clients may join a transfer-session group (§3.4).
 /// </summary>
-[Authorize]
-public class MessageHub : Hub
+public class MessageHub(TransferSessionService sessions) : Hub
 {
     // Server → client event names (match client-side expectations exactly)
     public const string MessageCreated    = nameof(MessageCreated);
@@ -42,9 +43,15 @@ public class MessageHub : Hub
     /// <summary>
     /// Allows a client to join a transfer-session group so it receives
     /// the <see cref="TransferReceived"/> event when content is pushed.
+    /// The session must exist and not be expired or already claimed (§3.4, §5).
+    /// No authentication required — session ID is the auth.
     /// </summary>
     public async Task JoinTransferSession(string sessionId)
     {
+        var (found, _, expired) = sessions.TryGet(sessionId);
+        if (!found || expired)
+            throw new HubException("Invalid or expired transfer session.");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, $"transfer:{sessionId}");
     }
 
