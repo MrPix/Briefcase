@@ -1,28 +1,121 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using SavedMessages.ApiService.Hubs;
+using SavedMessages.ApiService.Models;
+using SavedMessages.Domain.Entities;
+using SavedMessages.Infrastructure.Persistence;
 
 namespace SavedMessages.ApiService.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("api/messages")]
-public class MessagesController : ControllerBase
+public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : ControllerBase
 {
+    private Guid GetUserId() =>
+        Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+
+    private static MessageResponse ToResponse(Message m) => new(
+        m.Id, m.Kind, m.Content, m.FileId,
+        m.IsPinned, m.IsEncrypted,
+        m.CreatedAt, m.UpdatedAt);
+
     // GET /api/messages  →  list active messages (paged, newest first)
     [HttpGet]
-    public IActionResult GetMessages() => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> GetMessages([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var userId = GetUserId();
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(page, 1);
+
+        var query = db.Messages
+            .Where(m => m.UserId == userId && !m.IsDeleted)
+            .OrderByDescending(m => m.IsPinned)
+            .ThenByDescending(m => m.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(m => ToResponse(m))
+            .ToListAsync();
+
+        return Ok(new PagedResponse<MessageResponse>(items, page, pageSize, totalCount));
+    }
 
     // POST /api/messages  →  create text or URL message
     [HttpPost]
-    public IActionResult CreateMessage() => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest request)
+    {
+        var userId = GetUserId();
+        var now = DateTime.UtcNow;
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Kind = request.Kind,
+            Content = request.Content,
+            IsPinned = false,
+            IsDeleted = false,
+            IsEncrypted = false,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.Messages.Add(message);
+        await db.SaveChangesAsync();
+
+        var response = ToResponse(message);
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.MessageCreated, response);
+
+        return CreatedAtAction(nameof(GetMessages), null, response);
+    }
 
     // DELETE /api/messages/{id}  →  move to Trash (soft-delete)
     [HttpDelete("{id:guid}")]
-    public IActionResult DeleteMessage(Guid id) => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> DeleteMessage(Guid id)
+    {
+        var userId = GetUserId();
+        var message = await db.Messages
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted);
+
+        if (message is null)
+            return NotFound();
+
+        message.IsDeleted = true;
+        message.DeletedAt = DateTime.UtcNow;
+        message.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.MessageTrashed, new { id });
+
+        return NoContent();
+    }
 
     // PATCH /api/messages/{id}/pin  →  toggle pin
     [HttpPatch("{id:guid}/pin")]
-    public IActionResult TogglePin(Guid id) => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> TogglePin(Guid id)
+    {
+        var userId = GetUserId();
+        var message = await db.Messages
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted);
+
+        if (message is null)
+            return NotFound();
+
+        message.IsPinned = !message.IsPinned;
+        message.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return Ok(ToResponse(message));
+    }
 
     // POST /api/messages/{id}/share  →  generate share link
     [HttpPost("{id:guid}/share")]
