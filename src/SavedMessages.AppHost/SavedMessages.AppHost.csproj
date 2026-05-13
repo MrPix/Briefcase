@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.3.0" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="9.3.0" />
+    <PackageReference Include="Aspire.Hosting.Seq" Version="9.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SavedMessages.ApiService\SavedMessages.ApiService.csproj" />
     <ProjectReference Include="..\SavedMessages.Web\SavedMessages.Web.csproj" />
   </ItemGroup>
