@@ -60,6 +60,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             UserId = userId,
             Kind = request.Kind,
             Content = request.Content,
+            FileId = request.FileId,
             IsPinned = false,
             IsDeleted = false,
             IsEncrypted = false,

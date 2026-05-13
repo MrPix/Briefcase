@@ -117,12 +117,15 @@ SavedMessages/
 
 Aspire is the local development orchestrator. It wires up:
 - The API project
-- Azure SQL (via the Aspire SQL Server container or emulator)
-- Azure Blob Storage emulator (Azurite)
-- Azure SignalR Service emulator (or local in-process fallback)
+- PostgreSQL (via the Aspire PostgreSQL container)
+- MinIO (S3-compatible object storage for file uploads)
+- Redis (SignalR backplane)
+- Seq (structured logging)
 - The Blazor WASM web frontend
 
-In production, resources are replaced by real Azure services referenced via connection strings stored in Azure Key Vault.
+> **Note:** File downloads are streamed through the API rather than redirected to presigned S3 URLs. Aspire proxies container endpoints (e.g. `minio-savedmessages.dev.localhost`), which differ from the internal `ServiceURL` used by the S3 client to generate presigned URLs. Streaming through the API avoids this mismatch.
+
+In production, resources are replaced by real cloud services referenced via connection strings stored in a secret manager.
 
 ### 3.2 ASP.NET Core API
 

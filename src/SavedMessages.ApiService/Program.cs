@@ -6,7 +6,10 @@ using Microsoft.OpenApi;
 using SavedMessages.ApiService.Hubs;
 using SavedMessages.ApiService.Services;
 using Scalar.AspNetCore;
+using Amazon.S3;
+using SavedMessages.Domain.Interfaces;
 using SavedMessages.Infrastructure.Persistence;
+using SavedMessages.Infrastructure.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +57,23 @@ builder.Services.AddSingleton<TransferSessionService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<OAuthService>();
 builder.Services.AddHttpClient();
+
+// ── File Storage (MinIO / S3-compatible) ─────────────────────────────────────
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var endpoint = config.GetConnectionString("s3") ?? "http://localhost:9000";
+    var useHttps = endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+    var s3Config = new AmazonS3Config
+    {
+        ServiceURL = endpoint,
+        ForcePathStyle = true,
+        UseHttp = !useHttps,
+    };
+    return new AmazonS3Client("minioadmin", "minioadmin", s3Config);
+});
+builder.Services.AddSingleton<IFileStorageService>(sp =>
+    new MinioStorageService(sp.GetRequiredService<IAmazonS3>()));
 
 // ── JWT Authentication (§3.2 / §6) ───────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
