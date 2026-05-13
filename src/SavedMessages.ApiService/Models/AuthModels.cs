@@ -18,3 +18,7 @@ public record AuthResponse(
     string AccessToken,
     string RefreshToken,
     DateTime AccessTokenExpiresAt);
+
+public record OAuthCallbackRequest(
+    [Required] string Code,
+    [Required] string State);
