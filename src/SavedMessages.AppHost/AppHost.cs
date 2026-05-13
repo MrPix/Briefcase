@@ -26,7 +26,8 @@ var apiService = builder.AddProject<Projects.SavedMessages_ApiService>("apiservi
     .WithReference(minio.GetEndpoint("s3"))
     .WaitFor(postgres)
     .WaitFor(redis)
-    .WithHttpHealthCheck("/health");
+    .WithHttpHealthCheck("/health")
+    .WithUrls(context => context.Urls.Add(new ResourceUrlAnnotation { Url = $"{context.Urls[0].Url}/scalar/v1", DisplayText = "Scalar" }));
 
 // Web frontend — depends on the API service
 builder.AddProject<Projects.SavedMessages_Web>("webfrontend")
