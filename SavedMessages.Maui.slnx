@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/ARCHITECTURE.md" />
+    <File Path="README.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/SavedMessages.Components/SavedMessages.Components.csproj" Id="2188388b-2ec3-42de-b56c-717da6e53d53" />
     <Project Path="src/SavedMessages.Domain/SavedMessages.Domain.csproj" Id="b351b9a3-9c6c-445e-af87-c051758ff2e2" />
