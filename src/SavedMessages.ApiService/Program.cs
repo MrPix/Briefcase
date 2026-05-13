@@ -27,6 +27,7 @@ builder.Services.AddSignalR();
 // ── Application services ──────────────────────────────────────────────────────
 builder.Services.AddSingleton<QrCodeService>();
 builder.Services.AddSingleton<TransferSessionService>();
+builder.Services.AddScoped<TokenService>();
 
 // ── JWT Authentication (§3.2 / §6) ───────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
