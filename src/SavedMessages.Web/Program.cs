@@ -1,5 +1,7 @@
+using SavedMessages.Components.Services;
 using SavedMessages.Web;
 using SavedMessages.Web.Components;
+using SavedMessages.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,12 +14,24 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
-builder.Services.AddHttpClient<WeatherApiClient>(client =>
+// ── Auth services ─────────────────────────────────────────────────────────────
+builder.Services.AddScoped<ITokenStorageService, WebTokenStorageService>();
+builder.Services.AddTransient<AuthDelegatingHandler>();
+builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
     {
-        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
-        // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
         client.BaseAddress = new("https+http://apiservice");
     });
+builder.Services.AddHttpClient("ApiClient", client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    })
+    .AddHttpMessageHandler<AuthDelegatingHandler>();
+
+builder.Services.AddHttpClient<WeatherApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    })
+    .AddHttpMessageHandler<AuthDelegatingHandler>();
 
 var app = builder.Build();
 
