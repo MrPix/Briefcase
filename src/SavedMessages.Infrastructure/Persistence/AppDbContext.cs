@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FileAttachment> FileAttachments => Set<FileAttachment>();
     public DbSet<TransferSession> TransferSessions => Set<TransferSession>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -112,6 +113,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<TransferSession>(e =>
         {
             e.HasKey(t => t.Id);
+        });
+
+        // ── RefreshToken ──────────────────────────────────────────────────────
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.HasIndex(r => r.Token).IsUnique();
+            e.Property(r => r.Token).IsRequired().HasMaxLength(256);
+
+            e.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.Ignore(r => r.IsRevoked);
+            e.Ignore(r => r.IsExpired);
+            e.Ignore(r => r.IsActive);
         });
 
         // ── ShareLink ────────────────────────────────────────────────────────
