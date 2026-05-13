@@ -61,7 +61,7 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
             }
         }
 
-        pendingState = default;
+        pendingState = default!;
         return false;
     }
 
