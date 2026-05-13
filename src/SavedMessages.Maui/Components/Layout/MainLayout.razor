@@ -1,21 +1,55 @@
 ﻿@inherits LayoutComponentBase
 @inject IServiceProvider ServiceProvider
+@inject SavedMessages.Components.Services.IAuthService AuthService
+@inject NavigationManager Navigation
 @implements IDisposable
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@{
+    var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
+    var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+                  || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+}
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+@if (isAuthPage || AuthService.IsAuthenticated)
+{
+    @if (isAuthPage)
+    {
+        <main>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    }
+    else
+    {
+        <div class="page">
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+
+            <main>
+                <article class="content px-4">
+                    @Body
+                </article>
+            </main>
+        </div>
+    }
+}
 
 @code {
     private SavedMessages.Components.Services.IThemeService? _themeService;
+
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+                      || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAuthPage && !AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
