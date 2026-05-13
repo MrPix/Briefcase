@@ -39,6 +39,23 @@ public class MessageHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
+    /// <summary>
+    /// Allows a client to join a transfer-session group so it receives
+    /// the <see cref="TransferReceived"/> event when content is pushed.
+    /// </summary>
+    public async Task JoinTransferSession(string sessionId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"transfer:{sessionId}");
+    }
+
+    /// <summary>
+    /// Removes the client from a transfer-session group.
+    /// </summary>
+    public async Task LeaveTransferSession(string sessionId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"transfer:{sessionId}");
+    }
+
     private string? GetUserId() =>
         Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 }
