@@ -18,12 +18,22 @@ namespace SavedMessages.Maui
 
             builder.Services.AddMauiBlazorWebView();
 
+            // ── App services ──────────────────────────────────────────────────
+            builder.Services.AddSingleton<IClipboardService, MauiClipboardService>();
+            builder.Services.AddTransient<IMessageService, MauiMessageService>();
+
             // ── Auth services ─────────────────────────────────────────────────
             builder.Services.AddSingleton<ITokenStorageService, MauiTokenStorageService>();
             builder.Services.AddTransient<AuthDelegatingHandler>();
-            builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+            builder.Services.AddHttpClient("AuthClient", client =>
             {
                 client.BaseAddress = new Uri("https://localhost:7574/");
+            });
+            builder.Services.AddSingleton<IAuthService>(sp =>
+            {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                var tokenStorage = sp.GetRequiredService<ITokenStorageService>();
+                return new AuthService(factory.CreateClient("AuthClient"), tokenStorage);
             });
             builder.Services.AddHttpClient("ApiClient", client =>
             {
