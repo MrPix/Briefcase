@@ -10,7 +10,7 @@ namespace SavedMessages.ApiService.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(AppDbContext db, TokenService tokenService) : ControllerBase
+public class AuthController(AppDbContext db, TokenService tokenService, OAuthService oAuthService) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refresh_token";
 
@@ -110,13 +110,99 @@ public class AuthController(AppDbContext db, TokenService tokenService) : Contro
         return NoContent();
     }
 
-    // GET /api/auth/oauth/{provider}  →  redirect to OAuth provider
+    // GET /api/auth/oauth/{provider}  →  redirect to OAuth provider (PKCE + state)
     [HttpGet("oauth/{provider}")]
-    public IActionResult OAuthRedirect(string provider) => StatusCode(StatusCodes.Status501NotImplemented);
+    public IActionResult OAuthRedirect(string provider, [FromQuery] string redirect_uri)
+    {
+        if (!oAuthService.IsProviderSupported(provider))
+            return BadRequest(new ProblemDetails { Title = $"Unsupported OAuth provider: {provider}" });
 
-    // GET /api/auth/oauth/{provider}/callback  →  JWT
+        if (string.IsNullOrWhiteSpace(redirect_uri))
+            return BadRequest(new ProblemDetails { Title = "redirect_uri query parameter is required." });
+
+        var (authorizationUrl, _) = oAuthService.BuildAuthorizationUrl(provider, redirect_uri);
+        return Redirect(authorizationUrl);
+    }
+
+    // GET /api/auth/oauth/{provider}/callback  →  exchange code for JWT
     [HttpGet("oauth/{provider}/callback")]
-    public IActionResult OAuthCallback(string provider) => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> OAuthCallback(string provider, [FromQuery] string code, [FromQuery] string state)
+    {
+        if (!oAuthService.IsProviderSupported(provider))
+            return BadRequest(new ProblemDetails { Title = $"Unsupported OAuth provider: {provider}" });
+
+        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+            return BadRequest(new ProblemDetails { Title = "Authorization code and state are required." });
+
+        if (!oAuthService.TryConsumePendingState(state, out var pendingState))
+            return BadRequest(new ProblemDetails { Title = "Invalid or expired OAuth state." });
+
+        var normalizedProvider = oAuthService.NormalizeProvider(provider);
+
+        // Exchange authorization code for tokens using PKCE code_verifier
+        var tokenResponse = await oAuthService.ExchangeCodeAsync(
+            normalizedProvider, code, pendingState.CodeVerifier, pendingState.RedirectUri);
+
+        if (tokenResponse is null)
+            return BadRequest(new ProblemDetails { Title = "Failed to exchange authorization code." });
+
+        // Fetch user info from the provider
+        var userInfo = await oAuthService.GetUserInfoAsync(normalizedProvider, tokenResponse.AccessToken, tokenResponse.IdToken);
+
+        if (userInfo is null || string.IsNullOrEmpty(userInfo.Email))
+            return BadRequest(new ProblemDetails { Title = "Failed to retrieve user information from provider." });
+
+        // Find existing external login
+        var externalLogin = await db.ExternalLogins
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Provider == normalizedProvider && e.ProviderKey == userInfo.ProviderKey);
+
+        User user;
+
+        if (externalLogin is not null)
+        {
+            // Existing linked account — just issue tokens
+            user = externalLogin.User;
+        }
+        else
+        {
+            // Check if a user with the same email already exists
+            user = await db.Users.FirstOrDefaultAsync(u => u.Email == userInfo.Email)
+                ?? new User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = userInfo.Email,
+                    DisplayName = userInfo.Name,
+                    AvatarUrl = userInfo.AvatarUrl,
+                    CreatedAt = DateTime.UtcNow,
+                };
+
+            if (user.CreatedAt == default)
+            {
+                // Existing user without this provider linked — just add the external login
+            }
+            else if (!db.Entry(user).IsKeySet || db.Entry(user).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            {
+                db.Users.Add(user);
+            }
+
+            db.ExternalLogins.Add(new ExternalLogin
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Provider = normalizedProvider,
+                ProviderKey = userInfo.ProviderKey,
+            });
+
+            await db.SaveChangesAsync();
+        }
+
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+
+        SetRefreshTokenCookie(refreshToken);
+        return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
+    }
 
     private async Task<string> CreateRefreshTokenAsync(Guid userId)
     {
