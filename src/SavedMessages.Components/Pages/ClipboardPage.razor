@@ -41,7 +41,14 @@
             </button>
         </div>
 
-        @if (_messages is null)
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @_errorMessage
+                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadMessages">Retry</button>
+            </div>
+        }
+        else if (_messages is null)
         {
             <p><em>Loading messages...</em></p>
         }
@@ -139,6 +146,7 @@
     private Message? _selectedMessage;
     private string? _newContent;
     private bool _isDragOver;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,7 +155,17 @@
 
     private async Task LoadMessages()
     {
-        _messages = await MessageService.GetMessagesAsync();
+        try
+        {
+            _errorMessage = null;
+            _messages = await MessageService.GetMessagesAsync();
+        }
+        catch (Exception ex)
+        {
+            _messages = [];
+            _errorMessage = $"Failed to load messages: {ex.Message}";
+        }
+
         _pinnedMessages = _messages?.Where(m => m.IsPinned).ToList() ?? new();
         _recentMessages = _messages?.Where(m => !m.IsPinned).ToList() ?? new();
 
@@ -167,14 +185,21 @@
         if (string.IsNullOrWhiteSpace(_newContent))
             return;
 
-        var kind = Uri.TryCreate(_newContent, UriKind.Absolute, out var uri)
-            && (uri.Scheme == "http" || uri.Scheme == "https")
-            ? MessageKind.Url
-            : MessageKind.Text;
+        try
+        {
+            var kind = Uri.TryCreate(_newContent, UriKind.Absolute, out var uri)
+                && (uri.Scheme == "http" || uri.Scheme == "https")
+                ? MessageKind.Url
+                : MessageKind.Text;
 
-        await MessageService.CreateMessageAsync(kind, _newContent);
-        _newContent = null;
-        await LoadMessages();
+            await MessageService.CreateMessageAsync(kind, _newContent);
+            _newContent = null;
+            await LoadMessages();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to send message: {ex.Message}";
+        }
     }
 
     private async Task PasteFromClipboard()

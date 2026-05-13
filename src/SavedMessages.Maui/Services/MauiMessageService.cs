@@ -8,11 +8,29 @@ public class MauiMessageService(IHttpClientFactory httpClientFactory) : IMessage
 {
     private HttpClient CreateClient() => httpClientFactory.CreateClient("ApiClient");
 
+    private record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
+
+    private record MessageResponse(
+        Guid Id, MessageKind Kind, string? Content, Guid? FileId,
+        bool IsPinned, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
+
     public async Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20)
     {
         var client = CreateClient();
-        var messages = await client.GetFromJsonAsync<List<Message>>($"api/messages?page={page}&pageSize={pageSize}");
-        return messages?.AsReadOnly() ?? (IReadOnlyList<Message>)[];
+        var paged = await client.GetFromJsonAsync<PagedResponse<MessageResponse>>($"api/messages?page={page}&pageSize={pageSize}");
+        if (paged is null) return [];
+
+        return paged.Items.Select(r => new Message
+        {
+            Id = r.Id,
+            Kind = r.Kind,
+            Content = r.Content,
+            FileId = r.FileId,
+            IsPinned = r.IsPinned,
+            IsEncrypted = r.IsEncrypted,
+            CreatedAt = r.CreatedAt,
+            UpdatedAt = r.UpdatedAt
+        }).ToList().AsReadOnly();
     }
 
     public async Task<Message> CreateMessageAsync(MessageKind kind, string content)
