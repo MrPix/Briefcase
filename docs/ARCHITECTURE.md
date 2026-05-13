@@ -103,8 +103,8 @@ SavedMessages/
 │       │   └── Windows/
 │       └── MainPage.xaml              # Hosts BlazorWebView
 ├── tests/
-│   ├── SavedMessages.UnitTests/        # xUnit — domain logic, services, E2EE
-│   └── SavedMessages.IntegrationTests/ # xUnit + Aspire test host — full HTTP + DB + SignalR
+│   ├── SavedMessages.UnitTests/        # mstests — domain logic, services, E2EE
+│   └── SavedMessages.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -457,7 +457,7 @@ When ready to move to Azure, only the following need to change:
 
 ### 8.1 Unit Tests (`SavedMessages.UnitTests`)
 
-Framework: **xUnit** + **NSubstitute** (mocking) + **FluentAssertions**.
+Framework: **mstests** + **NSubstitute** (mocking) + **FluentAssertions**.
 
 Covers pure logic with no I/O — all dependencies are substituted.
 
@@ -472,7 +472,7 @@ Covers pure logic with no I/O — all dependencies are substituted.
 
 ### 8.2 Integration Tests (`SavedMessages.IntegrationTests`)
 
-Framework: **xUnit** + **Aspire test host** (`Aspire.Hosting.Testing`) + **Microsoft.AspNetCore.Mvc.Testing**.
+Framework: **mstests** + **Aspire test host** (`Aspire.Hosting.Testing`) + **Microsoft.AspNetCore.Mvc.Testing**.
 
 Spins up the real API, an in-process SQL Server (or Testcontainers PostgreSQL), Azurite for blob storage, and in-process SignalR — no mocks at the HTTP boundary.
 
