@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.3.1">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,6 +7,12 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>a72b3a8f-1e18-47ad-97ab-88726803368c</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.3.1" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.3.1" />
+    <PackageReference Include="Aspire.Hosting.Seq" Version="13.3.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SavedMessages.ApiService\SavedMessages.ApiService.csproj" />
