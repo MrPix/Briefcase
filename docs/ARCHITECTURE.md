@@ -30,6 +30,9 @@ SavedMessages is a multi-tier, real-time application. A single ASP.NET Core 10 b
 │  │  Controller │  │  Controller │  │  Controller         │ │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘ │
 │  ┌─────────────────────────────────────────────────────────┐ │
+│  │              E2EE Controller (key params only)          │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────────┐ │
 │  │              SignalR Hub  (MessageHub)                  │ │
 │  └─────────────────────────────────────────────────────────┘ │
 │  ┌─────────────────────────────────────────────────────────┐ │
@@ -201,12 +204,25 @@ Message
   Id              Guid        PK
   UserId          Guid        FK → User
   Kind            enum        (Text | Url | File)
-  Content         string?     (text body or URL)
+  Content         string?     (plaintext body/URL, or base64 AES-256-GCM ciphertext when encrypted)
   FileId          Guid?       FK → FileAttachment
   IsPinned        bool
   IsDeleted       bool        soft-delete flag; default false
   DeletedAt       datetime?   set when moved to Trash, null when active or restored
+  IsEncrypted     bool        true when Content is E2EE ciphertext; default false
+  EncryptionIV    string?     base64-encoded 96-bit AES-GCM nonce, unique per message
   CreatedAt       datetime
+  UpdatedAt       datetime
+
+UserE2eeSettings
+  UserId          Guid        PK, FK → User
+  IsEnabled       bool        user has opted into E2EE
+  KdfAlgorithm    string      key derivation algorithm (Argon2id recommended; PBKDF2-SHA256 fallback)
+  KdfSalt         string      base64 random salt (generated client-side, stored server-side)
+  KdfParams       string      JSON — algorithm-specific params (iterations, memory, parallelism)
+  KeyVerifier     string      base64 — a fixed known plaintext encrypted with the derived key;
+                              lets the client confirm the passphrase is correct without
+                              transmitting the key or passphrase to the server
   UpdatedAt       datetime
 
 FileAttachment
@@ -292,6 +308,14 @@ ShareLink
 | POST | `/api/transfer/session` | Create anonymous transfer session → session ID |
 | POST | `/api/transfer/push` | Push content into a transfer session |
 
+### E2EE
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/e2ee/settings` | Get current user's KDF salt, params, key verifier, and `isEnabled` flag |
+| POST | `/api/e2ee/enable` | Store KDF salt + params + key verifier; mark `IsEnabled = true`. Passphrase **never sent to server** — only derived artefacts |
+| POST | `/api/e2ee/disable` | Clear E2EE settings; client must re-upload all messages as plaintext first |
+| PUT | `/api/e2ee/change-passphrase` | Replace KDF salt + params + key verifier after client re-encrypts all messages with new key |
+
 ### SignalR Hub: `/hubs/messages`
 | Event (server → client) | Payload |
 |--------------------------|---------|
@@ -301,6 +325,7 @@ ShareLink
 | `ShareLinkRevoked` | `{ messageId }` |
 | `MessageTrashed` | `{ id }` |
 | `MessageRestored` | `Message` |
+| `E2eeSettingsChanged` | `{ isEnabled }` |
 ---
 
 ## 6. Authentication & Security
@@ -444,3 +469,8 @@ When ready to move to Azure, only the following need to change:
 ### Why Azure SignalR Service?
 - Offloads WebSocket connection management; Container Apps instances remain stateless.
 - Aspire has a first-class integration component for it.
+
+### Why client-side key derivation for E2EE (not server-managed keys)?
+- The server operator (or an attacker with database access) cannot decrypt messages even with full DB access.
+- Argon2id is memory-hard, making brute-force attacks against the passphrase expensive.
+- The `KeyVerifier` pattern lets clients validate a passphrase locally without a server round-trip that would expose the key.
