@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SavedMessages.Components\SavedMessages.Components.csproj" />
     <ProjectReference Include="..\SavedMessages.ServiceDefaults\SavedMessages.ServiceDefaults.csproj" />
   </ItemGroup>
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SavedMessages.ApiService.Models;
@@ -11,6 +12,8 @@ namespace SavedMessages.ApiService.Controllers;
 [Route("api/auth")]
 public class AuthController(AppDbContext db, TokenService tokenService) : ControllerBase
 {
+    private const string RefreshTokenCookieName = "refresh_token";
+
     // POST /api/auth/register
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -33,6 +36,7 @@ public class AuthController(AppDbContext db, TokenService tokenService) : Contro
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
+        SetRefreshTokenCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
     }
 
@@ -51,16 +55,24 @@ public class AuthController(AppDbContext db, TokenService tokenService) : Contro
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
+        SetRefreshTokenCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
     }
 
     // POST /api/auth/refresh
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest? request)
     {
+        // Read refresh token from HttpOnly cookie first, fall back to request body
+        var refreshTokenValue = Request.Cookies[RefreshTokenCookieName]
+            ?? request?.RefreshToken;
+
+        if (string.IsNullOrEmpty(refreshTokenValue))
+            return BadRequest(new ProblemDetails { Title = "Refresh token is required." });
+
         var stored = await db.RefreshTokens
             .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.Token == request.RefreshToken);
+            .FirstOrDefaultAsync(r => r.Token == refreshTokenValue);
 
         if (stored is null || !stored.IsActive)
             return Unauthorized(new ProblemDetails { Title = "Invalid or expired refresh token." });
@@ -71,7 +83,31 @@ public class AuthController(AppDbContext db, TokenService tokenService) : Contro
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(stored.UserId, stored.User.Email);
         var newRefreshToken = await CreateRefreshTokenAsync(stored.UserId);
 
+        SetRefreshTokenCookie(newRefreshToken);
         return Ok(new AuthResponse(accessToken, newRefreshToken, expiresAt));
+    }
+
+    // POST /api/auth/logout  →  revoke refresh token + clear cookie
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        var refreshTokenValue = Request.Cookies[RefreshTokenCookieName];
+
+        if (!string.IsNullOrEmpty(refreshTokenValue))
+        {
+            var stored = await db.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == refreshTokenValue && r.RevokedAt == null);
+
+            if (stored is not null)
+            {
+                stored.RevokedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+        }
+
+        ClearRefreshTokenCookie();
+        return NoContent();
     }
 
     // GET /api/auth/oauth/{provider}  →  redirect to OAuth provider
@@ -97,5 +133,28 @@ public class AuthController(AppDbContext db, TokenService tokenService) : Contro
         await db.SaveChangesAsync();
 
         return token.Token;
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(tokenService.RefreshTokenDays),
+            Path = "/api/auth",
+        });
+    }
+
+    private void ClearRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/api/auth",
+        });
     }
 }

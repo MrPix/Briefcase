@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using SavedMessages.Components.Services;
+using SavedMessages.Maui.Services;
 
 namespace SavedMessages.Maui
 {
@@ -16,9 +18,22 @@ namespace SavedMessages.Maui
 
             builder.Services.AddMauiBlazorWebView();
 
+            // ── Auth services ─────────────────────────────────────────────────
+            builder.Services.AddSingleton<ITokenStorageService, MauiTokenStorageService>();
+            builder.Services.AddTransient<AuthDelegatingHandler>();
+            builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+            {
+                client.BaseAddress = new Uri("https://YOUR_API_BASE_URL");
+            });
+            builder.Services.AddHttpClient("ApiClient", client =>
+            {
+                client.BaseAddress = new Uri("https://YOUR_API_BASE_URL");
+            })
+            .AddHttpMessageHandler<AuthDelegatingHandler>();
+
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();
