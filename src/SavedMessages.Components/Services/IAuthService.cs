@@ -2,6 +2,8 @@ namespace SavedMessages.Components.Services;
 
 public record AuthResult(string AccessToken, string RefreshToken, DateTime AccessTokenExpiresAt);
 
+public class AuthException(string message) : Exception(message);
+
 public interface IAuthService
 {
     Task<AuthResult> LoginAsync(string email, string password);
