@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using SavedMessages.ApiService.Hubs;
 using SavedMessages.ApiService.Services;
 using Scalar.AspNetCore;
@@ -19,7 +20,29 @@ builder.AddNpgsqlDbContext<AppDbContext>("savedmessagesdb");
 builder.Services.AddControllers();
 
 // ── OpenAPI ───────────────────────────────────────────────────────────────────
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Components ??= new();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Paste the access token from POST /api/auth/login"
+        };
+
+        document.Security ??= [];
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer")] = new List<string>()
+        });
+
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddProblemDetails();
 
 // ── SignalR ───────────────────────────────────────────────────────────────────
@@ -44,6 +67,7 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer           = true,
