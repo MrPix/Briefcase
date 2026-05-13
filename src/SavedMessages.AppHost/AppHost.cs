@@ -3,6 +3,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Infrastructure resources — self-hosted Linux compatible (§9)
 var postgres = builder.AddPostgres("postgres")
     .WithPgAdmin()
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithDataVolume("postgres-data")
     .AddDatabase("savedmessagesdb");
 
 var minio = builder.AddContainer("minio", "minio/minio", "latest")

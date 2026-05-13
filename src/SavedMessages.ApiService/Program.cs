@@ -1,13 +1,18 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SavedMessages.ApiService.Hubs;
 using SavedMessages.ApiService.Services;
+using SavedMessages.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+
+// ── EF Core (PostgreSQL via Aspire) ──────────────────────────────────────────
+builder.AddNpgsqlDbContext<AppDbContext>("savedmessagesdb");
 
 // ── Controllers ──────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -76,6 +81,25 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Auto-apply pending EF Core migrations in development.
+    // Retry briefly in case PostgreSQL is still starting up.
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var retries = 5;
+    for (var i = 0; ; i++)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            await db.Database.MigrateAsync();
+            break;
+        }
+        catch (Exception) when (i < retries)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2));
+        }
+    }
 }
 
 app.UseAuthentication();
@@ -86,5 +110,5 @@ app.MapHub<MessageHub>("/hubs/messages");
 
 app.MapDefaultEndpoints();
 
-app.Run();
+await app.RunAsync();
 
