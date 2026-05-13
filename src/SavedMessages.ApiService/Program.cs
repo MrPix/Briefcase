@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SavedMessages.ApiService.Hubs;
 using SavedMessages.ApiService.Services;
+using Scalar.AspNetCore;
 using SavedMessages.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -82,6 +83,7 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 
     // Auto-apply pending EF Core migrations in development.
     // Retry briefly in case PostgreSQL is still starting up.
