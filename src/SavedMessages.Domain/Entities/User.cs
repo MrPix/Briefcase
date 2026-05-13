@@ -11,4 +11,7 @@ public class User
     public ICollection<Device> Devices { get; set; } = [];
     public ICollection<Message> Messages { get; set; } = [];
     public ICollection<FileAttachment> FileAttachments { get; set; } = [];
+    public ICollection<ExternalLogin> ExternalLogins { get; set; } = [];
+    public ICollection<ShareLink> ShareLinks { get; set; } = [];
+    public UserE2eeSettings? E2eeSettings { get; set; }
 }

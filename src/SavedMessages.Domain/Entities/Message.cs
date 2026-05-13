@@ -24,4 +24,5 @@ public class Message
 
     public User User { get; set; } = null!;
     public FileAttachment? FileAttachment { get; set; }
+    public ICollection<ShareLink> ShareLinks { get; set; } = [];
 }
