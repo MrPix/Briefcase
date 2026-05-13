@@ -23,11 +23,11 @@ namespace SavedMessages.Maui
             builder.Services.AddTransient<AuthDelegatingHandler>();
             builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
             {
-                client.BaseAddress = new Uri("https://YOUR_API_BASE_URL");
+                client.BaseAddress = new Uri("https://apiservice-savedmessages.dev.localhost:7574/");
             });
             builder.Services.AddHttpClient("ApiClient", client =>
             {
-                client.BaseAddress = new Uri("https://YOUR_API_BASE_URL");
+                client.BaseAddress = new Uri("https://apiservice-savedmessages.dev.localhost:7574/");
             })
             .AddHttpMessageHandler<AuthDelegatingHandler>();
 

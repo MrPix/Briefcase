@@ -65,8 +65,15 @@ public class WindowsThemeService : IThemeService, IDisposable
 
     private async Task SetBodyThemeClassAsync(string theme)
     {
-        await _jsRuntime.InvokeVoidAsync("eval",
-            $"document.body.className = document.body.className.replace(/\\btheme-\\w+\\b/g, '') + ' theme-{theme}'");
+        try
+        {
+            await _jsRuntime.InvokeVoidAsync("eval",
+                $"document.body.className = document.body.className.replace(/\\btheme-\\w+\\b/g, '') + ' theme-{theme}'");
+        }
+        catch (InvalidOperationException)
+        {
+            // JS interop may not be available outside of a WebView context
+        }
     }
 
     public void Dispose()
