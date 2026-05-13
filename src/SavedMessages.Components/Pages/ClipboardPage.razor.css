@@ -1,0 +1,69 @@
+.clipboard-drop-zone {
+    position: relative;
+    min-height: 200px;
+}
+
+.clipboard-drop-zone.drag-over {
+    outline: 2px dashed #1b6ec2;
+    outline-offset: -4px;
+    border-radius: 8px;
+}
+
+.drop-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(27, 110, 194, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.drop-overlay-content {
+    text-align: center;
+    color: #1b6ec2;
+    font-weight: 600;
+}
+
+.clipboard-layout {
+    display: flex;
+    flex-direction: column;
+}
+
+.clipboard-list {
+    flex: 1;
+}
+
+.clipboard-detail {
+    display: none;
+}
+
+.selected-message ::deep .card {
+    border-left: 3px solid #1b6ec2;
+    cursor: pointer;
+}
+
+@media (min-width: 900px) {
+    .clipboard-layout {
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+
+    .clipboard-list {
+        flex: 1;
+        max-width: 50%;
+        overflow-y: auto;
+        max-height: calc(100vh - 6rem);
+    }
+
+    .clipboard-detail {
+        display: block;
+        flex: 1;
+        max-width: 50%;
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+    }
+}

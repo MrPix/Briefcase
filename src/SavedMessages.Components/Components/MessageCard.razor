@@ -1,6 +1,8 @@
 @namespace SavedMessages.Components.Components
 
-<div class="card mb-3 @(Message.IsPinned ? "border-warning" : "")">
+<div class="card mb-3 @(Message.IsPinned ? "border-warning" : "") position-relative"
+     @oncontextmenu="HandleContextMenu"
+     @oncontextmenu:preventDefault="ShowContextMenu">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
@@ -41,6 +43,39 @@
         </div>
         <small class="text-muted">@Message.CreatedAt.ToString("g")</small>
     </div>
+
+    @if (ShowContextMenu && _contextMenuVisible)
+    {
+        <div class="dropdown-menu show context-menu-dropdown" style="position:absolute; top:@(_contextMenuY)px; left:@(_contextMenuX)px; z-index:1050;">
+            @if (OnCopy.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnCopy.InvokeAsync(Message))">
+                    <span class="bi bi-clipboard me-2"></span> Copy
+                </button>
+            }
+            @if (OnPin.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnPin.InvokeAsync(Message))">
+                    <span class="bi @(Message.IsPinned ? "bi-pin-fill" : "bi-pin") me-2"></span>
+                    @(Message.IsPinned ? "Unpin" : "Pin")
+                </button>
+            }
+            @if (OnShare.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnShare.InvokeAsync(Message))">
+                    <span class="bi bi-share me-2"></span> Share
+                </button>
+            }
+            <div class="dropdown-divider"></div>
+            @if (OnDelete.HasDelegate)
+            {
+                <button class="dropdown-item text-danger" @onclick="() => ContextAction(() => OnDelete.InvokeAsync(Message))">
+                    <span class="bi bi-trash me-2"></span> Move to Trash
+                </button>
+            }
+        </div>
+        <div class="context-menu-backdrop" @onclick="CloseContextMenu"></div>
+    }
 </div>
 
 @code {
@@ -55,4 +90,33 @@
 
     [Parameter]
     public EventCallback<Message> OnCopy { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnShare { get; set; }
+
+    [Parameter]
+    public bool ShowContextMenu { get; set; }
+
+    private bool _contextMenuVisible;
+    private double _contextMenuX;
+    private double _contextMenuY;
+
+    private void HandleContextMenu(MouseEventArgs e)
+    {
+        if (!ShowContextMenu) return;
+        _contextMenuX = e.OffsetX;
+        _contextMenuY = e.OffsetY;
+        _contextMenuVisible = true;
+    }
+
+    private void CloseContextMenu()
+    {
+        _contextMenuVisible = false;
+    }
+
+    private async Task ContextAction(Func<Task> action)
+    {
+        _contextMenuVisible = false;
+        await action();
+    }
 }

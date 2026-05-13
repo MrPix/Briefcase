@@ -31,6 +31,17 @@ namespace SavedMessages.Maui
             })
             .AddHttpMessageHandler<AuthDelegatingHandler>();
 
+#if WINDOWS
+            // ── Windows-specific services ────────────────────────────────────
+            builder.Services.AddSingleton<IThemeService, WindowsThemeService>();
+            builder.Services.AddSingleton<WindowsFileDropService>();
+            builder.Services.AddSingleton<IFileDropService>(sp => sp.GetRequiredService<WindowsFileDropService>());
+            builder.Services.AddSingleton<WindowsKeyboardShortcutService>();
+            builder.Services.AddSingleton<IKeyboardShortcutService>(sp => sp.GetRequiredService<WindowsKeyboardShortcutService>());
+            builder.Services.AddSingleton<IJumpListService, WindowsJumpListService>();
+            builder.Services.AddSingleton<WindowsTrayService>();
+#endif
+
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
             builder.Logging.AddDebug();
