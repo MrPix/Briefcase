@@ -102,6 +102,9 @@ SavedMessages/
 │       │   ├── MacCatalyst/
 │       │   └── Windows/
 │       └── MainPage.xaml              # Hosts BlazorWebView
+├── tests/
+│   ├── SavedMessages.UnitTests/        # xUnit — domain logic, services, E2EE
+│   └── SavedMessages.IntegrationTests/ # xUnit + Aspire test host — full HTTP + DB + SignalR
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -447,6 +450,51 @@ When ready to move to Azure, only the following need to change:
 1. Swap the Aspire resource registrations in `AppHost` (`AddPostgres` → `AddAzureSqlDatabase`, `AddMinio` → `AddAzureBlobStorage`, etc.).
 2. Point GitHub Actions to `azd deploy` instead of `docker compose up`.
 3. Application code, domain logic, and API contracts remain unchanged.
+
+---
+
+## 8. Testing Strategy
+
+### 8.1 Unit Tests (`SavedMessages.UnitTests`)
+
+Framework: **xUnit** + **NSubstitute** (mocking) + **FluentAssertions**.
+
+Covers pure logic with no I/O — all dependencies are substituted.
+
+| Area | What is tested |
+|------|---------------|
+| Domain entities | Field defaults, soft-delete lifecycle, `IsDeleted` / `DeletedAt` invariants |
+| `QrCodeService` | Token generation, TTL calculation |
+| `TransferSessionService` | Expiry logic, single-use enforcement |
+| E2EE key derivation helpers | Argon2id param validation, key verifier generation/check |
+| Share link logic | CSPRNG slug length/entropy, one-time revoke state machine |
+| JWT helpers | Token issuance claims, expiry, refresh logic |
+
+### 8.2 Integration Tests (`SavedMessages.IntegrationTests`)
+
+Framework: **xUnit** + **Aspire test host** (`Aspire.Hosting.Testing`) + **Microsoft.AspNetCore.Mvc.Testing**.
+
+Spins up the real API, an in-process SQL Server (or Testcontainers PostgreSQL), Azurite for blob storage, and in-process SignalR — no mocks at the HTTP boundary.
+
+| Area | What is tested |
+|------|---------------|
+| Auth endpoints | Register, login, token refresh, OAuth PKCE flow (mocked provider) |
+| Messages API | Create, list (pagination, newest-first), soft-delete, pin, Trash/restore |
+| Files API | Multipart upload, download SAS redirect, delete |
+| Devices API | List, remove, QR pair-code + claim round-trip |
+| Transfer API | Session create → push → SignalR event received on target connection |
+| E2EE API | Enable/disable/change-passphrase; passphrase never appears in request log |
+| Share links | Generate slug, public `GET /s/{slug}` view, one-time atomic revoke race condition |
+| SignalR hub | `MessageCreated` / `MessageTrashed` / `MessageRestored` pushed to correct user group |
+| Security | Cross-user data isolation (userId scoping), expired transfer session rejection |
+
+### 8.3 Conventions
+
+- Test projects live under `tests/`, never inside `src/`.
+- Each test class maps 1-to-1 to the class under test (e.g. `MessagesControllerTests`).
+- Integration tests use a shared `WebApplicationFactory<Program>` fixture to avoid cold-start overhead per test.
+- The CI pipeline runs unit tests first (fast gate), then integration tests (slower, needs containers).
+- Test database is reset between test classes using `Respawn`.
 
 ---
 
