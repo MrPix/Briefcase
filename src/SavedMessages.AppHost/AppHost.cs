@@ -32,7 +32,6 @@ var apiService = builder.AddProject<Projects.SavedMessages_ApiService>("apiservi
 // Web frontend — depends on the API service
 builder.AddProject<Projects.SavedMessages_Web>("webfrontend")
     .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
     .WithReference(apiService)
     .WaitFor(apiService);
 

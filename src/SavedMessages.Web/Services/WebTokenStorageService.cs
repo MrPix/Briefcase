@@ -1,30 +1,31 @@
+using Microsoft.JSInterop;
 using SavedMessages.Components.Services;
 
 namespace SavedMessages.Web.Services;
 
 /// <summary>
-/// Web token storage: access token in memory, refresh token handled by HttpOnly cookie (no client storage needed).
+/// Web token storage using browser localStorage via JS interop.
 /// </summary>
-public class WebTokenStorageService : ITokenStorageService
+public class WebTokenStorageService(IJSRuntime js) : ITokenStorageService
 {
-    private string? _accessToken;
+    private const string AccessTokenKey = "savedmessages_access_token";
+    private const string RefreshTokenKey = "savedmessages_refresh_token";
 
-    public Task<string?> GetAccessTokenAsync() => Task.FromResult(_accessToken);
+    public async Task<string?> GetAccessTokenAsync() =>
+        await js.InvokeAsync<string?>("localStorage.getItem", AccessTokenKey);
 
-    public Task SetAccessTokenAsync(string token)
+    public async Task SetAccessTokenAsync(string token) =>
+        await js.InvokeVoidAsync("localStorage.setItem", AccessTokenKey, token);
+
+    public async Task<string?> GetRefreshTokenAsync() =>
+        await js.InvokeAsync<string?>("localStorage.getItem", RefreshTokenKey);
+
+    public async Task SetRefreshTokenAsync(string token) =>
+        await js.InvokeVoidAsync("localStorage.setItem", RefreshTokenKey, token);
+
+    public async Task ClearAsync()
     {
-        _accessToken = token;
-        return Task.CompletedTask;
-    }
-
-    // Refresh token is managed via HttpOnly cookie — no client-side storage
-    public Task<string?> GetRefreshTokenAsync() => Task.FromResult<string?>(null);
-
-    public Task SetRefreshTokenAsync(string token) => Task.CompletedTask;
-
-    public Task ClearAsync()
-    {
-        _accessToken = null;
-        return Task.CompletedTask;
+        await js.InvokeVoidAsync("localStorage.removeItem", AccessTokenKey);
+        await js.InvokeVoidAsync("localStorage.removeItem", RefreshTokenKey);
     }
 }
