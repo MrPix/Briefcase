@@ -1,0 +1,58 @@
+@namespace SavedMessages.Components.Components
+
+<div class="card mb-3 @(Message.IsPinned ? "border-warning" : "")">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                @if (Message.Kind == MessageKind.Url)
+                {
+                    <a href="@Message.Content" target="_blank" rel="noopener noreferrer">@Message.Content</a>
+                }
+                else if (Message.Kind == MessageKind.File)
+                {
+                    <span class="bi bi-file-earmark"></span>
+                    <span>File attachment</span>
+                }
+                else
+                {
+                    <p class="card-text mb-0">@Message.Content</p>
+                }
+            </div>
+            <div class="btn-group btn-group-sm">
+                @if (OnPin.HasDelegate)
+                {
+                    <button class="btn btn-outline-warning" @onclick="() => OnPin.InvokeAsync(Message)" title="@(Message.IsPinned ? "Unpin" : "Pin")">
+                        <span class="bi @(Message.IsPinned ? "bi-pin-fill" : "bi-pin")"></span>
+                    </button>
+                }
+                @if (OnDelete.HasDelegate)
+                {
+                    <button class="btn btn-outline-danger" @onclick="() => OnDelete.InvokeAsync(Message)" title="Delete">
+                        <span class="bi bi-trash"></span>
+                    </button>
+                }
+                @if (OnCopy.HasDelegate)
+                {
+                    <button class="btn btn-outline-secondary" @onclick="() => OnCopy.InvokeAsync(Message)" title="Copy">
+                        <span class="bi bi-clipboard"></span>
+                    </button>
+                }
+            </div>
+        </div>
+        <small class="text-muted">@Message.CreatedAt.ToString("g")</small>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Message Message { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Message> OnPin { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnCopy { get; set; }
+}
