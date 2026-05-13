@@ -63,9 +63,13 @@
             await AuthService.LoginAsync(_model.Email, _model.Password);
             Navigation.NavigateTo("/clipboard", forceLoad: false);
         }
+        catch (AuthException ex)
+        {
+            _errorMessage = ex.Message;
+        }
         catch (HttpRequestException)
         {
-            _errorMessage = "Invalid email or password. Please try again.";
+            _errorMessage = "Unable to connect to the server. Please try again later.";
         }
         catch (Exception ex)
         {

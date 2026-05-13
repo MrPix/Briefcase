@@ -1,6 +1,13 @@
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace SavedMessages.Components.Services;
+
+internal sealed class ProblemDetails
+{
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+}
 
 public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorage) : IAuthService
 {
@@ -13,7 +20,12 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
     public async Task<AuthResult> LoginAsync(string email, string password)
     {
         var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password });
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            throw new AuthException(problem?.Title ?? "Login failed.");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<AuthResult>()
             ?? throw new InvalidOperationException("Invalid auth response.");
@@ -25,7 +37,12 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
     public async Task<AuthResult> RegisterAsync(string email, string password, string displayName)
     {
         var response = await httpClient.PostAsJsonAsync("api/auth/register", new { email, password, displayName });
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            throw new AuthException(problem?.Title ?? "Registration failed.");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<AuthResult>()
             ?? throw new InvalidOperationException("Invalid auth response.");
