@@ -204,6 +204,8 @@ Message
   Content         string?     (text body or URL)
   FileId          Guid?       FK → FileAttachment
   IsPinned        bool
+  IsDeleted       bool        soft-delete flag; default false
+  DeletedAt       datetime?   set when moved to Trash, null when active or restored
   CreatedAt       datetime
   UpdatedAt       datetime
 
@@ -222,6 +224,17 @@ TransferSession
   ExpiresAt       datetime    (TTL: 10 minutes)
   ClaimedAt       datetime?
   Content         string?     (payload pushed by source device)
+
+ShareLink
+  Id              Guid        PK
+  MessageId       Guid        FK → Message
+  UserId          Guid        FK → User
+  Slug            string      unique, URL-safe random token (e.g. 12 chars)
+  ExpiresAt       datetime?   null = never expires
+  IsOneTime       bool        if true, link is revoked after the first successful view
+  ViewCount       int         how many times the link was opened
+  RevokedAt       datetime?   null = still active
+  CreatedAt       datetime
 ```
 
 ---
@@ -240,10 +253,23 @@ TransferSession
 ### Messages
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/messages` | List messages (paged, newest first) |
+| GET | `/api/messages` | List active messages (paged, newest first; `IsDeleted = false`) |
 | POST | `/api/messages` | Create text or URL message |
-| DELETE | `/api/messages/{id}` | Delete message |
+| DELETE | `/api/messages/{id}` | Move message to Trash (`IsDeleted = true`, sets `DeletedAt`) |
 | PATCH | `/api/messages/{id}/pin` | Toggle pin |
+| POST | `/api/messages/{id}/share` | Generate a share link → `{ url, slug, expiresAt }` |
+| DELETE | `/api/messages/{id}/share` | Revoke the share link |
+
+### Trash
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/trash` | List trashed messages (paged, `IsDeleted = true`) |
+| POST | `/api/trash/{id}/restore` | Restore message (`IsDeleted = false`, clears `DeletedAt`) |
+
+### Share Links (public, no auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/s/{slug}` | View shared note in browser (HTML page, no login required). If `IsOneTime = true`, the link is atomically revoked on first read |
 
 ### Files
 | Method | Path | Description |
@@ -271,12 +297,21 @@ TransferSession
 |--------------------------|---------|
 | `MessageCreated` | `Message` |
 | `MessageDeleted` | `{ id }` |
-| `TransferReceived` | `{ sessionId, content }` |
-
+| `TransferReceived` | `{ sessionId, content }` || `ShareLinkCreated` | `{ messageId, url }` |
+| `ShareLinkRevoked` | `{ messageId }` |
+| `MessageTrashed` | `{ id }` |
+| `MessageRestored` | `Message` |
 ---
 
 ## 6. Authentication & Security
 
+- Share link slugs are cryptographically random (CSPRNG, 12 chars, ~72 bits of entropy) — not guessable by enumeration.
+- Share links expose only the message content, never the owner's identity or other messages.
+- One-time links are revoked atomically on first read using an optimistic concurrency update (`UPDATE ... WHERE RevokedAt IS NULL`) — a race condition between two simultaneous requests cannot result in both succeeding.
+- Messages are **never hard-deleted**. `DELETE /api/messages/{id}` sets `IsDeleted = true` and `DeletedAt = now`. No row or blob is removed. This protects against accidental data loss and simplifies audit trails.
+- Share links whose parent message is in Trash are treated as revoked until the message is restored.
+- All message list queries filter on `IsDeleted = false` by default; the Trash endpoint explicitly filters on `IsDeleted = true`.
+- File messages shared via link redirect to a fresh short-lived SAS URL on each view — the slug itself does not embed storage credentials.
 - JWTs are short-lived (15 min access + 7 day refresh, stored in secure storage / HttpOnly cookie for web).
 - OAuth flows use PKCE. State parameter prevents CSRF.
 - File downloads use time-limited Azure Blob SAS URLs (never expose the raw storage connection string to clients).

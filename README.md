@@ -21,6 +21,8 @@ SavedMessages is a focused, self-hosted-friendly service that does one thing wel
 | **OAuth Sign-in** | Google, Facebook, Apple, Microsoft — no new password required |
 | **Email / password** | Traditional registration also supported |
 | **File support** | Upload and download files up to a configurable size limit |
+| **Share Link** | Generate a public link for any note — anyone with the link can view it in a browser, no account required. Links can be set to expire, revoked at any time, or marked as **one-time** (automatically invalidated after the first open) |
+| **Trash & Restore** | Deleted messages go to Trash and can be restored at any time. Content is never permanently removed from the database or storage — `IsDeleted` is a soft flag |
 
 ## Supported Platforms
 
