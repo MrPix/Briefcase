@@ -56,7 +56,7 @@ SavedMessages/
 ├── src/
 │   ├── SavedMessages.AppHost/          # .NET Aspire host
 │   ├── SavedMessages.ServiceDefaults/  # Aspire shared defaults (telemetry, health checks)
-│   ├── SavedMessages.Api/              # ASP.NET Core Web API
+│   ├── SavedMessages.ApiService/       # ASP.NET Core Web API
 │   ├── SavedMessages.Domain/           # Domain models, interfaces
 │   ├── SavedMessages.Infrastructure/   # EF Core, Azure integrations
 │   ├── SavedMessages.Components/       # Shared Razor component library

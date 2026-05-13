@@ -55,7 +55,7 @@ SavedMessages/
 ├── src/
 │   ├── SavedMessages.AppHost/          # .NET Aspire orchestration entry point
 │   ├── SavedMessages.ServiceDefaults/  # Shared Aspire defaults: OpenTelemetry, health checks, resilience
-│   ├── SavedMessages.Api/              # ASP.NET Core 10 Web API
+│   ├── SavedMessages.ApiService/       # ASP.NET Core 10 Web API
 │   │   ├── Controllers/
 │   │   │   ├── AuthController.cs
 │   │   │   ├── MessagesController.cs
@@ -74,14 +74,13 @@ SavedMessages/
 │   │   │   ├── Message.cs
 │   │   │   └── FileAttachment.cs
 │   │   └── Interfaces/
-│   │       ├── IMessageRepository.cs
 │   │       └── IFileStorageService.cs
-│   ├── SavedMessages.Infrastructure/   # EF Core, Azure SDK integrations
+│   ├── SavedMessages.Infrastructure/   # EF Core, S3 integrations
 │   │   ├── Persistence/
 │   │   │   ├── AppDbContext.cs
 │   │   │   └── Migrations/
 │   │   └── Storage/
-│   │       └── AzureBlobStorageService.cs
+│   │       └── MinioStorageService.cs
 │   ├── SavedMessages.Components/       # Shared Razor component library
 │   │   ├── Pages/
 │   │   │   ├── ClipboardPage.razor
@@ -127,12 +126,12 @@ Aspire is the local development orchestrator. It wires up:
 
 In production, resources are replaced by real cloud services referenced via connection strings stored in a secret manager.
 
-### 3.2 ASP.NET Core API
+### 3.2 ASP.NET Core API (`SavedMessages.ApiService`)
 
 Responsibilities:
 - JWT + OAuth 2.0 token issuance and validation
 - CRUD for messages and file metadata
-- Streaming file upload/download to/from Azure Blob Storage
+- Streaming file upload/download to/from MinIO (S3-compatible)
 - SignalR hub for real-time push to connected devices
 - QR code generation and transfer-session management
 
@@ -237,8 +236,16 @@ FileAttachment
   OriginalName    string
   ContentType     string
   SizeBytes       long
-  BlobPath        string      (Azure Blob Storage path)
+  BlobPath        string      (S3/MinIO object key path)
   CreatedAt       datetime
+
+RefreshToken
+  Id              Guid        PK
+  UserId          Guid        FK → User
+  Token           string      opaque random token value
+  ExpiresAt       datetime    (TTL: 7 days)
+  CreatedAt       datetime
+  RevokedAt       datetime?   null = still active; set on use (rotation) or logout
 
 TransferSession
   Id              Guid        PK
@@ -297,7 +304,7 @@ ShareLink
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/files` | Upload file (multipart) |
-| GET | `/api/files/{id}` | Download file (redirect to SAS URL) |
+| GET | `/api/files/{id}` | Download file (stream through API) |
 | DELETE | `/api/files/{id}` | Delete file + blob |
 
 ### Devices
@@ -342,10 +349,10 @@ ShareLink
 - Messages are **never hard-deleted**. `DELETE /api/messages/{id}` sets `IsDeleted = true` and `DeletedAt = now`. No row or blob is removed. This protects against accidental data loss and simplifies audit trails.
 - Share links whose parent message is in Trash are treated as revoked until the message is restored.
 - All message list queries filter on `IsDeleted = false` by default; the Trash endpoint explicitly filters on `IsDeleted = true`.
-- File messages shared via link redirect to a fresh short-lived SAS URL on each view — the slug itself does not embed storage credentials.
-- JWTs are short-lived (15 min access + 7 day refresh, stored in secure storage / HttpOnly cookie for web).
+- File messages shared via link are streamed through the API on each view — the slug itself does not embed storage credentials.
+- JWTs are short-lived (15 min access + 7 day refresh, stored in secure storage / HttpOnly cookie for web). Refresh tokens are rotated on each use and revoked on logout.
 - OAuth flows use PKCE. State parameter prevents CSRF.
-- File downloads use time-limited Azure Blob SAS URLs (never expose the raw storage connection string to clients).
+- File downloads are streamed through the API (never expose the raw S3/MinIO credentials or presigned URLs to clients).
 - Transfer sessions expire after 10 minutes and are single-use.
 - Pairing QR tokens expire after 5 minutes and are signed JWTs verified server-side.
 - All user data is scoped by `UserId` — no cross-user data access is possible at the repository layer.
