@@ -324,6 +324,8 @@ ShareLink
 
 ## 7. Azure Deployment Topology
 
+> This is the recommended production path. For early development or self-hosted deployments see **Section 8** instead.
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Azure Resource Group: rg-savedmessages-prod        │
@@ -363,7 +365,67 @@ ShareLink
 
 ---
 
-## 8. Technology Decision Notes
+## 9. Self-Hosted Linux Deployment
+
+All Azure managed services have drop-in self-hosted equivalents. No application code changes are required — only connection strings and Aspire resource registrations differ.
+
+| Azure Service | Self-hosted equivalent | Notes |
+|---|---|---|
+| Azure SQL Database | **PostgreSQL** | Switch EF Core provider to `Npgsql.EntityFrameworkCore.PostgreSQL` |
+| Azure Blob Storage | **MinIO** | S3-compatible API; use `AWSSDK.S3` or MinIO .NET SDK; pre-signed URLs replace SAS URLs |
+| Azure SignalR Service | **ASP.NET Core SignalR in-process** | No external service needed at single-instance scale; add a **Redis backplane** when scaling to multiple containers |
+| Azure Key Vault | **Environment variables / `.env` file** | Use HashiCorp Vault or Doppler for a managed secrets experience |
+| Azure Static Web Apps | **Nginx** | Serves the Blazor WASM `wwwroot` publish output |
+| Azure Monitor / App Insights | **Seq** (simple) or **Grafana + Loki + Tempo** | Aspire's OpenTelemetry output targets either with no code changes |
+
+### Docker Compose layout
+
+```yaml
+services:
+  api:        # ASP.NET Core 10 Web API
+  web:        # Nginx serving Blazor WASM wwwroot
+  postgres:   # PostgreSQL 16
+  minio:      # MinIO object storage
+  redis:      # Redis (SignalR backplane — add when running multiple API replicas)
+  seq:        # Structured log viewer (optional)
+```
+
+### Topology
+
+```
+┌─────────────────────────────────────────────────┐
+│  Linux Server (VPS / bare metal)                │
+│                                                 │
+│  ┌──────────┐   ┌──────────────────────────┐   │
+│  │  Nginx   │   │  Nginx (reverse proxy /  │   │
+│  │  WASM    │   │  SSL termination)        │   │
+│  └──────────┘   └────────────┬─────────────┘   │
+│                               │                │
+│               ┌───────────────▼─────────────┐  │
+│               │  API Container              │  │
+│               │  (ASP.NET Core + SignalR)   │  │
+│               └──┬────────────┬─────────────┘  │
+│                  │            │                │
+│  ┌───────────────▼──┐  ┌──────▼────────────┐  │
+│  │  PostgreSQL       │  │  MinIO            │  │
+│  │  (messages, users)│  │  (file blobs)     │  │
+│  └──────────────────┘  └───────────────────┘  │
+│  ┌─────────────────────────────────────────┐  │
+│  │  Seq  (logs, traces)                    │  │
+│  └─────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+### Migration path to Azure
+
+When ready to move to Azure, only the following need to change:
+1. Swap the Aspire resource registrations in `AppHost` (`AddPostgres` → `AddAzureSqlDatabase`, `AddMinio` → `AddAzureBlobStorage`, etc.).
+2. Point GitHub Actions to `azd deploy` instead of `docker compose up`.
+3. Application code, domain logic, and API contracts remain unchanged.
+
+---
+
+## 9. Technology Decision Notes
 
 ### Why .NET MAUI + Blazor Hybrid for native apps?
 - One codebase builds for Windows, Android, iOS, and macOS.

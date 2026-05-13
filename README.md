@@ -81,6 +81,10 @@ Aspire will launch the API, database migrations, and the web frontend. Navigate 
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design, data models, API surface, and deployment topology.
 
+Two deployment targets are documented:
+- **Azure** — Container Apps, Azure SQL, Blob Storage, SignalR Service (recommended for production scale-out)
+- **Self-hosted Linux** — Docker Compose, PostgreSQL, MinIO, in-process SignalR (recommended starting point)
+
 ## License
 
 [MIT](LICENSE)
