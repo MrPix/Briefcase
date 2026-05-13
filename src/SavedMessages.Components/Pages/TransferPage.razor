@@ -1,0 +1,84 @@
+@page "/transfer"
+@namespace SavedMessages.Components.Pages
+@inject ITransferService TransferService
+
+<h1>Quick Transfer</h1>
+
+<p class="text-muted">Transfer content to another device without an account.</p>
+
+@if (_sessionId is null)
+{
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick="CreateSession">
+            <span class="bi bi-qr-code"></span> Generate QR Code
+        </button>
+        <button class="btn btn-outline-primary" @onclick="() => _showScanner = true">
+            <span class="bi bi-qr-code-scan"></span> Scan QR Code
+        </button>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center">
+            <p>Share this session ID with the sending device:</p>
+            <h3><code>@_sessionId</code></h3>
+            <p class="text-muted">Waiting for content...</p>
+        </div>
+    </div>
+}
+
+@if (_showScanner)
+{
+    <div class="mt-3">
+        <SavedMessages.Components.Components.QrScanner OnScanned="HandleScanned" />
+    </div>
+}
+
+@if (_showPush)
+{
+    <div class="mt-3">
+        <div class="input-group">
+            <textarea class="form-control" @bind="_pushContent" placeholder="Enter content to transfer..." rows="3"></textarea>
+            <button class="btn btn-success" @onclick="PushContent" disabled="@string.IsNullOrWhiteSpace(_pushContent)">
+                <span class="bi bi-send"></span> Send
+            </button>
+        </div>
+    </div>
+}
+
+@if (_transferComplete)
+{
+    <div class="alert alert-success mt-3">Content transferred successfully!</div>
+}
+
+@code {
+    private string? _sessionId;
+    private string? _scannedSessionId;
+    private string? _pushContent;
+    private bool _showScanner;
+    private bool _showPush;
+    private bool _transferComplete;
+
+    private async Task CreateSession()
+    {
+        _sessionId = await TransferService.CreateSessionAsync();
+    }
+
+    private void HandleScanned(string result)
+    {
+        _scannedSessionId = result;
+        _showScanner = false;
+        _showPush = true;
+    }
+
+    private async Task PushContent()
+    {
+        if (_scannedSessionId is not null && !string.IsNullOrWhiteSpace(_pushContent))
+        {
+            await TransferService.PushContentAsync(_scannedSessionId, _pushContent);
+            _transferComplete = true;
+            _showPush = false;
+        }
+    }
+}
