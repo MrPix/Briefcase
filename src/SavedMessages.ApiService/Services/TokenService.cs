@@ -44,4 +44,65 @@ public class TokenService(IConfiguration configuration)
 
     public int RefreshTokenDays =>
         int.Parse(configuration["Jwt:RefreshTokenDays"] ?? "7");
+
+    public string GenerateDevicePairToken(Guid userId)
+    {
+        var secret = configuration["Jwt:Secret"]!;
+        var issuer = configuration["Jwt:Issuer"];
+        var audience = configuration["Jwt:Audience"];
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("purpose", "device-pair"),
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public ClaimsPrincipal? ValidateDevicePairToken(string token)
+    {
+        var secret = configuration["Jwt:Secret"]!;
+        var issuer = configuration["Jwt:Issuer"];
+        var audience = configuration["Jwt:Audience"];
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var handler = new JwtSecurityTokenHandler();
+
+        try
+        {
+            var principal = handler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = true,
+                ValidIssuer = issuer,
+                ValidateAudience = true,
+                ValidAudience = audience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+            }, out _);
+
+            // Ensure this is a device-pair token
+            if (principal.FindFirstValue("purpose") != "device-pair")
+                return null;
+
+            return principal;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
