@@ -1,4 +1,6 @@
 ﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.Maui.Storage;
 using SavedMessages.Maui.Services;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -40,6 +42,46 @@ namespace SavedMessages.Maui.WinUI
             {
                 var trayService = Services.GetService<WindowsTrayService>();
                 trayService?.Initialize(window);
+
+                RestoreWindowBounds(window);
+                window.SizeChanged += OnWindowSizeChanged;
+                window.AppWindow.Changed += OnAppWindowChanged;
+            }
+        }
+
+        private const string PrefWindowWidth = "WindowWidth";
+        private const string PrefWindowHeight = "WindowHeight";
+        private const string PrefWindowX = "WindowX";
+        private const string PrefWindowY = "WindowY";
+
+        private static void RestoreWindowBounds(Microsoft.UI.Xaml.Window window)
+        {
+            var appWindow = window.AppWindow;
+            if (appWindow is null) return;
+
+            var width = Preferences.Get(PrefWindowWidth, 0.0);
+            var height = Preferences.Get(PrefWindowHeight, 0.0);
+            if (width > 0 && height > 0)
+                appWindow.Resize(new Windows.Graphics.SizeInt32((int)width, (int)height));
+
+            var x = Preferences.Get(PrefWindowX, int.MinValue);
+            var y = Preferences.Get(PrefWindowY, int.MinValue);
+            if (x != int.MinValue && y != int.MinValue)
+                appWindow.Move(new Windows.Graphics.PointInt32(x, y));
+        }
+
+        private static void OnWindowSizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs e)
+        {
+            Preferences.Set(PrefWindowWidth, (double)e.Size.Width);
+            Preferences.Set(PrefWindowHeight, (double)e.Size.Height);
+        }
+
+        private static void OnAppWindowChanged(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowChangedEventArgs args)
+        {
+            if (args.DidPositionChange)
+            {
+                Preferences.Set(PrefWindowX, sender.Position.X);
+                Preferences.Set(PrefWindowY, sender.Position.Y);
             }
         }
 
