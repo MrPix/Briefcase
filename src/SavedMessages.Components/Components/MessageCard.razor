@@ -19,34 +19,12 @@
     </div>
     <div class="msg-body">
         <div class="msg-top-row">
-            <span class="msg-title">
-                @if (Message.Kind == MessageKind.Url)
-                {
-                    @(Message.Content?.Length > 50 ? Message.Content[..50] + "..." : Message.Content)
-                }
-                else if (Message.Kind == MessageKind.File)
-                {
-                    <span>File attachment</span>
-                }
-                else
-                {
-                    @(Message.Content?.Length > 50 ? Message.Content[..50] + "..." : Message.Content)
-                }
-            </span>
             <span class="msg-time">@Message.CreatedAt.ToString("h:mm tt")</span>
         </div>
         <div class="msg-preview">
-            @if (Message.Content?.Length > 80)
-            {
-                @Message.Content[..80]<span>...</span>
-            }
-            else
-            {
-                @Message.Content
-            }
+            @Message.Content
         </div>
         <div class="msg-meta">
-            <span class="badge-type badge-@Message.Kind.ToString().ToLowerInvariant()">@Message.Kind</span>
             @if (Message.IsPinned)
             {
                 <svg width="12" height="12" fill="var(--accent, #6C3FC5)" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>

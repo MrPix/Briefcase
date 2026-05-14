@@ -3,6 +3,7 @@
     gap: 12px;
     padding: 12px 16px;
     position: relative;
+    border-radius: 12px;
 }
 
 .msg-card.pinned {
@@ -52,9 +53,7 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-top: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-break: break-word;
 }
 
 .msg-meta {
