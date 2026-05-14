@@ -11,6 +11,12 @@ main {
     height: 100vh;
 }
 
+main.auth-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .sidebar {
     width: var(--sidebar-width, 220px);
     height: 100vh;
