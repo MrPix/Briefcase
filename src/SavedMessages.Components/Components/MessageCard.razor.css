@@ -1,3 +1,68 @@
+.msg-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    position: relative;
+    border-radius: 12px;
+}
+
+.msg-card.pinned {
+    background: rgba(108, 63, 197, 0.03);
+}
+
+.msg-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--surface-hover, #F5F5F5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.msg-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.msg-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.msg-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.msg-preview {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+.msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
 .context-menu-backdrop {
     position: fixed;
     inset: 0;
@@ -8,5 +73,8 @@
 .context-menu-dropdown {
     z-index: 1050;
     min-width: 160px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border);
 }
+

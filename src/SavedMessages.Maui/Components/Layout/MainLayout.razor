@@ -14,10 +14,8 @@
 {
     @if (isAuthPage)
     {
-        <main>
-            <article class="content px-4">
-                @Body
-            </article>
+        <main class="auth-main">
+            @Body
         </main>
     }
     else
@@ -28,9 +26,7 @@
             </div>
 
             <main>
-                <article class="content px-4">
-                    @Body
-                </article>
+                @Body
             </main>
         </div>
     }
