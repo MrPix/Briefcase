@@ -32,6 +32,31 @@ a, .btn-link {
     color: var(--accent);
 }
 
+a.sidebar-link,
+a.sidebar-link:visited,
+a.sidebar-link:link {
+    color: var(--text-primary);
+    text-decoration: none;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+a.sidebar-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-bg-hover);
+    text-decoration: none;
+}
+
+a.sidebar-link.active,
+a.sidebar-link.active:visited {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+    text-decoration: none;
+}
+
 .btn-primary {
     color: #fff;
     background-color: var(--accent);
