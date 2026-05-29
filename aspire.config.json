@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/SavedMessages.AppHost/SavedMessages.AppHost.csproj"
+  }
+}
