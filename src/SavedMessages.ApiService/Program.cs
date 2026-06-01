@@ -75,6 +75,20 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 builder.Services.AddSingleton<IFileStorageService>(sp =>
     new MinioStorageService(sp.GetRequiredService<IAmazonS3>()));
 
+// ── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["https://webfrontend-savedmessages.dev.localhost:7205"];
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // ── JWT Authentication (§3.2 / §6) ───────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
@@ -151,6 +165,7 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

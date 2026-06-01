@@ -9,6 +9,7 @@
     <Project Path="src/SavedMessages.AppHost/SavedMessages.AppHost.csproj" Id="045658e0-9539-40a8-9526-838c08ff3be5" />
     <Project Path="src/SavedMessages.Components/SavedMessages.Components.csproj" Id="2188388b-2ec3-42de-b56c-717da6e53d53" />
     <Project Path="src/SavedMessages.Domain/SavedMessages.Domain.csproj" Id="b351b9a3-9c6c-445e-af87-c051758ff2e2" />
+    <Project Path="src/SavedMessages.Maui/SavedMessages.Maui.csproj" />
     <Project Path="src/SavedMessages.ServiceDefaults/SavedMessages.ServiceDefaults.csproj" />
     <Project Path="src/SavedMessages.Web/SavedMessages.Web.csproj" />
   </Folder>
