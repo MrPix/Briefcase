@@ -1,0 +1,10 @@
+{
+  "solution": {
+    "path": "SavedMessages.slnx",
+    "projects": [
+      "src\\SavedMessages.Components\\SavedMessages.Components.csproj",
+      "src\\SavedMessages.Domain\\SavedMessages.Domain.csproj",
+      "src\\SavedMessages.Maui\\SavedMessages.Maui.csproj"
+    ]
+  }
+}
