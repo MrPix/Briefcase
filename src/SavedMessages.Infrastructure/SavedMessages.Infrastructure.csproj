@@ -7,8 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.3.5" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.2" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.0" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.7.5" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.24" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8" PrivateAssets="all" />
   </ItemGroup>
 
