@@ -343,5 +343,20 @@ label.toolbar-btn {
     font-size: 0.8rem;
 }
 
+.see-all-link {
+    display: block;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent, #0078d4);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.see-all-link:hover {
+    text-decoration: underline;
+}
+
 }
 

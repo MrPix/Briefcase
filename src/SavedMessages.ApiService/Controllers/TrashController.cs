@@ -21,7 +21,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
 
     private static MessageResponse ToResponse(Message m) => new(
         m.Id, m.Kind, m.Content, m.FileId,
-        m.IsPinned, m.IsEncrypted,
+        m.IsPinned, m.PinnedAt, m.IsEncrypted,
         m.CreatedAt, m.UpdatedAt);
 
     // GET /api/trash  →  list trashed messages (paged, IsDeleted = true)

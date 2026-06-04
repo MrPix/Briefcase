@@ -14,6 +14,7 @@ public record MessageResponse(
     string? Content,
     Guid? FileId,
     bool IsPinned,
+    DateTime? PinnedAt,
     bool IsEncrypted,
     DateTime CreatedAt,
     DateTime UpdatedAt);

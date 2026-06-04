@@ -15,6 +15,7 @@ public class Message
     public string? Content { get; set; }
     public Guid? FileId { get; set; }
     public bool IsPinned { get; set; }
+    public DateTime? PinnedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public bool IsEncrypted { get; set; }
