@@ -120,6 +120,28 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         return Ok(ToResponse(message));
     }
 
+    // PUT /api/messages/{id}  →  update message content
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateMessage(Guid id, [FromBody] UpdateMessageRequest request)
+    {
+        var userId = GetUserId();
+        var message = await db.Messages
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted);
+
+        if (message is null)
+            return NotFound();
+
+        message.Content = request.Content;
+        message.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        var response = ToResponse(message);
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.MessageUpdated, response);
+
+        return Ok(response);
+    }
+
     // POST /api/messages/{id}/share  →  generate share link
     [HttpPost("{id:guid}/share")]
     public IActionResult CreateShareLink(Guid id) => StatusCode(StatusCodes.Status501NotImplemented);

@@ -19,6 +19,9 @@ public record MessageResponse(
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
+public record UpdateMessageRequest(
+    [MaxLength(50_000)] string? Content);
+
 public record PagedResponse<T>(
     IReadOnlyList<T> Items,
     int Page,

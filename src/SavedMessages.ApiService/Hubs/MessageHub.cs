@@ -14,6 +14,7 @@ public class MessageHub(TransferSessionService sessions) : Hub
 {
     // Server → client event names (match client-side expectations exactly)
     public const string MessageCreated    = nameof(MessageCreated);
+    public const string MessageUpdated    = nameof(MessageUpdated);
     public const string MessageDeleted    = nameof(MessageDeleted);
     public const string MessageTrashed    = nameof(MessageTrashed);
     public const string MessageRestored   = nameof(MessageRestored);
