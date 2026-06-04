@@ -63,6 +63,42 @@
     margin-top: 6px;
 }
 
+.msg-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
+}
+
+.msg-card:hover .msg-actions {
+    opacity: 1;
+}
+
+.msg-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    color: var(--text-secondary, #6B7280);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.msg-action-btn:hover {
+    background: var(--surface-hover, #F5F5F5);
+    color: var(--text-primary, #1F2937);
+}
+
+.msg-action-btn.delete:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+}
+
 .context-menu-backdrop {
     position: fixed;
     inset: 0;
