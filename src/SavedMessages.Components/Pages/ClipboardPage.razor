@@ -8,6 +8,7 @@
 @inject IClipboardService ClipboardService
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
+@implements IDisposable
 
 <div class="clipboard-drop-zone @(_isDragOver ? "drag-over" : "")"
      @ondragenter="HandleDragEnter"
@@ -193,6 +194,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        NavigationManager.LocationChanged += OnLocationChanged;
+        UpdateFilterFromUrl();
+        await LoadMessages();
+    }
+
+    private void UpdateFilterFromUrl()
+    {
         var path = new Uri(NavigationManager.Uri).AbsolutePath.TrimStart('/').ToLowerInvariant();
         _activeFilter = path switch
         {
@@ -202,7 +210,18 @@
             "text" => "text",
             _ => "all"
         };
-        await LoadMessages();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateFilterFromUrl();
+        ApplyFilters();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
     private async Task LoadMessages()
@@ -244,7 +263,9 @@
             .Where(m => m.IsPinned)
             .OrderByDescending(m => m.PinnedAt)
             .ToList();
-        _recentMessages = _filteredMessages.Where(m => !m.IsPinned).ToList();
+        _recentMessages = _activeFilter is "all" or "pinned"
+            ? _filteredMessages.Where(m => !m.IsPinned).ToList()
+            : _filteredMessages;
     }
 
     private void SetFilter(string filter)
