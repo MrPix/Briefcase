@@ -42,5 +42,6 @@ builder.Services.AddScoped<IClipboardService, WebClipboardService>();
 builder.Services.AddScoped<IMessageService, WebMessageService>();
 builder.Services.AddScoped<IDeviceService, WebDeviceService>();
 builder.Services.AddScoped<ITransferService, WebTransferService>();
+builder.Services.AddScoped<ITrashService, WebTrashService>();
 
 await builder.Build().RunAsync();
