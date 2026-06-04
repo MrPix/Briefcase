@@ -99,7 +99,8 @@
                                     OnPin="HandlePin"
                                     OnDelete="HandleDelete"
                                     OnCopy="HandleCopy"
-                                    OnDownload="HandleDownload" />
+                                    OnDownload="HandleDownload"
+                                    OnEdit="HandleEdit" />
                             </div>
                         }
                         @if (_activeFilter == "all" && _pinnedMessages.Count > MaxPinnedInClipboard)
@@ -119,7 +120,8 @@
                                     OnPin="HandlePin"
                                     OnDelete="HandleDelete"
                                     OnCopy="HandleCopy"
-                                    OnDownload="HandleDownload" />
+                                    OnDownload="HandleDownload"
+                                    OnEdit="HandleEdit" />
                             </div>
                         }
                     }
@@ -361,6 +363,19 @@
             {
                 _errorMessage = $"Failed to download file: {ex.Message}";
             }
+        }
+    }
+
+    private async Task HandleEdit(Message message)
+    {
+        try
+        {
+            await MessageService.EditMessageAsync(message.Id, message.Content);
+            await LoadMessages();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to edit message: {ex.Message}";
         }
     }
 

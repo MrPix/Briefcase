@@ -99,6 +99,63 @@
     color: #DC2626;
 }
 
+.msg-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.msg-edit-input {
+    width: 100%;
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    border: 1px solid var(--border, #E5E7EB);
+    border-radius: 6px;
+    background: var(--surface, #FFFFFF);
+    color: var(--text-primary, #1F2937);
+    resize: vertical;
+    font-family: inherit;
+}
+
+.msg-edit-input:focus {
+    outline: none;
+    border-color: var(--accent, #6C3FC5);
+}
+
+.msg-edit-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.msg-edit-btn {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.msg-edit-btn.save {
+    background: var(--accent, #6C3FC5);
+    color: #fff;
+}
+
+.msg-edit-btn.save:hover {
+    opacity: 0.9;
+}
+
+.msg-edit-btn.cancel {
+    background: var(--surface-hover, #F5F5F5);
+    color: var(--text-secondary, #6B7280);
+}
+
+.msg-edit-btn.cancel:hover {
+    background: var(--border, #E5E7EB);
+}
+
 .context-menu-backdrop {
     position: fixed;
     inset: 0;

@@ -62,6 +62,13 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task EditMessageAsync(Guid messageId, string? content)
+    {
+        var client = CreateClient();
+        var response = await client.PutAsJsonAsync($"api/messages/{messageId}", new { content });
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream, string? comment = null)
     {
         var client = CreateClient();

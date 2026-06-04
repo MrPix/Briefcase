@@ -21,9 +21,22 @@
         <div class="msg-top-row">
             <span class="msg-time">@Message.CreatedAt.ToString("h:mm tt")</span>
         </div>
-        <div class="msg-preview">
-            @Message.Content
-        </div>
+        @if (_isEditing)
+        {
+            <div class="msg-edit">
+                <textarea class="msg-edit-input" @bind="_editContent" rows="2"></textarea>
+                <div class="msg-edit-actions">
+                    <button class="msg-edit-btn save" @onclick="SaveEdit" @onclick:stopPropagation>Save</button>
+                    <button class="msg-edit-btn cancel" @onclick="CancelEdit" @onclick:stopPropagation>Cancel</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="msg-preview">
+                @Message.Content
+            </div>
+        }
         <div class="msg-meta">
             @if (Message.IsPinned)
             {
@@ -48,6 +61,12 @@
         {
             <button class="msg-action-btn" title="@(Message.IsPinned ? "Unpin" : "Pin")" @onclick="() => OnPin.InvokeAsync(Message)" @onclick:stopPropagation>
                 <svg width="16" height="16" fill="@(Message.IsPinned ? "var(--accent, #6C3FC5)" : "none")" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnEdit.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Edit" @onclick="StartEdit" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
         }
         @if (OnRestore.HasDelegate)
@@ -77,6 +96,12 @@
             {
                 <button class="dropdown-item" @onclick="() => ContextAction(() => OnPin.InvokeAsync(Message))">
                     @(Message.IsPinned ? "Unpin" : "Pin")
+                </button>
+            }
+            @if (OnEdit.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(StartEditAsync)">
+                    Edit
                 </button>
             }
             @if (OnShare.HasDelegate)
@@ -114,6 +139,9 @@
     public EventCallback<Message> OnDownload { get; set; }
 
     [Parameter]
+    public EventCallback<Message> OnEdit { get; set; }
+
+    [Parameter]
     public EventCallback<Message> OnRestore { get; set; }
 
     [Parameter]
@@ -125,6 +153,8 @@
     private bool _contextMenuVisible;
     private double _contextMenuX;
     private double _contextMenuY;
+    private bool _isEditing;
+    private string? _editContent;
 
     private void HandleContextMenu(MouseEventArgs e)
     {
@@ -143,5 +173,34 @@
     {
         _contextMenuVisible = false;
         await action();
+    }
+
+    private void StartEdit()
+    {
+        _editContent = Message.Content;
+        _isEditing = true;
+    }
+
+    private Task StartEditAsync()
+    {
+        StartEdit();
+        return Task.CompletedTask;
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        _editContent = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (OnEdit.HasDelegate)
+        {
+            Message.Content = _editContent;
+            await OnEdit.InvokeAsync(Message);
+        }
+        _isEditing = false;
+        _editContent = null;
     }
 }
