@@ -17,6 +17,26 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
     public string? AccessToken => _accessToken;
     public bool IsAuthenticated => _accessToken is not null && DateTime.UtcNow < _expiresAt;
 
+    public async Task TryRestoreSessionAsync()
+    {
+        if (IsAuthenticated)
+            return;
+
+        var storedToken = await tokenStorage.GetAccessTokenAsync();
+        if (storedToken is not null)
+        {
+            _accessToken = storedToken;
+            // Access token may be expired; try a refresh to get a new one.
+            var result = await RefreshAsync();
+            if (result is null)
+            {
+                _accessToken = null;
+                _expiresAt = default;
+                await tokenStorage.ClearAsync();
+            }
+        }
+    }
+
     public async Task<AuthResult> LoginAsync(string email, string password)
     {
         var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform });

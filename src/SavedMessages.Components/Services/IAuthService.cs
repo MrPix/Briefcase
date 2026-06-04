@@ -11,6 +11,7 @@ public interface IAuthService
     Task<AuthResult?> RefreshAsync();
     Task LogoutAsync();
     Task ChangePasswordAsync(string currentPassword, string newPassword);
+    Task TryRestoreSessionAsync();
     string? AccessToken { get; }
     bool IsAuthenticated { get; }
 }
