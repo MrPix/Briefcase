@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\SavedMessages.Domain\SavedMessages.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SavedMessages.ApiService\SavedMessages.ApiService.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
