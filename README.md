@@ -4,7 +4,7 @@ A cross-platform personal clipboard and message relay service — send text, lin
 
 ## The Problem
 
-Many people use Telegram's "Saved Messages" as a personal relay — paste a URL on a PC, read it on a phone. But that requires Telegram to be installed and signed in on every device, which is often inconvenient (work laptop policies, shared tablets, car head units, etc.). Existing alternatives either cover only some platforms, require complex setup, or come with unnecessary social features.
+Most major messengers — Telegram, WhatsApp, Signal, Viber, and others — now offer a "Saved Messages" or "Note to Self" feature as a personal relay: paste a URL on a PC, read it on a phone. But all of them require the same app to be installed and signed in on every device, which is often inconvenient (work laptop policies, shared tablets, car head units, etc.). Switching messengers just to share a link is friction you shouldn't have, and existing clipboard tools either cover only some platforms, require complex setup, or come with unnecessary social features.
 
 ## The Solution
 
