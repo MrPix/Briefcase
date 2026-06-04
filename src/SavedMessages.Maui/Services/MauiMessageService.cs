@@ -41,6 +41,19 @@ public class MauiMessageService(IHttpClientFactory httpClientFactory) : IMessage
         return (await response.Content.ReadFromJsonAsync<Message>())!;
     }
 
+    public async Task<(byte[] Data, string ContentType, string FileName)> DownloadFileAsync(Guid fileId)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync($"api/files/{fileId}");
+        response.EnsureSuccessStatusCode();
+        var data = await response.Content.ReadAsByteArrayAsync();
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "download";
+        return (data, contentType, fileName);
+    }
+
     public async Task DeleteMessageAsync(Guid messageId)
     {
         var client = CreateClient();

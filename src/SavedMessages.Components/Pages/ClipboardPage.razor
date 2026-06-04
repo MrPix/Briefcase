@@ -2,6 +2,7 @@
 @namespace SavedMessages.Components.Pages
 @inject IMessageService MessageService
 @inject IClipboardService ClipboardService
+@inject IJSRuntime JS
 
 <div class="clipboard-drop-zone @(_isDragOver ? "drag-over" : "")"
      @ondragenter="HandleDragEnter"
@@ -154,7 +155,8 @@
                                     Message="message"
                                     OnPin="HandlePin"
                                     OnDelete="HandleDelete"
-                                    OnCopy="HandleCopy" />
+                                    OnCopy="HandleCopy"
+                                    OnDownload="HandleDownload" />
                             </div>
                         }
                     }
@@ -169,7 +171,8 @@
                                     Message="message"
                                     OnPin="HandlePin"
                                     OnDelete="HandleDelete"
-                                    OnCopy="HandleCopy" />
+                                    OnCopy="HandleCopy"
+                                    OnDownload="HandleDownload" />
                             </div>
                         }
                     }
@@ -336,6 +339,22 @@
         if (message.Content is not null)
         {
             await ClipboardService.SetTextAsync(message.Content);
+        }
+    }
+
+    private async Task HandleDownload(Message message)
+    {
+        if (message.FileId is not null)
+        {
+            try
+            {
+                var (data, contentType, fileName) = await MessageService.DownloadFileAsync(message.FileId.Value);
+                await JS.InvokeVoidAsync("SavedMessages.downloadFile", fileName, contentType, data);
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = $"Failed to download file: {ex.Message}";
+            }
         }
     }
 
