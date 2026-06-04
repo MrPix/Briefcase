@@ -110,7 +110,27 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         return NoContent();
     }
 
-    // GET /api/auth/oauth/{provider}  →  redirect to OAuth provider (PKCE + state)
+    // POST /api/auth/change-password
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await db.Users.FindAsync(userId);
+
+        if (user is null)
+            return NotFound(new ProblemDetails { Title = "User not found." });
+
+        if (user.PasswordHash is null || !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return BadRequest(new ProblemDetails { Title = "Current password is incorrect." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // GET /api/auth/oauth/{provider}
     [HttpGet("oauth/{provider}")]
     public IActionResult OAuthRedirect(string provider, [FromQuery] string redirect_uri)
     {

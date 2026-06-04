@@ -10,6 +10,7 @@ public interface IAuthService
     Task<AuthResult> RegisterAsync(string email, string password, string displayName);
     Task<AuthResult?> RefreshAsync();
     Task LogoutAsync();
+    Task ChangePasswordAsync(string currentPassword, string newPassword);
     string? AccessToken { get; }
     bool IsAuthenticated { get; }
 }
