@@ -60,10 +60,19 @@ SavedMessages/
 │   │   │   ├── AuthController.cs
 │   │   │   ├── MessagesController.cs
 │   │   │   ├── FilesController.cs
-│   │   │   └── DevicesController.cs
+│   │   │   ├── TrashController.cs
+│   │   │   ├── DevicesController.cs
+│   │   │   ├── TransferController.cs
+│   │   │   └── E2eeController.cs
 │   │   ├── Hubs/
 │   │   │   └── MessageHub.cs          # SignalR hub
+│   │   ├── Models/
+│   │   │   ├── AuthModels.cs
+│   │   │   ├── MessageModels.cs
+│   │   │   └── DeviceModels.cs
 │   │   ├── Services/
+│   │   │   ├── TokenService.cs
+│   │   │   ├── OAuthService.cs
 │   │   │   ├── QrCodeService.cs
 │   │   │   └── TransferSessionService.cs
 │   │   └── Program.cs
@@ -72,7 +81,12 @@ SavedMessages/
 │   │   │   ├── User.cs
 │   │   │   ├── Device.cs
 │   │   │   ├── Message.cs
-│   │   │   └── FileAttachment.cs
+│   │   │   ├── FileAttachment.cs
+│   │   │   ├── ExternalLogin.cs
+│   │   │   ├── RefreshToken.cs
+│   │   │   ├── ShareLink.cs
+│   │   │   ├── TransferSession.cs
+│   │   │   └── UserE2eeSettings.cs
 │   │   └── Interfaces/
 │   │       └── IFileStorageService.cs
 │   ├── SavedMessages.Infrastructure/   # EF Core, S3 integrations
@@ -83,14 +97,42 @@ SavedMessages/
 │   │       └── MinioStorageService.cs
 │   ├── SavedMessages.Components/       # Shared Razor component library
 │   │   ├── Pages/
-│   │   │   ├── ClipboardPage.razor
+│   │   │   ├── LoginPage.razor
+│   │   │   ├── SignupPage.razor
+│   │   │   ├── ClipboardPage.razor    # multi-route: /clipboard /favorites /files /links /text
 │   │   │   ├── TransferPage.razor
-│   │   │   └── DevicesPage.razor
-│   │   └── Components/
-│   │       ├── MessageCard.razor
-│   │       └── QrScanner.razor
+│   │   │   ├── DevicesPage.razor
+│   │   │   ├── TrashPage.razor
+│   │   │   ├── SettingsPage.razor
+│   │   │   └── AboutPage.razor
+│   │   ├── Components/
+│   │   │   ├── MessageCard.razor
+│   │   │   └── QrScanner.razor
+│   │   └── Services/
+│   │       ├── IAuthService.cs
+│   │       ├── IMessageService.cs
+│   │       ├── IDeviceService.cs
+│   │       ├── ITransferService.cs
+│   │       ├── ITrashService.cs
+│   │       ├── IClipboardService.cs
+│   │       ├── ITokenStorageService.cs
+│   │       ├── IThemeService.cs
+│   │       ├── IQrScannerService.cs
+│   │       ├── IDeviceInfoProvider.cs
+│   │       ├── IKeyboardShortcutService.cs
+│   │       ├── IJumpListService.cs
+│   │       ├── IFileDropService.cs
+│   │       ├── AuthService.cs         # shared token management + session restore
+│   │       └── AuthDelegatingHandler.cs  # HTTP handler with auto token refresh
 │   ├── SavedMessages.Web/              # Blazor WebAssembly PWA
 │   │   ├── Program.cs
+│   │   ├── Services/
+│   │   │   ├── WebMessageService.cs
+│   │   │   ├── WebDeviceService.cs
+│   │   │   ├── WebTransferService.cs
+│   │   │   ├── WebTrashService.cs
+│   │   │   ├── WebClipboardService.cs      # JS interop via Clipboard API
+│   │   │   └── WebTokenStorageService.cs  # localStorage via JS interop
 │   │   └── wwwroot/
 │   │       └── manifest.json          # PWA manifest
 │   └── SavedMessages.Maui/            # .NET MAUI Blazor Hybrid
@@ -100,10 +142,24 @@ SavedMessages/
 │       │   ├── iOS/
 │       │   ├── MacCatalyst/
 │       │   └── Windows/
+│       ├── Services/
+│       │   ├── MauiMessageService.cs
+│       │   ├── MauiDeviceService.cs
+│       │   ├── MauiTransferService.cs
+│       │   ├── MauiTrashService.cs
+│       │   ├── MauiClipboardService.cs
+│       │   ├── MauiTokenStorageService.cs  # secure credential storage
+│       │   ├── MauiDeviceInfoProvider.cs
+│       │   ├── WindowsThemeService.cs      # Windows only
+│       │   ├── WindowsKeyboardShortcutService.cs  # Windows only
+│       │   ├── WindowsJumpListService.cs   # Windows only
+│       │   ├── WindowsFileDropService.cs   # Windows only
+│       │   └── WindowsTrayService.cs       # Windows only
 │       └── MainPage.xaml              # Hosts BlazorWebView
 ├── tests/
 │   ├── SavedMessages.UnitTests/        # mstests — domain logic, services, E2EE
-│   └── SavedMessages.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
+│   ├── SavedMessages.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
+│   └── SavedMessages.Tests/            # mstests + Aspire.Hosting.Testing — end-to-end smoke tests
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -167,11 +223,17 @@ Every authenticated client connects to the hub. When a message is created or a q
 
 ### 3.5 Shared Razor Component Library
 
-Contains all pages and UI components as Razor components. Both `SavedMessages.Web` (WASM) and `SavedMessages.Maui` (Blazor Hybrid) reference this library. Platform-specific concerns (camera for QR scanning, file picker) are abstracted behind interfaces injected at the app level.
+Contains all pages and UI components as Razor components. Both `SavedMessages.Web` (WASM) and `SavedMessages.Maui` (Blazor Hybrid) reference this library. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
 
 ### 3.6 .NET MAUI Blazor Hybrid
 
 `MainPage.xaml` hosts a `BlazorWebView` that renders the shared Razor components. MAUI provides native platform APIs (camera, share sheet, background notifications, local secure storage for tokens). One project builds for Windows, Android, iOS, and macOS.
+
+Windows-specific features (compiled with `#if WINDOWS`):
+- **System tray icon** (`WindowsTrayService`) — app stays accessible from the notification area
+- **Keyboard shortcuts** (`WindowsKeyboardShortcutService`) — Ctrl+N (new message), Ctrl+Shift+V (paste & send), Delete, Ctrl+P (pin), Ctrl+F (search)
+- **Taskbar jump list** (`WindowsJumpListService`) — quick actions from the taskbar
+- **File drag-and-drop** (`WindowsFileDropService`) — drop files directly onto the window
 
 ### 3.7 Blazor WebAssembly PWA
 
@@ -212,6 +274,7 @@ Message
   Content         string?     (plaintext body/URL, or base64 AES-256-GCM ciphertext when encrypted)
   FileId          Guid?       FK → FileAttachment
   IsPinned        bool
+  PinnedAt        datetime?   set when pinned, null when not pinned
   IsDeleted       bool        soft-delete flag; default false
   DeletedAt       datetime?   set when moved to Trash, null when active or restored
   IsEncrypted     bool        true when Content is E2EE ciphertext; default false
@@ -243,7 +306,7 @@ RefreshToken
   Id              Guid        PK
   UserId          Guid        FK → User
   Token           string      opaque random token value
-  ExpiresAt       datetime    (TTL: 7 days)
+  ExpiresAt       datetime    (TTL: 365 days by default, configurable via Jwt:RefreshTokenDays)
   CreatedAt       datetime
   RevokedAt       datetime?   null = still active; set on use (rotation) or logout
 
@@ -253,6 +316,8 @@ TransferSession
   ExpiresAt       datetime    (TTL: 10 minutes)
   ClaimedAt       datetime?
   Content         string?     (payload pushed by source device)
+
+> **Note:** `TransferSession` is currently managed in-memory by `TransferSessionService` and is not persisted to the database. The domain entity exists for future persistence if needed.
 
 ShareLink
   Id              Guid        PK
@@ -275,17 +340,20 @@ ShareLink
 |--------|------|-------------|
 | POST | `/api/auth/register` | Email + password registration |
 | POST | `/api/auth/login` | Email + password login → JWT |
+| POST | `/api/auth/logout` | Revoke refresh token, clear session |
 | GET | `/api/auth/oauth/{provider}` | Redirect to OAuth provider |
 | GET | `/api/auth/oauth/{provider}/callback` | OAuth callback → JWT |
 | POST | `/api/auth/refresh` | Refresh JWT |
+| POST | `/api/auth/change-password` | Change password (requires current password) |
 
 ### Messages
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/messages` | List active messages (paged, newest first; `IsDeleted = false`) |
 | POST | `/api/messages` | Create text or URL message |
+| PATCH | `/api/messages/{id}` | Edit message content |
 | DELETE | `/api/messages/{id}` | Move message to Trash (`IsDeleted = true`, sets `DeletedAt`) |
-| PATCH | `/api/messages/{id}/pin` | Toggle pin |
+| PATCH | `/api/messages/{id}/pin` | Toggle pin (also sets/clears `PinnedAt`) |
 | POST | `/api/messages/{id}/share` | Generate a share link → `{ url, slug, expiresAt }` |
 | DELETE | `/api/messages/{id}/share` | Revoke the share link |
 
@@ -322,6 +390,9 @@ ShareLink
 | POST | `/api/transfer/push` | Push content into a transfer session |
 
 ### E2EE
+
+> **Status: Schema and endpoints scaffolded; currently returns `501 Not Implemented`.** The database schema (`UserE2eeSettings`) and domain model are fully defined. Client-side key derivation and ciphertext storage in `Message.Content` / `Message.EncryptionIV` are designed and ready. Full implementation is a planned milestone.
+
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/e2ee/settings` | Get current user's KDF salt, params, key verifier, and `isEnabled` flag |
@@ -334,10 +405,11 @@ ShareLink
 |--------------------------|---------|
 | `MessageCreated` | `Message` |
 | `MessageDeleted` | `{ id }` |
-| `TransferReceived` | `{ sessionId, content }` || `ShareLinkCreated` | `{ messageId, url }` |
-| `ShareLinkRevoked` | `{ messageId }` |
 | `MessageTrashed` | `{ id }` |
 | `MessageRestored` | `Message` |
+| `TransferReceived` | `{ sessionId, content }` |
+| `ShareLinkCreated` | `{ messageId, url }` |
+| `ShareLinkRevoked` | `{ messageId }` |
 | `E2eeSettingsChanged` | `{ isEnabled }` |
 ---
 
@@ -350,7 +422,8 @@ ShareLink
 - Share links whose parent message is in Trash are treated as revoked until the message is restored.
 - All message list queries filter on `IsDeleted = false` by default; the Trash endpoint explicitly filters on `IsDeleted = true`.
 - File messages shared via link are streamed through the API on each view — the slug itself does not embed storage credentials.
-- JWTs are short-lived (15 min access + 7 day refresh, stored in secure storage / HttpOnly cookie for web). Refresh tokens are rotated on each use and revoked on logout.
+- JWTs are short-lived (15 min access token + 365 day refresh token by default, configurable via `Jwt:AccessTokenMinutes` / `Jwt:RefreshTokenDays`). Tokens are stored in secure storage on MAUI and `localStorage` on web (WASM). Refresh tokens are rotated on each use and revoked on logout.
+- File uploads are limited to **100 MB** per file (enforced at the API layer).
 - OAuth flows use PKCE. State parameter prevents CSRF.
 - File downloads are streamed through the API (never expose the raw S3/MinIO credentials or presigned URLs to clients).
 - Transfer sessions expire after 10 minutes and are single-use.
@@ -363,6 +436,7 @@ ShareLink
 ## 7. Azure Deployment Topology
 
 > This is the recommended production path. For early development or self-hosted deployments see **Section 8** instead.
+> The local development setup (Aspire) already uses PostgreSQL + MinIO + Redis + Seq — no Azure account needed to run the project.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -403,7 +477,7 @@ ShareLink
 
 ---
 
-## 9. Self-Hosted Linux Deployment
+## 8. Self-Hosted Linux Deployment
 
 All Azure managed services have drop-in self-hosted equivalents. No application code changes are required — only connection strings and Aspire resource registrations differ.
 
@@ -463,7 +537,7 @@ When ready to move to Azure, only the following need to change:
 
 ---
 
-## 8. Testing Strategy
+## 9. Testing Strategy
 
 ### 8.1 Unit Tests (`SavedMessages.UnitTests`)
 
@@ -508,7 +582,7 @@ Spins up the real API, an in-process SQL Server (or Testcontainers PostgreSQL), 
 
 ---
 
-## 9. Technology Decision Notes
+## 10. Technology Decision Notes
 
 ### Why .NET MAUI + Blazor Hybrid for native apps?
 - One codebase builds for Windows, Android, iOS, and macOS.
