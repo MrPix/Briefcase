@@ -24,6 +24,21 @@
     </div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script>
+        window.SavedMessages = {
+            downloadFile: function (fileName, contentType, data) {
+                var blob = new Blob([new Uint8Array(data)], { type: contentType });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        };
+    </script>
 
 </body>
 

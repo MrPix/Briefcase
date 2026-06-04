@@ -41,12 +41,46 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         return (await response.Content.ReadFromJsonAsync<Message>())!;
     }
 
+    public async Task<(byte[] Data, string ContentType, string FileName)> DownloadFileAsync(Guid fileId)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync($"api/files/{fileId}");
+        response.EnsureSuccessStatusCode();
+        var data = await response.Content.ReadAsByteArrayAsync();
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "download";
+        return (data, contentType, fileName);
+    }
+
     public async Task DeleteMessageAsync(Guid messageId)
     {
         var client = CreateClient();
         var response = await client.DeleteAsync($"api/messages/{messageId}");
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream, string? comment = null)
+    {
+        var client = CreateClient();
+
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        content.Add(streamContent, "file", fileName);
+
+        var uploadResponse = await client.PostAsync("api/files", content);
+        uploadResponse.EnsureSuccessStatusCode();
+        var fileResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
+
+        var messageContent = string.IsNullOrWhiteSpace(comment) ? fileName : comment;
+        var msgResponse = await client.PostAsJsonAsync("api/messages", new { kind = MessageKind.File, content = messageContent, fileId = fileResult!.Id });
+        msgResponse.EnsureSuccessStatusCode();
+        return (await msgResponse.Content.ReadFromJsonAsync<Message>())!;
+    }
+
+    private record FileUploadResponse(Guid Id, string OriginalName, string ContentType, long SizeBytes, DateTime CreatedAt);
 
     public async Task TogglePinAsync(Guid messageId)
     {
