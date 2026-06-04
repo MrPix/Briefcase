@@ -1,8 +1,13 @@
 @page "/clipboard"
+@page "/favorites"
+@page "/files"
+@page "/links"
+@page "/text"
 @namespace SavedMessages.Components.Pages
 @inject IMessageService MessageService
 @inject IClipboardService ClipboardService
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 
 <div class="clipboard-drop-zone @(_isDragOver ? "drag-over" : "")"
      @ondragenter="HandleDragEnter"
@@ -179,6 +184,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var path = new Uri(NavigationManager.Uri).AbsolutePath.TrimStart('/').ToLowerInvariant();
+        _activeFilter = path switch
+        {
+            "favorites" => "pinned",
+            "files" => "file",
+            "links" => "url",
+            "text" => "text",
+            _ => "all"
+        };
         await LoadMessages();
     }
 
