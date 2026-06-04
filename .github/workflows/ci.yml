@@ -33,17 +33,20 @@ jobs:
       - name: Run unit tests
         run: dotnet test tests/SavedMessages.UnitTests/SavedMessages.UnitTests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
 
+      - name: Run integration tests
+        run: dotnet test tests/SavedMessages.IntegrationTests/SavedMessages.IntegrationTests.csproj --no-build --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results
-          path: "**/test-results.trx"
+          path: "**/*test-results.trx"
 
       - name: Publish test results
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: Unit Test Results
-          path: "**/test-results.trx"
+          name: Test Results
+          path: "**/*test-results.trx"
           reporter: dotnet-trx
