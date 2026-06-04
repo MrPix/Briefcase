@@ -183,7 +183,6 @@
     private IEnumerable<Message> _visiblePinnedMessages =>
         _activeFilter == "all" ? _pinnedMessages.Take(MaxPinnedInClipboard) : _pinnedMessages;
     private string? _newContent;
-    private string? _searchQuery;
     private string _activeFilter = "all";
     private bool _isDragOver;
     private string? _errorMessage;
@@ -245,11 +244,6 @@
     private void ApplyFilters()
     {
         var filtered = _messages?.AsEnumerable() ?? [];
-
-        if (!string.IsNullOrWhiteSpace(_searchQuery))
-        {
-            filtered = filtered.Where(m => m.Content?.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) == true);
-        }
 
         filtered = _activeFilter switch
         {
