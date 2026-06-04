@@ -33,6 +33,8 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
+        await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform);
+
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
@@ -40,7 +42,7 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
     }
 
-    // POST /api/auth/login  →  JWT access + refresh tokens
+    // POST /api/auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -51,6 +53,8 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         {
             return Unauthorized(new ProblemDetails { Title = "Invalid email or password." });
         }
+
+        await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform);
 
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
@@ -222,6 +226,36 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
 
         SetRefreshTokenCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
+    }
+
+    private async Task UpsertDeviceAsync(Guid userId, string? deviceName, string? devicePlatform)
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+            return;
+
+        var platform = Enum.TryParse<Platform>(devicePlatform, true, out var p) ? p : Platform.Web;
+
+        var device = await db.Devices
+            .FirstOrDefaultAsync(d => d.UserId == userId && d.Name == deviceName && d.Platform == platform);
+
+        if (device is not null)
+        {
+            device.LastSeenAt = DateTime.UtcNow;
+        }
+        else
+        {
+            db.Devices.Add(new Device
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Name = deviceName,
+                Platform = platform,
+                CreatedAt = DateTime.UtcNow,
+                LastSeenAt = DateTime.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private async Task<string> CreateRefreshTokenAsync(Guid userId)

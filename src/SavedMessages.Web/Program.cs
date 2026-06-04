@@ -14,6 +14,7 @@ var apiBaseAddress = builder.Configuration["services:apiservice:https:0"]
 
 // ── Auth services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ITokenStorageService, WebTokenStorageService>();
+builder.Services.AddScoped<IDeviceInfoProvider, DefaultDeviceInfoProvider>();
 builder.Services.AddTransient<AuthDelegatingHandler>();
 builder.Services.AddHttpClient("AuthClient", client =>
     {
@@ -23,7 +24,8 @@ builder.Services.AddScoped<IAuthService>(sp =>
     {
         var factory = sp.GetRequiredService<IHttpClientFactory>();
         var tokenStorage = sp.GetRequiredService<ITokenStorageService>();
-        return new AuthService(factory.CreateClient("AuthClient"), tokenStorage);
+        var deviceInfo = sp.GetRequiredService<IDeviceInfoProvider>();
+        return new AuthService(factory.CreateClient("AuthClient"), tokenStorage, deviceInfo);
     });
 builder.Services.AddHttpClient("ApiClient", client =>
     {

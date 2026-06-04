@@ -34,7 +34,8 @@ namespace SavedMessages.Maui
             {
                 var factory = sp.GetRequiredService<IHttpClientFactory>();
                 var tokenStorage = sp.GetRequiredService<ITokenStorageService>();
-                return new AuthService(factory.CreateClient("AuthClient"), tokenStorage);
+                var deviceInfo = sp.GetRequiredService<IDeviceInfoProvider>();
+                return new AuthService(factory.CreateClient("AuthClient"), tokenStorage, deviceInfo);
             });
             builder.Services.AddHttpClient("ApiClient", client =>
             {

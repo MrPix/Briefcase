@@ -9,7 +9,7 @@ internal sealed class ProblemDetails
     public string? Title { get; set; }
 }
 
-public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorage) : IAuthService
+public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorage, IDeviceInfoProvider deviceInfoProvider) : IAuthService
 {
     private string? _accessToken;
     private DateTime _expiresAt;
@@ -19,7 +19,7 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
 
     public async Task<AuthResult> LoginAsync(string email, string password)
     {
-        var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password });
+        var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform });
 
         if (!response.IsSuccessStatusCode)
         {
@@ -36,7 +36,7 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
 
     public async Task<AuthResult> RegisterAsync(string email, string password, string displayName)
     {
-        var response = await httpClient.PostAsJsonAsync("api/auth/register", new { email, password, displayName });
+        var response = await httpClient.PostAsJsonAsync("api/auth/register", new { email, password, displayName, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform });
 
         if (!response.IsSuccessStatusCode)
         {
