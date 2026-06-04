@@ -35,8 +35,13 @@
 @code {
     private SavedMessages.Components.Services.IThemeService? _themeService;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        if (!AuthService.IsAuthenticated)
+        {
+            await AuthService.TryRestoreSessionAsync();
+        }
+
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
         var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
                       || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);

@@ -43,7 +43,7 @@ public class TokenService(IConfiguration configuration)
     }
 
     public int RefreshTokenDays =>
-        int.Parse(configuration["Jwt:RefreshTokenDays"] ?? "7");
+        int.Parse(configuration["Jwt:RefreshTokenDays"] ?? "365");
 
     public string GenerateDevicePairToken(Guid userId)
     {
