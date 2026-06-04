@@ -22,3 +22,7 @@ public record AuthResponse(
 public record OAuthCallbackRequest(
     [Required] string Code,
     [Required] string State);
+
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required, MinLength(8), MaxLength(128)] string NewPassword);

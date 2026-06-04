@@ -1,0 +1,175 @@
+@page "/settings"
+@namespace SavedMessages.Components.Pages
+@inject IAuthService AuthService
+@inject IDeviceService DeviceService
+@inject NavigationManager Navigation
+
+<div class="settings-container">
+    <div class="settings-card">
+        <h2 class="settings-title">Settings</h2>
+
+        @* ── Device Name ── *@
+        <div class="settings-section">
+            <h5>Device</h5>
+            @if (_devices is null)
+            {
+                <p class="text-muted"><em>Loading devices…</em></p>
+            }
+            else if (_devices.Count == 0)
+            {
+                <p class="text-muted">No registered devices.</p>
+            }
+            else
+            {
+                <ul class="list-group mb-2">
+                    @foreach (var device in _devices)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@device.Name</strong>
+                                <span class="badge bg-secondary ms-2">@device.Platform</span>
+                            </div>
+                            <small class="text-muted">Last seen: @device.LastSeenAt.ToString("g")</small>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        @* ── Change Password ── *@
+        <div class="settings-section">
+            <h5>Change Password</h5>
+
+            @if (!string.IsNullOrEmpty(_passwordMessage))
+            {
+                <div class="alert @(_passwordSuccess ? "alert-success" : "alert-danger")">@_passwordMessage</div>
+            }
+
+            <EditForm Model="_passwordModel" OnValidSubmit="HandleChangePassword" FormName="changePasswordForm">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label for="currentPassword" class="form-label">Current Password</label>
+                    <InputText id="currentPassword" type="password" class="form-control" @bind-Value="_passwordModel.CurrentPassword" />
+                    <ValidationMessage For="() => _passwordModel.CurrentPassword" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">New Password</label>
+                    <InputText id="newPassword" type="password" class="form-control" @bind-Value="_passwordModel.NewPassword" />
+                    <ValidationMessage For="() => _passwordModel.NewPassword" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                    <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_passwordModel.ConfirmPassword" />
+                    <ValidationMessage For="() => _passwordModel.ConfirmPassword" />
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@_isChangingPassword">
+                    @if (_isChangingPassword)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Changing…</span>
+                    }
+                    else
+                    {
+                        <span>Change Password</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+
+        @* ── Logout ── *@
+        <div class="settings-section">
+            <button class="btn btn-outline-danger w-100" @onclick="HandleLogout" disabled="@_isLoggingOut">
+                @if (_isLoggingOut)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Logging out…</span>
+                }
+                else
+                {
+                    <span>Log Out</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<Device>? _devices;
+    private ChangePasswordModel _passwordModel = new();
+    private string? _passwordMessage;
+    private bool _passwordSuccess;
+    private bool _isChangingPassword;
+    private bool _isLoggingOut;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _devices = await DeviceService.GetDevicesAsync();
+        }
+        catch
+        {
+            _devices = [];
+        }
+    }
+
+    private async Task HandleChangePassword()
+    {
+        _isChangingPassword = true;
+        _passwordMessage = null;
+        _passwordSuccess = false;
+
+        try
+        {
+            await AuthService.ChangePasswordAsync(_passwordModel.CurrentPassword, _passwordModel.NewPassword);
+            _passwordMessage = "Password changed successfully.";
+            _passwordSuccess = true;
+            _passwordModel = new();
+        }
+        catch (AuthException ex)
+        {
+            _passwordMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _passwordMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isChangingPassword = false;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        _isLoggingOut = true;
+
+        try
+        {
+            await AuthService.LogoutAsync();
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+        catch
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+
+    private sealed class ChangePasswordModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Current password is required.")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "New password is required.")]
+        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please confirm your new password.")]
+        [System.ComponentModel.DataAnnotations.Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

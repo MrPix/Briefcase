@@ -87,6 +87,17 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
         await tokenStorage.ClearAsync();
     }
 
+    public async Task ChangePasswordAsync(string currentPassword, string newPassword)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/auth/change-password", new { currentPassword, newPassword });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            throw new AuthException(problem?.Title ?? "Failed to change password.");
+        }
+    }
+
     private async Task StoreTokensAsync(AuthResult result)
     {
         _accessToken = result.AccessToken;
