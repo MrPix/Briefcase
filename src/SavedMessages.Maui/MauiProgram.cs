@@ -21,7 +21,10 @@ namespace SavedMessages.Maui
             // ── App services ──────────────────────────────────────────────────
             builder.Services.AddSingleton<IClipboardService, MauiClipboardService>();
             builder.Services.AddTransient<IMessageService, MauiMessageService>();
-                        builder.Services.AddTransient<ITrashService, MauiTrashService>();
+            builder.Services.AddTransient<ITrashService, MauiTrashService>();
+            builder.Services.AddSingleton<IDeviceInfoProvider, MauiDeviceInfoProvider>();
+            builder.Services.AddTransient<IDeviceService, MauiDeviceService>();
+            builder.Services.AddTransient<ITransferService, MauiTransferService>();
 
             // ── Auth services ─────────────────────────────────────────────────
             builder.Services.AddSingleton<ITokenStorageService, MauiTokenStorageService>();
