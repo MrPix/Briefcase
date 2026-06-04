@@ -177,3 +177,6 @@ app.MapDefaultEndpoints();
 
 await app.RunAsync();
 
+// Make the implicit Program class visible to integration-test projects.
+public partial class Program { }
+

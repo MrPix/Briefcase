@@ -1,11 +1,1 @@
-﻿namespace SavedMessages.IntegrationTests
-{
-    [TestClass]
-    public sealed class Test1
-    {
-        [TestMethod]
-        public void TestMethod1()
-        {
-        }
-    }
-}
+﻿// Placeholder removed — see AuthControllerTests, MessagesControllerTests, TrashControllerTests.
