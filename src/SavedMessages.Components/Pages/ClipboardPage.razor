@@ -26,75 +26,12 @@
     <div class="clipboard-layout">
         @* ── Center: message list ── *@
         <div class="clipboard-list">
-            <div class="list-toolbar">
-                <div class="search-box">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
-                    <input type="text" placeholder="Search messages..." @bind="_searchQuery" @bind:event="oninput" />
-                    <span class="search-shortcut">Ctrl K</span>
-                </div>
-                <div class="toolbar-actions">
-                    <button class="toolbar-btn primary" @onclick="ToggleCompose" title="New message">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-                        New
-                    </button>
-                    <button class="toolbar-btn" @onclick="PasteFromClipboard" title="Paste from clipboard">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Import
-                    </button>
-                    <label class="toolbar-btn" title="Upload file">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Upload
-                        <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
-                    </label>
-                </div>
-            </div>
+
 
             @if (_isUploading)
             {
                 <div class="upload-progress">
                     <span>Uploading...</span>
-                </div>
-            }
-
-            @if (_showCompose)
-            {
-                <div class="compose-area">
-                    @if (_stagedFiles.Count > 0)
-                    {
-                        <div class="staged-files">
-                            @foreach (var file in _stagedFiles)
-                            {
-                                <div class="staged-file">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    <span class="staged-file-name">@file.Name</span>
-                                    <span class="staged-file-size">@FormatFileSize(file.Size)</span>
-                                    <button class="staged-file-remove" @onclick="() => RemoveStagedFile(file)" title="Remove">
-                                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    </button>
-                                </div>
-                            }
-                            <label class="staged-file-add" title="Add more files">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-                                Add files
-                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
-                            </label>
-                        </div>
-                    }
-                    <textarea class="compose-input" @bind="_newContent" placeholder="@(_stagedFiles.Count > 0 ? "Add a comment (optional)..." : "Type or paste a message...")" rows="3"></textarea>
-                    <div class="compose-actions">
-                        <button class="toolbar-btn" @onclick="CancelCompose">Cancel</button>
-                        @if (_stagedFiles.Count == 0)
-                        {
-                            <label class="toolbar-btn" title="Attach file">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
-                            </label>
-                        }
-                        <button class="toolbar-btn primary" @onclick="SendMessage" disabled="@(!CanSend)">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Send
-                        </button>
-                    </div>
                 </div>
             }
 
@@ -178,6 +115,47 @@
                     }
                 </div>
             }
+
+            <div class="compose-area">
+                    @if (_stagedFiles.Count > 0)
+                    {
+                        <div class="staged-files">
+                            @foreach (var file in _stagedFiles)
+                            {
+                                <div class="staged-file">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span class="staged-file-name">@file.Name</span>
+                                    <span class="staged-file-size">@FormatFileSize(file.Size)</span>
+                                    <button class="staged-file-remove" @onclick="() => RemoveStagedFile(file)" title="Remove">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </button>
+                                </div>
+                            }
+                            <label class="staged-file-add" title="Add more files">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+                                Add files
+                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
+                            </label>
+                        </div>
+                    }
+                    <textarea class="compose-input" @bind="_newContent" placeholder="@(_stagedFiles.Count > 0 ? "Add a comment (optional)..." : "Type or paste a message...")" rows="3"></textarea>
+                    <div class="compose-actions">
+                        @if (_stagedFiles.Count == 0)
+                        {
+                            <label class="toolbar-btn" title="Attach file">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
+                            </label>
+                        }
+                        <button class="toolbar-btn" @onclick="PasteFromClipboard" title="Paste from clipboard">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="toolbar-btn primary" @onclick="SendMessage" disabled="@(!CanSend)">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Send
+                        </button>
+                    </div>
+                </div>
         </div>
     </div>
 </div>
@@ -191,7 +169,6 @@
     private string? _searchQuery;
     private string _activeFilter = "all";
     private bool _isDragOver;
-    private bool _showCompose;
     private string? _errorMessage;
     private bool _isUploading;
     private List<StagedFile> _stagedFiles = new();
@@ -250,22 +227,6 @@
         ApplyFilters();
     }
 
-    private void ToggleCompose()
-    {
-        _showCompose = !_showCompose;
-        if (!_showCompose)
-        {
-            _newContent = null;
-            _stagedFiles.Clear();
-        }
-    }
-
-    private void CancelCompose()
-    {
-        _showCompose = false;
-        _newContent = null;
-        _stagedFiles.Clear();
-    }
 
     private async Task SendMessage()
     {
@@ -299,7 +260,6 @@
 
             _newContent = null;
             _stagedFiles.Clear();
-            _showCompose = false;
             await LoadMessages();
         }
         catch (Exception ex)
@@ -318,7 +278,6 @@
         if (text is not null)
         {
             _newContent = text;
-            _showCompose = true;
         }
     }
 
@@ -382,7 +341,6 @@
             await stream.CopyToAsync(ms);
             _stagedFiles.Add(new StagedFile(file.Name, file.ContentType, file.Size, ms.ToArray()));
         }
-        _showCompose = true;
     }
 
     private void RemoveStagedFile(StagedFile file)
