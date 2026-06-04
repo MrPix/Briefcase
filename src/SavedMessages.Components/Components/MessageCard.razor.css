@@ -54,6 +54,7 @@
     color: var(--text-secondary);
     margin-top: 2px;
     word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .msg-meta {
@@ -166,8 +167,7 @@
 .context-menu-dropdown {
     z-index: 1050;
     min-width: 160px;
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
     border-radius: var(--radius-md, 10px);
     border: 1px solid var(--border);
 }
-
