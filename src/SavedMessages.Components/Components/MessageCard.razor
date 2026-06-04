@@ -50,6 +50,12 @@
                 <svg width="16" height="16" fill="@(Message.IsPinned ? "var(--accent, #6C3FC5)" : "none")" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
         }
+        @if (OnRestore.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Restore" @onclick="() => OnRestore.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
         @if (OnDelete.HasDelegate)
         {
             <button class="msg-action-btn delete" title="Delete" @onclick="() => OnDelete.InvokeAsync(Message)" @onclick:stopPropagation>
@@ -106,6 +112,9 @@
 
     [Parameter]
     public EventCallback<Message> OnDownload { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnRestore { get; set; }
 
     [Parameter]
     public EventCallback<Message> OnShare { get; set; }
