@@ -12,7 +12,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
 
     private record MessageResponse(
         Guid Id, MessageKind Kind, string? Content, Guid? FileId,
-        bool IsPinned, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
+        bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
 
     public async Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20)
     {
@@ -27,6 +27,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
             Content = r.Content,
             FileId = r.FileId,
             IsPinned = r.IsPinned,
+            PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt

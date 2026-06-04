@@ -21,7 +21,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
 
     private static MessageResponse ToResponse(Message m) => new(
         m.Id, m.Kind, m.Content, m.FileId,
-        m.IsPinned, m.IsEncrypted,
+        m.IsPinned, m.PinnedAt, m.IsEncrypted,
         m.CreatedAt, m.UpdatedAt);
 
     // GET /api/messages  →  list active messages (paged, newest first)
@@ -35,6 +35,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         var query = db.Messages
             .Where(m => m.UserId == userId && !m.IsDeleted)
             .OrderByDescending(m => m.IsPinned)
+            .ThenByDescending(m => m.PinnedAt)
             .ThenByDescending(m => m.CreatedAt);
 
         var totalCount = await query.CountAsync();
@@ -112,6 +113,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             return NotFound();
 
         message.IsPinned = !message.IsPinned;
+        message.PinnedAt = message.IsPinned ? DateTime.UtcNow : null;
         message.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
