@@ -3,57 +3,56 @@
 @inject ITrashService TrashService
 @inject IClipboardService ClipboardService
 
-<div class="trash-page">
-    <div class="trash-header">
-        <div class="trash-title">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <h2>Trash</h2>
-        </div>
-        <span class="trash-subtitle">Deleted messages can be restored from here</span>
-    </div>
+<div class="clipboard-layout">
+    <div class="clipboard-list">
 
-    @if (_errorMessage is not null)
-    {
-        <div class="alert alert-danger mx-3" role="alert">
-            @_errorMessage
-            <button class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadMessages">Retry</button>
+        <div class="filter-tabs">
+            <span class="filter-tab active">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Trash
+            </span>
         </div>
-    }
-    else if (_messages is null)
-    {
-        <div class="loading-state">
-            <p>Loading trashed messages...</p>
-        </div>
-    }
-    else if (_messages.Count == 0)
-    {
-        <div class="empty-state">
-            <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <p>Trash is empty</p>
-            <span>Deleted messages will appear here</span>
-        </div>
-    }
-    else
-    {
-        <div class="message-list">
-            @foreach (var message in _messages)
-            {
-                <div class="trash-item">
-                    <div class="trash-item-content">
+
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-danger mx-3" role="alert">
+                @_errorMessage
+                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadMessages">Retry</button>
+            </div>
+        }
+        else if (_messages is null)
+        {
+            <div class="loading-state">
+                <p>Loading trashed messages...</p>
+            </div>
+        }
+        else if (_messages.Count == 0)
+        {
+            <div class="empty-state">
+                <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <p>Trash is empty</p>
+                <span>Deleted messages will appear here</span>
+            </div>
+        }
+        else
+        {
+            <div class="message-list">
+                <div class="list-section-header">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Deleted Messages
+                </div>
+                @foreach (var message in _messages)
+                {
+                    <div class="message-item">
                         <SavedMessages.Components.Components.MessageCard
                             Message="message"
+                            OnRestore="HandleRestore"
                             OnCopy="HandleCopy" />
                     </div>
-                    <div class="trash-item-actions">
-                        <button class="restore-btn" @onclick="() => HandleRestore(message)" title="Restore">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Restore
-                        </button>
-                    </div>
-                </div>
-            }
-        </div>
-    }
+                }
+            </div>
+        }
+    </div>
 </div>
 
 @code {
