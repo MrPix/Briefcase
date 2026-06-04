@@ -6,7 +6,7 @@ public interface IMessageService
 {
     Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20);
     Task<Message> CreateMessageAsync(MessageKind kind, string content);
-    Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream);
+    Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream, string? comment = null);
     Task DeleteMessageAsync(Guid messageId);
     Task TogglePinAsync(Guid messageId);
 }

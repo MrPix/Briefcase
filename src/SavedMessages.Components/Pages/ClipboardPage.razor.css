@@ -151,6 +151,71 @@ label.toolbar-btn {
     background: var(--surface-hover);
 }
 
+.staged-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.staged-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.staged-file-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.staged-file-size {
+    color: var(--text-secondary, #6B7280);
+    font-size: 0.75rem;
+}
+
+.staged-file-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    color: var(--text-secondary, #6B7280);
+    display: flex;
+    align-items: center;
+}
+
+.staged-file-remove:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+}
+
+.staged-file-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6B7280);
+    cursor: pointer;
+    background: none;
+}
+
+.staged-file-add:hover {
+    border-color: var(--accent, #6C3FC5);
+    color: var(--accent, #6C3FC5);
+}
+
 .compose-input {
     width: 100%;
     border: 1px solid var(--border);

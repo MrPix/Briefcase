@@ -58,10 +58,38 @@
             @if (_showCompose)
             {
                 <div class="compose-area">
-                    <textarea class="compose-input" @bind="_newContent" placeholder="Type or paste a message..." rows="3"></textarea>
+                    @if (_stagedFiles.Count > 0)
+                    {
+                        <div class="staged-files">
+                            @foreach (var file in _stagedFiles)
+                            {
+                                <div class="staged-file">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    <span class="staged-file-name">@file.Name</span>
+                                    <span class="staged-file-size">@FormatFileSize(file.Size)</span>
+                                    <button class="staged-file-remove" @onclick="() => RemoveStagedFile(file)" title="Remove">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </button>
+                                </div>
+                            }
+                            <label class="staged-file-add" title="Add more files">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+                                Add files
+                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
+                            </label>
+                        </div>
+                    }
+                    <textarea class="compose-input" @bind="_newContent" placeholder="@(_stagedFiles.Count > 0 ? "Add a comment (optional)..." : "Type or paste a message...")" rows="3"></textarea>
                     <div class="compose-actions">
-                        <button class="toolbar-btn" @onclick="ToggleCompose">Cancel</button>
-                        <button class="toolbar-btn primary" @onclick="SendMessage" disabled="@string.IsNullOrWhiteSpace(_newContent)">
+                        <button class="toolbar-btn" @onclick="CancelCompose">Cancel</button>
+                        @if (_stagedFiles.Count == 0)
+                        {
+                            <label class="toolbar-btn" title="Attach file">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
+                            </label>
+                        }
+                        <button class="toolbar-btn primary" @onclick="SendMessage" disabled="@(!CanSend)">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             Send
                         </button>
@@ -162,6 +190,12 @@
     private bool _isDragOver;
     private bool _showCompose;
     private string? _errorMessage;
+    private bool _isUploading;
+    private List<StagedFile> _stagedFiles = new();
+
+    private bool CanSend => _stagedFiles.Count > 0 || !string.IsNullOrWhiteSpace(_newContent);
+
+    private record StagedFile(string Name, string ContentType, long Size, byte[] Data);
 
     protected override async Task OnInitializedAsync()
     {
@@ -216,29 +250,62 @@
     private void ToggleCompose()
     {
         _showCompose = !_showCompose;
-        if (!_showCompose) _newContent = null;
+        if (!_showCompose)
+        {
+            _newContent = null;
+            _stagedFiles.Clear();
+        }
+    }
+
+    private void CancelCompose()
+    {
+        _showCompose = false;
+        _newContent = null;
+        _stagedFiles.Clear();
     }
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(_newContent))
+        if (!CanSend)
             return;
 
         try
         {
-            var kind = Uri.TryCreate(_newContent, UriKind.Absolute, out var uri)
-                && (uri.Scheme == "http" || uri.Scheme == "https")
-                ? MessageKind.Url
-                : MessageKind.Text;
+            if (_stagedFiles.Count > 0)
+            {
+                _isUploading = true;
+                StateHasChanged();
 
-            await MessageService.CreateMessageAsync(kind, _newContent);
+                var comment = string.IsNullOrWhiteSpace(_newContent) ? null : _newContent;
+                foreach (var file in _stagedFiles)
+                {
+                    using var stream = new MemoryStream(file.Data);
+                    await MessageService.UploadFileAsync(file.Name, file.ContentType, stream, comment);
+                    comment = null; // only attach comment to the first file
+                }
+            }
+            else
+            {
+                var kind = Uri.TryCreate(_newContent, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == "http" || uri.Scheme == "https")
+                    ? MessageKind.Url
+                    : MessageKind.Text;
+
+                await MessageService.CreateMessageAsync(kind, _newContent!);
+            }
+
             _newContent = null;
+            _stagedFiles.Clear();
             _showCompose = false;
             await LoadMessages();
         }
         catch (Exception ex)
         {
             _errorMessage = $"Failed to send message: {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
         }
     }
 
@@ -285,32 +352,29 @@
     private void HandleDrop(DragEventArgs e)
     {
         _isDragOver = false;
-        // File drops are handled via the InputFile component
     }
-
-    private bool _isUploading;
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
-        _isUploading = true;
-        StateHasChanged();
-
-        try
+        foreach (var file in e.GetMultipleFiles(10))
         {
-            foreach (var file in e.GetMultipleFiles(10))
-            {
-                await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
-                await MessageService.UploadFileAsync(file.Name, file.ContentType, stream);
-            }
-            await LoadMessages();
+            await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _stagedFiles.Add(new StagedFile(file.Name, file.ContentType, file.Size, ms.ToArray()));
         }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Failed to upload file: {ex.Message}";
-        }
-        finally
-        {
-            _isUploading = false;
-        }
+        _showCompose = true;
     }
+
+    private void RemoveStagedFile(StagedFile file)
+    {
+        _stagedFiles.Remove(file);
+    }
+
+    private static string FormatFileSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+        _ => $"{bytes / (1024.0 * 1024.0):F1} MB"
+    };
 }

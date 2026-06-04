@@ -48,7 +48,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream)
+    public async Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream, string? comment = null)
     {
         var client = CreateClient();
 
@@ -61,7 +61,8 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         uploadResponse.EnsureSuccessStatusCode();
         var fileResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
 
-        var msgResponse = await client.PostAsJsonAsync("api/messages", new { kind = MessageKind.File, content = fileName, fileId = fileResult!.Id });
+        var messageContent = string.IsNullOrWhiteSpace(comment) ? fileName : comment;
+        var msgResponse = await client.PostAsJsonAsync("api/messages", new { kind = MessageKind.File, content = messageContent, fileId = fileResult!.Id });
         msgResponse.EnsureSuccessStatusCode();
         return (await msgResponse.Content.ReadFromJsonAsync<Message>())!;
     }
