@@ -51,7 +51,7 @@ public class MauiMessageService(IHttpClientFactory httpClientFactory) : IMessage
     public async Task TogglePinAsync(Guid messageId)
     {
         var client = CreateClient();
-        var response = await client.PutAsync($"api/messages/{messageId}/pin", null);
+        var response = await client.PatchAsync($"api/messages/{messageId}/pin", null);
         response.EnsureSuccessStatusCode();
     }
 }
