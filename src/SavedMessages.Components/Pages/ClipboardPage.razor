@@ -40,8 +40,20 @@
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         Import
                     </button>
+                    <label class="toolbar-btn" title="Upload file">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Upload
+                        <InputFile OnChange="HandleFileSelected" style="display:none" multiple />
+                    </label>
                 </div>
             </div>
+
+            @if (_isUploading)
+            {
+                <div class="upload-progress">
+                    <span>Uploading...</span>
+                </div>
+            }
 
             @if (_showCompose)
             {
@@ -273,5 +285,32 @@
     private void HandleDrop(DragEventArgs e)
     {
         _isDragOver = false;
+        // File drops are handled via the InputFile component
+    }
+
+    private bool _isUploading;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _isUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            foreach (var file in e.GetMultipleFiles(10))
+            {
+                await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
+                await MessageService.UploadFileAsync(file.Name, file.ContentType, stream);
+            }
+            await LoadMessages();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to upload file: {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+        }
     }
 }

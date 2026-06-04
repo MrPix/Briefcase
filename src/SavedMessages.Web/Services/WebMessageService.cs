@@ -48,6 +48,26 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<Message> UploadFileAsync(string fileName, string contentType, Stream fileStream)
+    {
+        var client = CreateClient();
+
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        content.Add(streamContent, "file", fileName);
+
+        var uploadResponse = await client.PostAsync("api/files", content);
+        uploadResponse.EnsureSuccessStatusCode();
+        var fileResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
+
+        var msgResponse = await client.PostAsJsonAsync("api/messages", new { kind = MessageKind.File, content = fileName, fileId = fileResult!.Id });
+        msgResponse.EnsureSuccessStatusCode();
+        return (await msgResponse.Content.ReadFromJsonAsync<Message>())!;
+    }
+
+    private record FileUploadResponse(Guid Id, string OriginalName, string ContentType, long SizeBytes, DateTime CreatedAt);
+
     public async Task TogglePinAsync(Guid messageId)
     {
         var client = CreateClient();
