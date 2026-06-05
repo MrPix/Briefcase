@@ -31,6 +31,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
             FileId = r.FileId,
             FileName = r.FileName,
             FilePreviewUrl = AppendAccessToken(r.FilePreviewUrl, accessToken, apiBaseAddress),
+            Downloaded = false,
             IsPinned = r.IsPinned,
             PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,

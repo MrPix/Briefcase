@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SavedMessages.Components.Services;
@@ -26,13 +27,31 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
         if (storedToken is not null)
         {
             _accessToken = storedToken;
+            _expiresAt = TryGetTokenExpiryUtc(storedToken) ?? DateTime.UtcNow.AddMinutes(5);
+
+            if (DateTime.UtcNow < _expiresAt)
+                return;
+
             // Access token may be expired; try a refresh to get a new one.
-            var result = await RefreshAsync();
-            if (result is null)
+            try
             {
-                _accessToken = null;
-                _expiresAt = default;
-                await tokenStorage.ClearAsync();
+                var result = await RefreshAsync();
+                if (result is null)
+                {
+                    _accessToken = null;
+                    _expiresAt = default;
+                    await tokenStorage.ClearAsync();
+                }
+            }
+            catch (HttpRequestException)
+            {
+                // Backend is unreachable; keep local auth state for offline mode.
+                _expiresAt = DateTime.MaxValue;
+            }
+            catch (TaskCanceledException)
+            {
+                // Timeout/network interruption; keep local auth state for offline mode.
+                _expiresAt = DateTime.MaxValue;
             }
         }
     }
@@ -124,5 +143,43 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
         _expiresAt = result.AccessTokenExpiresAt;
         await tokenStorage.SetAccessTokenAsync(result.AccessToken);
         await tokenStorage.SetRefreshTokenAsync(result.RefreshToken);
+    }
+
+    private static DateTime? TryGetTokenExpiryUtc(string token)
+    {
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length < 2)
+                return null;
+
+            var payload = parts[1]
+                .Replace('-', '+')
+                .Replace('_', '/');
+
+            switch (payload.Length % 4)
+            {
+                case 2:
+                    payload += "==";
+                    break;
+                case 3:
+                    payload += "=";
+                    break;
+            }
+
+            var bytes = Convert.FromBase64String(payload);
+            using var doc = JsonDocument.Parse(bytes);
+            if (!doc.RootElement.TryGetProperty("exp", out var expElement))
+                return null;
+
+            if (!expElement.TryGetInt64(out var expSeconds))
+                return null;
+
+            return DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

@@ -39,6 +39,9 @@
             @if (Message.Kind == MessageKind.File)
             {
                 <div class="msg-file-name">@FileNameToShow</div>
+                <div class="msg-file-state @(Message.Downloaded ? "downloaded" : "not-downloaded")">
+                    @(Message.Downloaded ? "Downloaded" : "Not downloaded")
+                </div>
                 @if (HasFilePreview)
                 {
                     <img class="msg-image-preview" src="@Message.FilePreviewUrl" alt="@FileNameToShow" loading="lazy" />

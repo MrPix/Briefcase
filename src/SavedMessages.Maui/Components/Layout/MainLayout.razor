@@ -39,7 +39,14 @@
     {
         if (!AuthService.IsAuthenticated)
         {
-            await AuthService.TryRestoreSessionAsync();
+            try
+            {
+                await AuthService.TryRestoreSessionAsync();
+            }
+            catch
+            {
+                // Keep UI alive even if auth backend is unavailable.
+            }
         }
 
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
