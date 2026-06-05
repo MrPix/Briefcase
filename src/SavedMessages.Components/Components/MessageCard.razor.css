@@ -57,6 +57,16 @@
     white-space: pre-wrap;
 }
 
+.msg-link {
+    color: var(--accent, #6C3FC5);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.msg-link:hover {
+    color: var(--text-primary, #1F2937);
+}
+
 .msg-file-name {
     font-size: 0.82rem;
     color: var(--text-primary, #1F2937);

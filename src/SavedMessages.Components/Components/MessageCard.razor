@@ -48,7 +48,14 @@
             else
             {
                 <div class="msg-preview">
-                    @Message.Content
+                    @if (ClickableUrl is not null)
+                    {
+                        <a class="msg-link" href="@ClickableUrl" target="_blank" rel="noopener noreferrer">@Message.Content</a>
+                    }
+                    else
+                    {
+                        @Message.Content
+                    }
                 </div>
             }
         }
@@ -185,6 +192,13 @@
         && !string.IsNullOrWhiteSpace(Message.Content)
         && !string.Equals(Message.Content, Message.FileName, StringComparison.Ordinal)
             ? Message.Content
+            : null;
+
+    private string? ClickableUrl => Message.Kind == MessageKind.Url
+        && !string.IsNullOrWhiteSpace(Message.Content)
+        && Uri.TryCreate(Message.Content, UriKind.Absolute, out var parsedUri)
+        && (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps)
+            ? parsedUri.ToString()
             : null;
 
     private void HandleContextMenu(MouseEventArgs e)
