@@ -3,9 +3,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SavedMessages.Domain.Constants;
 using SavedMessages.Domain.Entities;
 using SavedMessages.Domain.Interfaces;
 using SavedMessages.Infrastructure.Persistence;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 
 namespace SavedMessages.ApiService.Controllers;
 
@@ -14,8 +19,13 @@ namespace SavedMessages.ApiService.Controllers;
 [Route("api/files")]
 public class FilesController(AppDbContext db, IFileStorageService storage) : ControllerBase
 {
+    private const string PreviewContentType = "image/jpeg";
+
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+
+    private static bool IsImage(string contentType) =>
+        contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
 
     // POST /api/files  →  upload file (multipart)
     [HttpPost]
@@ -28,9 +38,25 @@ public class FilesController(AppDbContext db, IFileStorageService storage) : Con
         var userId = GetUserId();
         var fileId = Guid.NewGuid();
         var blobPath = $"{userId}/{fileId}/{file.FileName}";
+        string? previewBlobPath = null;
 
         await using var stream = file.OpenReadStream();
         await storage.UploadAsync(blobPath, file.ContentType, stream, ct);
+
+        if (IsImage(file.ContentType))
+        {
+            await using var imageStream = file.OpenReadStream();
+            var previewStream = await TryCreatePreviewAsync(imageStream, ct);
+
+            if (previewStream is not null)
+            {
+                await using (previewStream)
+                {
+                    previewBlobPath = $"{userId}/{fileId}/preview.jpg";
+                    await storage.UploadAsync(previewBlobPath, PreviewContentType, previewStream, ct);
+                }
+            }
+        }
 
         var attachment = new FileAttachment
         {
@@ -40,6 +66,7 @@ public class FilesController(AppDbContext db, IFileStorageService storage) : Con
             ContentType = file.ContentType,
             SizeBytes = file.Length,
             BlobPath = blobPath,
+            PreviewBlobPath = previewBlobPath,
             CreatedAt = DateTime.UtcNow,
         };
 
@@ -71,6 +98,24 @@ public class FilesController(AppDbContext db, IFileStorageService storage) : Con
         return File(stream, attachment.ContentType, attachment.OriginalName);
     }
 
+    // GET /api/files/{id}/preview  →  download preview image
+    [HttpGet("{id:guid}/preview")]
+    public async Task<IActionResult> DownloadPreview(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        var attachment = await db.FileAttachments
+            .FirstOrDefaultAsync(f => f.Id == id && f.UserId == userId, ct);
+
+        if (attachment is null)
+            return NotFound();
+
+        if (string.IsNullOrWhiteSpace(attachment.PreviewBlobPath))
+            return NotFound();
+
+        var stream = await storage.DownloadAsync(attachment.PreviewBlobPath, ct);
+        return File(stream, PreviewContentType);
+    }
+
     // DELETE /api/files/{id}  →  delete file + blob
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteFile(Guid id, CancellationToken ct)
@@ -83,9 +128,43 @@ public class FilesController(AppDbContext db, IFileStorageService storage) : Con
             return NotFound();
 
         await storage.DeleteAsync(attachment.BlobPath, ct);
+
+        if (!string.IsNullOrWhiteSpace(attachment.PreviewBlobPath))
+            await storage.DeleteAsync(attachment.PreviewBlobPath, ct);
+
         db.FileAttachments.Remove(attachment);
         await db.SaveChangesAsync(ct);
 
         return NoContent();
+    }
+
+    private static async Task<MemoryStream?> TryCreatePreviewAsync(Stream source, CancellationToken ct)
+    {
+        try
+        {
+            using Image image = await Image.LoadAsync(source, ct);
+            image.Mutate(ctx =>
+            {
+                ctx.AutoOrient();
+                ctx.Resize(new ResizeOptions
+                {
+                    Mode = ResizeMode.Max,
+                    Size = new Size(FilePreviewConstants.Width, FilePreviewConstants.Height)
+                });
+            });
+
+            var output = new MemoryStream();
+            await image.SaveAsJpegAsync(output, new JpegEncoder { Quality = 80 }, ct);
+            output.Position = 0;
+            return output;
+        }
+        catch (UnknownImageFormatException)
+        {
+            return null;
+        }
+        catch (InvalidImageContentException)
+        {
+            return null;
+        }
     }
 }

@@ -102,6 +102,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(f => f.OriginalName).IsRequired().HasMaxLength(256);
             e.Property(f => f.ContentType).IsRequired().HasMaxLength(100);
             e.Property(f => f.BlobPath).IsRequired().HasMaxLength(1024);
+            e.Property(f => f.PreviewBlobPath).HasMaxLength(1024);
 
             e.HasOne(f => f.User)
                 .WithMany(u => u.FileAttachments)

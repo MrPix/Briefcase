@@ -24,6 +24,8 @@ public class Message
     public string? EncryptionIV { get; set; }
     [NotMapped]
     public string? FileName { get; set; }
+    [NotMapped]
+    public string? FilePreviewUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
