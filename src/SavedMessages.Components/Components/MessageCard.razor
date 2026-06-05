@@ -1,4 +1,7 @@
 @namespace SavedMessages.Components.Components
+@using System.Text
+@using System.Text.Encodings.Web
+@using System.Text.RegularExpressions
 
 <div class="msg-card @(Message.IsPinned ? "pinned" : "")"
      @oncontextmenu="HandleContextMenu"
@@ -42,20 +45,13 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(FileComment))
                 {
-                    <div class="msg-file-comment">@FileComment</div>
+                    <div class="msg-file-comment">@LinkifyText(FileComment)</div>
                 }
             }
             else
             {
                 <div class="msg-preview">
-                    @if (ClickableUrl is not null)
-                    {
-                        <a class="msg-link" href="@ClickableUrl" target="_blank" rel="noopener noreferrer">@Message.Content</a>
-                    }
-                    else
-                    {
-                        @Message.Content
-                    }
+                    @LinkifyText(Message.Content)
                 </div>
             }
         }
@@ -182,6 +178,8 @@
 
     private bool HasFilePreview => !string.IsNullOrWhiteSpace(Message.FilePreviewUrl);
 
+    private static readonly Regex UrlRegex = new(@"https?://[^\s<]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private string FileNameToShow => HasExplicitFileName
         ? Message.FileName!
         : !string.IsNullOrWhiteSpace(Message.Content)
@@ -194,12 +192,59 @@
             ? Message.Content
             : null;
 
-    private string? ClickableUrl => Message.Kind == MessageKind.Url
-        && !string.IsNullOrWhiteSpace(Message.Content)
-        && Uri.TryCreate(Message.Content, UriKind.Absolute, out var parsedUri)
-        && (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps)
-            ? parsedUri.ToString()
-            : null;
+    private static MarkupString LinkifyText(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return (MarkupString)string.Empty;
+        }
+
+        var html = new StringBuilder(text.Length + 32);
+        var lastIndex = 0;
+
+        foreach (Match match in UrlRegex.Matches(text))
+        {
+            if (match.Index > lastIndex)
+            {
+                html.Append(HtmlEncoder.Default.Encode(text[lastIndex..match.Index]));
+            }
+
+            var rawUrl = match.Value;
+            var trimmedUrl = rawUrl.TrimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}');
+            var trailing = rawUrl[trimmedUrl.Length..];
+
+            if (Uri.TryCreate(trimmedUrl, UriKind.Absolute, out var parsedUri)
+                && (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps))
+            {
+                var safeUrl = HtmlEncoder.Default.Encode(parsedUri.ToString());
+                var safeLabel = HtmlEncoder.Default.Encode(trimmedUrl);
+
+                html.Append("<a class=\"msg-link\" href=\"");
+                html.Append(safeUrl);
+                html.Append("\" target=\"_blank\" rel=\"noopener noreferrer\">");
+                html.Append(safeLabel);
+                html.Append("</a>");
+            }
+            else
+            {
+                html.Append(HtmlEncoder.Default.Encode(trimmedUrl));
+            }
+
+            if (!string.IsNullOrEmpty(trailing))
+            {
+                html.Append(HtmlEncoder.Default.Encode(trailing));
+            }
+
+            lastIndex = match.Index + match.Length;
+        }
+
+        if (lastIndex < text.Length)
+        {
+            html.Append(HtmlEncoder.Default.Encode(text[lastIndex..]));
+        }
+
+        return (MarkupString)html.ToString();
+    }
 
     private void HandleContextMenu(MouseEventArgs e)
     {
