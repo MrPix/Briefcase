@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SavedMessages.Domain.Entities;
 
 public enum MessageKind
@@ -20,6 +22,8 @@ public class Message
     public DateTime? DeletedAt { get; set; }
     public bool IsEncrypted { get; set; }
     public string? EncryptionIV { get; set; }
+    [NotMapped]
+    public string? FileName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

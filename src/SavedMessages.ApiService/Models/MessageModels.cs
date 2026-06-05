@@ -13,6 +13,7 @@ public record MessageResponse(
     MessageKind Kind,
     string? Content,
     Guid? FileId,
+    string? FileName,
     bool IsPinned,
     DateTime? PinnedAt,
     bool IsEncrypted,

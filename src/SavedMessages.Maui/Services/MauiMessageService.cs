@@ -11,7 +11,7 @@ public class MauiMessageService(IHttpClientFactory httpClientFactory) : IMessage
     private record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
     private record MessageResponse(
-        Guid Id, MessageKind Kind, string? Content, Guid? FileId,
+        Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName,
         bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
 
     public async Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20)
@@ -26,6 +26,7 @@ public class MauiMessageService(IHttpClientFactory httpClientFactory) : IMessage
             Kind = r.Kind,
             Content = r.Content,
             FileId = r.FileId,
+            FileName = r.FileName,
             IsPinned = r.IsPinned,
             PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,

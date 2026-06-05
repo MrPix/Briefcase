@@ -33,9 +33,20 @@
         }
         else
         {
-            <div class="msg-preview">
-                @Message.Content
-            </div>
+            @if (Message.Kind == MessageKind.File)
+            {
+                <div class="msg-file-name">@FileNameToShow</div>
+                @if (!string.IsNullOrWhiteSpace(FileComment))
+                {
+                    <div class="msg-file-comment">@FileComment</div>
+                }
+            }
+            else
+            {
+                <div class="msg-preview">
+                    @Message.Content
+                </div>
+            }
         }
         <div class="msg-meta">
             @if (Message.IsPinned)
@@ -155,6 +166,20 @@
     private double _contextMenuY;
     private bool _isEditing;
     private string? _editContent;
+
+    private bool HasExplicitFileName => !string.IsNullOrWhiteSpace(Message.FileName);
+
+    private string FileNameToShow => HasExplicitFileName
+        ? Message.FileName!
+        : !string.IsNullOrWhiteSpace(Message.Content)
+            ? Message.Content!
+            : "Attached file";
+
+    private string? FileComment => HasExplicitFileName
+        && !string.IsNullOrWhiteSpace(Message.Content)
+        && !string.Equals(Message.Content, Message.FileName, StringComparison.Ordinal)
+            ? Message.Content
+            : null;
 
     private void HandleContextMenu(MouseEventArgs e)
     {

@@ -57,6 +57,22 @@
     white-space: pre-wrap;
 }
 
+.msg-file-name {
+    font-size: 0.82rem;
+    color: var(--text-primary, #1F2937);
+    font-style: italic;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+.msg-file-comment {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #6B7280);
+    margin-top: 2px;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
 .msg-meta {
     display: flex;
     align-items: center;

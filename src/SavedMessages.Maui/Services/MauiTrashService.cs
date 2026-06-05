@@ -11,7 +11,7 @@ public class MauiTrashService(IHttpClientFactory httpClientFactory) : ITrashServ
     private record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
     private record MessageResponse(
-        Guid Id, MessageKind Kind, string? Content, Guid? FileId,
+        Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName,
         bool IsPinned, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
 
     public async Task<IReadOnlyList<Message>> GetTrashedMessagesAsync(int page = 1, int pageSize = 50)
@@ -26,6 +26,7 @@ public class MauiTrashService(IHttpClientFactory httpClientFactory) : ITrashServ
             Kind = r.Kind,
             Content = r.Content,
             FileId = r.FileId,
+            FileName = r.FileName,
             IsPinned = r.IsPinned,
             IsEncrypted = r.IsEncrypted,
             CreatedAt = r.CreatedAt,

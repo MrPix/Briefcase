@@ -21,6 +21,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
 
     private static MessageResponse ToResponse(Message m) => new(
         m.Id, m.Kind, m.Content, m.FileId,
+        m.FileName,
         m.IsPinned, m.PinnedAt, m.IsEncrypted,
         m.CreatedAt, m.UpdatedAt);
 
@@ -40,7 +41,17 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(m => ToResponse(m))
+            .Select(m => new MessageResponse(
+                m.Id,
+                m.Kind,
+                m.Content,
+                m.FileId,
+                m.FileAttachment != null ? m.FileAttachment.OriginalName : null,
+                m.IsPinned,
+                m.PinnedAt,
+                m.IsEncrypted,
+                m.CreatedAt,
+                m.UpdatedAt))
             .ToListAsync();
 
         return Ok(new PagedResponse<MessageResponse>(items, page, pageSize, totalCount));
