@@ -4,14 +4,14 @@ using SavedMessages.Domain.Entities;
 
 namespace SavedMessages.Web.Services;
 
-public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageService
+public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStorageService tokenStorage) : IMessageService
 {
     private HttpClient CreateClient() => httpClientFactory.CreateClient("ApiClient");
 
     private record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
     private record MessageResponse(
-        Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName,
+        Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName, string? FilePreviewUrl,
         bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
 
     public async Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20)
@@ -20,6 +20,9 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
         var paged = await client.GetFromJsonAsync<PagedResponse<MessageResponse>>($"api/messages?page={page}&pageSize={pageSize}");
         if (paged is null) return [];
 
+        var accessToken = await tokenStorage.GetAccessTokenAsync();
+        var apiBaseAddress = client.BaseAddress;
+
         return paged.Items.Select(r => new Message
         {
             Id = r.Id,
@@ -27,12 +30,29 @@ public class WebMessageService(IHttpClientFactory httpClientFactory) : IMessageS
             Content = r.Content,
             FileId = r.FileId,
             FileName = r.FileName,
+            FilePreviewUrl = AppendAccessToken(r.FilePreviewUrl, accessToken, apiBaseAddress),
             IsPinned = r.IsPinned,
             PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt
         }).ToList().AsReadOnly();
+    }
+
+    private static string? AppendAccessToken(string? previewUrl, string? accessToken, Uri? apiBaseAddress)
+    {
+        if (string.IsNullOrWhiteSpace(previewUrl))
+            return previewUrl;
+
+        var resolvedPreviewUrl = previewUrl;
+        if (apiBaseAddress is not null && Uri.TryCreate(previewUrl, UriKind.Relative, out _))
+            resolvedPreviewUrl = new Uri(apiBaseAddress, previewUrl).ToString();
+
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return resolvedPreviewUrl;
+
+        var separator = resolvedPreviewUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        return $"{resolvedPreviewUrl}{separator}access_token={Uri.EscapeDataString(accessToken)}";
     }
 
     public async Task<Message> CreateMessageAsync(MessageKind kind, string content)

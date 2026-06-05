@@ -19,9 +19,13 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
+    private static string? BuildPreviewUrl(FileAttachment? attachment) =>
+        attachment?.PreviewBlobPath is not null ? $"/api/files/{attachment.Id}/preview" : null;
+
     private static MessageResponse ToResponse(Message m) => new(
         m.Id, m.Kind, m.Content, m.FileId,
         m.FileName,
+        BuildPreviewUrl(m.FileAttachment),
         m.IsPinned, m.PinnedAt, m.IsEncrypted,
         m.CreatedAt, m.UpdatedAt);
 
@@ -49,6 +53,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
                 m.Content,
                 m.FileId,
                 m.FileAttachment != null ? m.FileAttachment.OriginalName : null,
+                m.FileAttachment != null && m.FileAttachment.PreviewBlobPath != null ? $"/api/files/{m.FileAttachment.Id}/preview" : null,
                 m.IsPinned,
                 m.PinnedAt,
                 m.IsEncrypted,

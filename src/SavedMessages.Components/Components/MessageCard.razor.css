@@ -73,6 +73,17 @@
     white-space: pre-wrap;
 }
 
+.msg-image-preview {
+    display: block;
+    margin-top: 8px;
+    width: min(220px, 100%);
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border, #E5E7EB);
+    background: var(--surface-hover, #F5F5F5);
+}
+
 .msg-meta {
     display: flex;
     align-items: center;

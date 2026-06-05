@@ -8,6 +8,7 @@ public class FileAttachment
     public string ContentType { get; set; } = string.Empty;
     public long SizeBytes { get; set; }
     public string BlobPath { get; set; } = string.Empty;
+    public string? PreviewBlobPath { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public User User { get; set; } = null!;

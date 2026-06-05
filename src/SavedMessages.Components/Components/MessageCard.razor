@@ -36,6 +36,10 @@
             @if (Message.Kind == MessageKind.File)
             {
                 <div class="msg-file-name">@FileNameToShow</div>
+                @if (HasFilePreview)
+                {
+                    <img class="msg-image-preview" src="@Message.FilePreviewUrl" alt="@FileNameToShow" loading="lazy" />
+                }
                 @if (!string.IsNullOrWhiteSpace(FileComment))
                 {
                     <div class="msg-file-comment">@FileComment</div>
@@ -168,6 +172,8 @@
     private string? _editContent;
 
     private bool HasExplicitFileName => !string.IsNullOrWhiteSpace(Message.FileName);
+
+    private bool HasFilePreview => !string.IsNullOrWhiteSpace(Message.FilePreviewUrl);
 
     private string FileNameToShow => HasExplicitFileName
         ? Message.FileName!
