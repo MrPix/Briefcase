@@ -26,6 +26,8 @@ public class Message
     public string? FileName { get; set; }
     [NotMapped]
     public string? FilePreviewUrl { get; set; }
+    [NotMapped]
+    public bool Downloaded { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

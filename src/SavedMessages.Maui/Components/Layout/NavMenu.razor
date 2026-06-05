@@ -63,12 +63,120 @@
     </nav>
 
     <div class="sidebar-footer">
-        <div class="encryption-status">
-            <svg width="16" height="16" fill="var(--green)" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <div>
-                <span class="footer-label">End-to-End Encryption</span>
-                <span class="footer-value">Enabled</span>
+        <div class="status-stack">
+            <div class="encryption-status">
+                <svg width="16" height="16" fill="var(--green)" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <span class="footer-label">End-to-End Encryption</span>
+                    <span class="footer-value">Enabled</span>
+                </div>
+            </div>
+            <div class="connection-status @ConnectionClass">
+                <span class="connection-dot" aria-hidden="true"></span>
+                <span>@ConnectionLabel</span>
             </div>
         </div>
     </div>
 </div>
+
+@inject Microsoft.Maui.Networking.IConnectivity Connectivity
+@inject IHttpClientFactory HttpClientFactory
+@implements IDisposable
+
+@code {
+    private readonly SemaphoreSlim _probeLock = new(1, 1);
+    private CancellationTokenSource? _probeCts;
+    private bool _isBackendReachable;
+
+    private bool HasInternet => Connectivity.NetworkAccess == Microsoft.Maui.Networking.NetworkAccess.Internet;
+    private bool IsOnline => HasInternet && _isBackendReachable;
+    private string ConnectionLabel => IsOnline ? "Online mode" : "Offline mode";
+    private string ConnectionClass => IsOnline ? "is-online" : "is-offline";
+
+    protected override void OnInitialized()
+    {
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        _probeCts = new CancellationTokenSource();
+        _ = Task.Run(() => RunBackendProbeLoopAsync(_probeCts.Token));
+        _ = ProbeBackendAsync(_probeCts.Token);
+    }
+
+    private void OnConnectivityChanged(object? sender, Microsoft.Maui.Networking.ConnectivityChangedEventArgs e)
+    {
+        if (_probeCts is not null)
+            _ = ProbeBackendAsync(_probeCts.Token);
+    }
+
+    private async Task RunBackendProbeLoopAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                if (!await timer.WaitForNextTickAsync(ct))
+                    break;
+
+                await ProbeBackendAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private async Task ProbeBackendAsync(CancellationToken ct)
+    {
+        if (!HasInternet)
+        {
+            if (_isBackendReachable)
+            {
+                _isBackendReachable = false;
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        await _probeLock.WaitAsync(ct);
+        try
+        {
+            var reachable = false;
+            try
+            {
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(1200));
+
+                var client = HttpClientFactory.CreateClient("AuthClient");
+                using var response = await client.GetAsync("api/messages?page=1&pageSize=1", timeoutCts.Token);
+                reachable = true; // any HTTP response means backend is reachable
+            }
+            catch (HttpRequestException)
+            {
+                reachable = false;
+            }
+            catch (TaskCanceledException)
+            {
+                reachable = false;
+            }
+
+            if (_isBackendReachable != reachable)
+            {
+                _isBackendReachable = reachable;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        finally
+        {
+            _probeLock.Release();
+        }
+    }
+
+    public void Dispose()
+    {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        _probeCts?.Cancel();
+        _probeCts?.Dispose();
+        _probeLock.Dispose();
+    }
+}

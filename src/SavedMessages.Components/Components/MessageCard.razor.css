@@ -75,6 +75,27 @@
     word-break: break-word;
 }
 
+.msg-file-state {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.msg-file-state.downloaded {
+    background: rgba(16, 185, 129, 0.14);
+    color: #047857;
+}
+
+.msg-file-state.not-downloaded {
+    background: rgba(251, 191, 36, 0.2);
+    color: #92400e;
+}
+
 .msg-file-comment {
     font-size: 0.78rem;
     color: var(--text-secondary, #6B7280);
