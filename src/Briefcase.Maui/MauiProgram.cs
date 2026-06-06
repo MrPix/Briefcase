@@ -32,7 +32,7 @@ namespace Briefcase.Maui
             builder.Services.AddTransient<AuthDelegatingHandler>();
             builder.Services.AddHttpClient("AuthClient", client =>
             {
-                client.BaseAddress = new Uri("https://localhost:7574/");
+                client.BaseAddress = new Uri(GetApiBaseAddress());
             });
             builder.Services.AddSingleton<IAuthService>(sp =>
             {
@@ -43,7 +43,7 @@ namespace Briefcase.Maui
             });
             builder.Services.AddHttpClient("ApiClient", client =>
             {
-                client.BaseAddress = new Uri("https://localhost:7574/");
+                client.BaseAddress = new Uri(GetApiBaseAddress());
             })
             .AddHttpMessageHandler<AuthDelegatingHandler>();
 
@@ -64,6 +64,17 @@ namespace Briefcase.Maui
 #endif
 
             return builder.Build();
+        }
+
+        private static string GetApiBaseAddress()
+        {
+#if ANDROID
+            // Android emulator reaches host machine loopback through 10.0.2.2.
+            // Use HTTP dev endpoint to avoid trusting local HTTPS certificates on emulator.
+            return "http://10.0.2.2:5356/";
+#else
+            return "https://localhost:7574/";
+#endif
         }
     }
 }
