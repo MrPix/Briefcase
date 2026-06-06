@@ -1,0 +1,17 @@
+{
+  "solution": {
+    "path": "Briefcase.slnx",
+    "projects": [
+      "src\\Briefcase.ApiService\\Briefcase.ApiService.csproj",
+      "src\\Briefcase.AppHost\\Briefcase.AppHost.csproj",
+      "src\\Briefcase.Components\\Briefcase.Components.csproj",
+      "src\\Briefcase.Domain\\Briefcase.Domain.csproj",
+      "src\\Briefcase.Infrastructure\\Briefcase.Infrastructure.csproj",
+      "src\\Briefcase.ServiceDefaults\\Briefcase.ServiceDefaults.csproj",
+      "src\\Briefcase.Web\\Briefcase.Web.csproj",
+      "tests\\Briefcase.IntegrationTests\\Briefcase.IntegrationTests.csproj",
+      "tests\\Briefcase.Tests\\Briefcase.Tests.csproj",
+      "tests\\Briefcase.UnitTests\\Briefcase.UnitTests.csproj"
+    ]
+  }
+}

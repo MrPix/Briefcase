@@ -1,4 +1,4 @@
-# SavedMessages
+# Briefcase
 
 A cross-platform personal clipboard and message relay service — send text, links, and files between any of your devices instantly, without relying on a third-party messenger.
 
@@ -8,7 +8,7 @@ Most major messengers — Telegram, WhatsApp, Signal, Viber, and others — now 
 
 ## The Solution
 
-SavedMessages is a focused, self-hosted-friendly service that does one thing well: move your own content between your own devices. It is intentionally minimal — no social feed, no contacts, no distractions.
+Briefcase is a focused, self-hosted-friendly service that does one thing well: move your own content between your own devices. It is intentionally minimal — no social feed, no contacts, no distractions.
 
 ## Key Features
 
@@ -52,16 +52,16 @@ SavedMessages is a focused, self-hosted-friendly service that does one thing wel
 ## Project Structure
 
 ```
-SavedMessages/
+Briefcase/
 ├── src/
-│   ├── SavedMessages.AppHost/          # .NET Aspire host
-│   ├── SavedMessages.ServiceDefaults/  # Aspire shared defaults (telemetry, health checks)
-│   ├── SavedMessages.ApiService/       # ASP.NET Core Web API
-│   ├── SavedMessages.Domain/           # Domain models, interfaces
-│   ├── SavedMessages.Infrastructure/   # EF Core, Azure integrations
-│   ├── SavedMessages.Components/       # Shared Razor component library
-│   ├── SavedMessages.Web/              # Blazor WebAssembly PWA
-│   └── SavedMessages.Maui/             # .NET MAUI + Blazor Hybrid (Win/Android/iOS/macOS)
+│   ├── Briefcase.AppHost/          # .NET Aspire host
+│   ├── Briefcase.ServiceDefaults/  # Aspire shared defaults (telemetry, health checks)
+│   ├── Briefcase.ApiService/       # ASP.NET Core Web API
+│   ├── Briefcase.Domain/           # Domain models, interfaces
+│   ├── Briefcase.Infrastructure/   # EF Core, Azure integrations
+│   ├── Briefcase.Components/       # Shared Razor component library
+│   ├── Briefcase.Web/              # Blazor WebAssembly PWA
+│   └── Briefcase.Maui/             # .NET MAUI + Blazor Hybrid (Win/Android/iOS/macOS)
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -71,9 +71,9 @@ SavedMessages/
 > Prerequisites: .NET 10 SDK, Azure subscription (or local emulators via Aspire), Node.js (for Tailwind/CSS tooling if used).
 
 ```bash
-git clone https://github.com/you/SavedMessages.git
-cd SavedMessages
-dotnet run --project src/SavedMessages.AppHost
+git clone https://github.com/you/Briefcase.git
+cd Briefcase
+dotnet run --project src/Briefcase.AppHost
 ```
 
 Aspire will launch the API, database migrations, and the web frontend. Navigate to the Aspire dashboard URL printed in the console to see all running services.

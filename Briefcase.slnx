@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/ARCHITECTURE.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Briefcase.Infrastructure/Briefcase.Infrastructure.csproj" Id="bb4ad78c-b44f-4ba0-b8e8-925ed880950a" />
+    <Project Path="src/Briefcase.ApiService/Briefcase.ApiService.csproj" />
+    <Project Path="src/Briefcase.AppHost/Briefcase.AppHost.csproj" Id="045658e0-9539-40a8-9526-838c08ff3be5" />
+    <Project Path="src/Briefcase.Components/Briefcase.Components.csproj" Id="2188388b-2ec3-42de-b56c-717da6e53d53" />
+    <Project Path="src/Briefcase.Domain/Briefcase.Domain.csproj" Id="b351b9a3-9c6c-445e-af87-c051758ff2e2" />
+    <Project Path="src/Briefcase.Maui/Briefcase.Maui.csproj" />
+    <Project Path="src/Briefcase.ServiceDefaults/Briefcase.ServiceDefaults.csproj" />
+    <Project Path="src/Briefcase.Web/Briefcase.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Briefcase.IntegrationTests/Briefcase.IntegrationTests.csproj" Id="2b777278-95f6-49ee-b2f8-7b4e7547c473" />
+    <Project Path="tests/Briefcase.Tests/Briefcase.Tests.csproj" />
+    <Project Path="tests/Briefcase.UnitTests/Briefcase.UnitTests.csproj" Id="e53e8406-027b-468c-ae70-2a00716f0b30" />
+  </Folder>
+</Solution>

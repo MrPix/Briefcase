@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-SavedMessages is a multi-tier, real-time application. A single ASP.NET Core 10 backend serves all clients. Native apps (Windows, Android, iOS, macOS) are built with .NET MAUI + Blazor Hybrid. The web client is a Blazor WebAssembly PWA. Both frontends share a common Razor component library, so UI code is written once.
+Briefcase is a multi-tier, real-time application. A single ASP.NET Core 10 backend serves all clients. Native apps (Windows, Android, iOS, macOS) are built with .NET MAUI + Blazor Hybrid. The web client is a Blazor WebAssembly PWA. Both frontends share a common Razor component library, so UI code is written once.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -51,11 +51,11 @@ SavedMessages is a multi-tier, real-time application. A single ASP.NET Core 10 b
 ## 2. Solution Structure
 
 ```
-SavedMessages/
+Briefcase/
 ├── src/
-│   ├── SavedMessages.AppHost/          # .NET Aspire orchestration entry point
-│   ├── SavedMessages.ServiceDefaults/  # Shared Aspire defaults: OpenTelemetry, health checks, resilience
-│   ├── SavedMessages.ApiService/       # ASP.NET Core 10 Web API
+│   ├── Briefcase.AppHost/          # .NET Aspire orchestration entry point
+│   ├── Briefcase.ServiceDefaults/  # Shared Aspire defaults: OpenTelemetry, health checks, resilience
+│   ├── Briefcase.ApiService/       # ASP.NET Core 10 Web API
 │   │   ├── Controllers/
 │   │   │   ├── AuthController.cs
 │   │   │   ├── MessagesController.cs
@@ -76,7 +76,7 @@ SavedMessages/
 │   │   │   ├── QrCodeService.cs
 │   │   │   └── TransferSessionService.cs
 │   │   └── Program.cs
-│   ├── SavedMessages.Domain/           # Pure domain — no framework deps
+│   ├── Briefcase.Domain/           # Pure domain — no framework deps
 │   │   ├── Entities/
 │   │   │   ├── User.cs
 │   │   │   ├── Device.cs
@@ -89,13 +89,13 @@ SavedMessages/
 │   │   │   └── UserE2eeSettings.cs
 │   │   └── Interfaces/
 │   │       └── IFileStorageService.cs
-│   ├── SavedMessages.Infrastructure/   # EF Core, S3 integrations
+│   ├── Briefcase.Infrastructure/   # EF Core, S3 integrations
 │   │   ├── Persistence/
 │   │   │   ├── AppDbContext.cs
 │   │   │   └── Migrations/
 │   │   └── Storage/
 │   │       └── MinioStorageService.cs
-│   ├── SavedMessages.Components/       # Shared Razor component library
+│   ├── Briefcase.Components/       # Shared Razor component library
 │   │   ├── Pages/
 │   │   │   ├── LoginPage.razor
 │   │   │   ├── SignupPage.razor
@@ -124,7 +124,7 @@ SavedMessages/
 │   │       ├── IFileDropService.cs
 │   │       ├── AuthService.cs         # shared token management + session restore
 │   │       └── AuthDelegatingHandler.cs  # HTTP handler with auto token refresh
-│   ├── SavedMessages.Web/              # Blazor WebAssembly PWA
+│   ├── Briefcase.Web/              # Blazor WebAssembly PWA
 │   │   ├── Program.cs
 │   │   ├── Services/
 │   │   │   ├── WebMessageService.cs
@@ -135,7 +135,7 @@ SavedMessages/
 │   │   │   └── WebTokenStorageService.cs  # localStorage via JS interop
 │   │   └── wwwroot/
 │   │       └── manifest.json          # PWA manifest
-│   └── SavedMessages.Maui/            # .NET MAUI Blazor Hybrid
+│   └── Briefcase.Maui/            # .NET MAUI Blazor Hybrid
 │       ├── MauiProgram.cs
 │       ├── Platforms/
 │       │   ├── Android/
@@ -157,9 +157,9 @@ SavedMessages/
 │       │   └── WindowsTrayService.cs       # Windows only
 │       └── MainPage.xaml              # Hosts BlazorWebView
 ├── tests/
-│   ├── SavedMessages.UnitTests/        # mstests — domain logic, services, E2EE
-│   ├── SavedMessages.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
-│   └── SavedMessages.Tests/            # mstests + Aspire.Hosting.Testing — end-to-end smoke tests
+│   ├── Briefcase.UnitTests/        # mstests — domain logic, services, E2EE
+│   ├── Briefcase.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
+│   └── Briefcase.Tests/            # mstests + Aspire.Hosting.Testing — end-to-end smoke tests
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -178,11 +178,11 @@ Aspire is the local development orchestrator. It wires up:
 - Seq (structured logging)
 - The Blazor WASM web frontend
 
-> **Note:** File downloads are streamed through the API rather than redirected to presigned S3 URLs. Aspire proxies container endpoints (e.g. `minio-savedmessages.dev.localhost`), which differ from the internal `ServiceURL` used by the S3 client to generate presigned URLs. Streaming through the API avoids this mismatch.
+> **Note:** File downloads are streamed through the API rather than redirected to presigned S3 URLs. Aspire proxies container endpoints (e.g. `minio-Briefcase.dev.localhost`), which differ from the internal `ServiceURL` used by the S3 client to generate presigned URLs. Streaming through the API avoids this mismatch.
 
 In production, resources are replaced by real cloud services referenced via connection strings stored in a secret manager.
 
-### 3.2 ASP.NET Core API (`SavedMessages.ApiService`)
+### 3.2 ASP.NET Core API (`Briefcase.ApiService`)
 
 Responsibilities:
 - JWT + OAuth 2.0 token issuance and validation
@@ -223,7 +223,7 @@ Every authenticated client connects to the hub. When a message is created or a q
 
 ### 3.5 Shared Razor Component Library
 
-Contains all pages and UI components as Razor components. Both `SavedMessages.Web` (WASM) and `SavedMessages.Maui` (Blazor Hybrid) reference this library. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
+Contains all pages and UI components as Razor components. Both `Briefcase.Web` (WASM) and `Briefcase.Maui` (Blazor Hybrid) reference this library. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
 
 ### 3.6 .NET MAUI Blazor Hybrid
 
@@ -440,7 +440,7 @@ ShareLink
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Azure Resource Group: rg-savedmessages-prod        │
+│  Azure Resource Group: rg-Briefcase-prod        │
 │                                                     │
 │  ┌───────────────────────────────────────────────┐  │
 │  │  Azure Container Apps Environment             │  │
@@ -539,7 +539,7 @@ When ready to move to Azure, only the following need to change:
 
 ## 9. Testing Strategy
 
-### 8.1 Unit Tests (`SavedMessages.UnitTests`)
+### 8.1 Unit Tests (`Briefcase.UnitTests`)
 
 Framework: **mstests** + **NSubstitute** (mocking) + **FluentAssertions**.
 
@@ -554,7 +554,7 @@ Covers pure logic with no I/O — all dependencies are substituted.
 | Share link logic | CSPRNG slug length/entropy, one-time revoke state machine |
 | JWT helpers | Token issuance claims, expiry, refresh logic |
 
-### 8.2 Integration Tests (`SavedMessages.IntegrationTests`)
+### 8.2 Integration Tests (`Briefcase.IntegrationTests`)
 
 Framework: **mstests** + **Aspire test host** (`Aspire.Hosting.Testing`) + **Microsoft.AspNetCore.Mvc.Testing**.
 

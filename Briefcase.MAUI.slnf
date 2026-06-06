@@ -1,0 +1,10 @@
+{
+  "solution": {
+    "path": "Briefcase.slnx",
+    "projects": [
+      "src\\Briefcase.Components\\Briefcase.Components.csproj",
+      "src\\Briefcase.Domain\\Briefcase.Domain.csproj",
+      "src\\Briefcase.Maui\\Briefcase.Maui.csproj"
+    ]
+  }
+}

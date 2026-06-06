@@ -1,0 +1,87 @@
+@inherits LayoutComponentBase
+@inject IServiceProvider ServiceProvider
+@inject Briefcase.Components.Services.IAuthService AuthService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@{
+    var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
+    var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+                  || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+}
+
+@if (isAuthPage || AuthService.IsAuthenticated)
+{
+    @if (isAuthPage)
+    {
+        <main class="auth-main">
+            @Body
+        </main>
+    }
+    else
+    {
+        <div class="page">
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+
+            <main>
+                @Body
+            </main>
+        </div>
+    }
+}
+
+@code {
+    private Briefcase.Components.Services.IThemeService? _themeService;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            try
+            {
+                await AuthService.TryRestoreSessionAsync();
+            }
+            catch
+            {
+                // Keep UI alive even if auth backend is unavailable.
+            }
+        }
+
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+                      || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAuthPage && !AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _themeService = ServiceProvider.GetService<Briefcase.Components.Services.IThemeService>();
+            if (_themeService is not null)
+            {
+                await _themeService.ApplyThemeAsync();
+                _themeService.ThemeChanged += OnThemeChanged;
+            }
+        }
+    }
+
+    private void OnThemeChanged(string theme)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_themeService is not null)
+        {
+            _themeService.ThemeChanged -= OnThemeChanged;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 # HTTPS in Production
 
-This document covers TLS certificate options for the SavedMessages stack (ASP.NET Core 10 API + Blazor WASM frontend, containerised, Linux-compatible).
+This document covers TLS certificate options for the Briefcase stack (ASP.NET Core 10 API + Blazor WASM frontend, containerised, Linux-compatible).
 
 ---
 
@@ -43,7 +43,7 @@ Caddy is a modern web server written in Go. It obtains and renews Let's Encrypt 
 ### 2.2 Project layout
 
 ```
-/srv/savedmessages/
+/srv/Briefcase/
 ├── docker-compose.yml
 ├── Caddyfile
 └── caddy-data/          ← persisted certificate store (mount as volume)
@@ -89,7 +89,7 @@ services:
       - internal
 
   apiservice:
-    image: savedmessages/apiservice:latest
+    image: Briefcase/apiservice:latest
     environment:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
@@ -97,7 +97,7 @@ services:
       - internal
 
   webfrontend:
-    image: savedmessages/webfrontend:latest
+    image: Briefcase/webfrontend:latest
     environment:
       ASPNETCORE_URLS: http://+:8080
     networks:
@@ -190,7 +190,7 @@ services:
       - internal
 
   apiservice:
-    image: savedmessages/apiservice:latest
+    image: Briefcase/apiservice:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.example.com`)"
@@ -244,7 +244,7 @@ Certbot will:
 3. Write the certificate to `/etc/letsencrypt/live/api.example.com/`
 4. Modify the Nginx config to add the `ssl_certificate` directives
 
-### 4.3 Nginx config (`/etc/nginx/sites-available/savedmessages`)
+### 4.3 Nginx config (`/etc/nginx/sites-available/Briefcase`)
 
 ```nginx
 upstream apiservice {
@@ -303,7 +303,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/savedmessages /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/Briefcase /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -366,15 +366,15 @@ Managed certificates are available for Container Apps:
 
 ```bash
 az containerapp hostname add \
-  --name savedmessages-api \
-  --resource-group rg-savedmessages \
+  --name Briefcase-api \
+  --resource-group rg-Briefcase \
   --hostname api.example.com
 
 az containerapp hostname bind \
-  --name savedmessages-api \
-  --resource-group rg-savedmessages \
+  --name Briefcase-api \
+  --resource-group rg-Briefcase \
   --hostname api.example.com \
-  --environment savedmessages-env \
+  --environment Briefcase-env \
   --validation-method HTTP
 ```
 
@@ -386,8 +386,8 @@ Front Door manages certificates and adds a global CDN and WAF layer — useful w
 
 ```bash
 az afd custom-domain create \
-  --profile-name savedmessages-afd \
-  --resource-group rg-savedmessages \
+  --profile-name Briefcase-afd \
+  --resource-group rg-Briefcase \
   --custom-domain-name api-domain \
   --host-name api.example.com \
   --minimum-tls-version TLS12 \
