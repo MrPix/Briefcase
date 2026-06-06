@@ -4,15 +4,17 @@ using Briefcase.Domain.Interfaces;
 
 namespace Briefcase.Infrastructure.Storage;
 
-public class MinioStorageService(IAmazonS3 s3, string bucketName = "Briefcase") : IFileStorageService
+public class MinioStorageService(IAmazonS3 s3, string bucketName = "briefcase") : IFileStorageService
 {
+    private readonly string normalizedBucketName = NormalizeBucketName(bucketName);
+
     public async Task UploadAsync(string blobPath, string contentType, Stream content, CancellationToken cancellationToken = default)
     {
         await EnsureBucketExistsAsync(cancellationToken);
 
         var request = new PutObjectRequest
         {
-            BucketName = bucketName,
+            BucketName = normalizedBucketName,
             Key = blobPath,
             ContentType = contentType,
             InputStream = content,
@@ -25,7 +27,7 @@ public class MinioStorageService(IAmazonS3 s3, string bucketName = "Briefcase") 
     {
         var request = new GetPreSignedUrlRequest
         {
-            BucketName = bucketName,
+            BucketName = normalizedBucketName,
             Key = blobPath,
             Expires = DateTime.UtcNow.AddMinutes(15),
             Verb = HttpVerb.GET,
@@ -39,7 +41,7 @@ public class MinioStorageService(IAmazonS3 s3, string bucketName = "Briefcase") 
     {
         var request = new GetObjectRequest
         {
-            BucketName = bucketName,
+            BucketName = normalizedBucketName,
             Key = blobPath,
         };
 
@@ -51,7 +53,7 @@ public class MinioStorageService(IAmazonS3 s3, string bucketName = "Briefcase") 
     {
         var request = new DeleteObjectRequest
         {
-            BucketName = bucketName,
+            BucketName = normalizedBucketName,
             Key = blobPath,
         };
 
@@ -62,11 +64,22 @@ public class MinioStorageService(IAmazonS3 s3, string bucketName = "Briefcase") 
     {
         try
         {
-            await s3.EnsureBucketExistsAsync(bucketName);
+            await s3.EnsureBucketExistsAsync(normalizedBucketName);
         }
         catch
         {
             // Bucket already exists or check not supported
         }
+    }
+
+    private static string NormalizeBucketName(string value)
+    {
+        var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Storage bucket name cannot be empty.", nameof(value));
+        }
+
+        return normalized;
     }
 }

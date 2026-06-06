@@ -73,7 +73,11 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client("minioadmin", "minioadmin", s3Config);
 });
 builder.Services.AddSingleton<IFileStorageService>(sp =>
-    new MinioStorageService(sp.GetRequiredService<IAmazonS3>()));
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var bucketName = config["Storage:BucketName"] ?? "briefcase";
+    return new MinioStorageService(sp.GetRequiredService<IAmazonS3>(), bucketName);
+});
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
