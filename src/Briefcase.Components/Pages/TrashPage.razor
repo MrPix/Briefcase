@@ -1,0 +1,101 @@
+@page "/trash"
+@namespace Briefcase.Components.Pages
+@inject ITrashService TrashService
+@inject IClipboardService ClipboardService
+
+<div class="clipboard-layout">
+    <div class="clipboard-list">
+
+        <div class="filter-tabs">
+            <span class="filter-tab active">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Trash
+            </span>
+        </div>
+
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-danger mx-3" role="alert">
+                @_errorMessage
+                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadMessages">Retry</button>
+            </div>
+        }
+        else if (_messages is null)
+        {
+            <div class="loading-state">
+                <p>Loading trashed messages...</p>
+            </div>
+        }
+        else if (_messages.Count == 0)
+        {
+            <div class="empty-state">
+                <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <p>Trash is empty</p>
+                <span>Deleted messages will appear here</span>
+            </div>
+        }
+        else
+        {
+            <div class="message-list">
+                <div class="list-section-header">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Deleted Messages
+                </div>
+                @foreach (var message in _messages)
+                {
+                    <div class="message-item">
+                        <Briefcase.Components.Components.MessageCard
+                            Message="message"
+                            OnRestore="HandleRestore"
+                            OnCopy="HandleCopy" />
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<Message>? _messages;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+    }
+
+    private async Task LoadMessages()
+    {
+        try
+        {
+            _errorMessage = null;
+            _messages = await TrashService.GetTrashedMessagesAsync();
+        }
+        catch (Exception ex)
+        {
+            _messages = [];
+            _errorMessage = $"Failed to load trashed messages: {ex.Message}";
+        }
+    }
+
+    private async Task HandleRestore(Message message)
+    {
+        try
+        {
+            await TrashService.RestoreMessageAsync(message.Id);
+            await LoadMessages();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to restore message: {ex.Message}";
+        }
+    }
+
+    private async Task HandleCopy(Message message)
+    {
+        if (message.Content is not null)
+        {
+            await ClipboardService.SetTextAsync(message.Content);
+        }
+    }
+}

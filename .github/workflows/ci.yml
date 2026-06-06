@@ -25,16 +25,16 @@ jobs:
         run: dotnet workload install maui-android
 
       - name: Restore dependencies
-        run: dotnet restore SavedMessages.slnx
+        run: dotnet restore Briefcase.slnx
 
       - name: Build
-        run: dotnet build SavedMessages.slnx --no-restore --configuration Release
+        run: dotnet build Briefcase.slnx --no-restore --configuration Release
 
       - name: Run unit tests
-        run: dotnet test tests/SavedMessages.UnitTests/SavedMessages.UnitTests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test tests/Briefcase.UnitTests/Briefcase.UnitTests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
 
       - name: Run integration tests
-        run: dotnet test tests/SavedMessages.IntegrationTests/SavedMessages.IntegrationTests.csproj --no-build --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
+        run: dotnet test tests/Briefcase.IntegrationTests/Briefcase.IntegrationTests.csproj --no-build --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
 
       - name: Upload test results
         if: always()

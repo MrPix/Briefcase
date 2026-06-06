@@ -1,0 +1,299 @@
+@namespace Briefcase.Components.Components
+@using System.Text
+@using System.Text.Encodings.Web
+@using System.Text.RegularExpressions
+
+<div class="msg-card @(Message.IsPinned ? "pinned" : "")"
+     @oncontextmenu="HandleContextMenu"
+     @oncontextmenu:preventDefault="ShowContextMenu">
+    <div class="msg-icon">
+        @if (Message.Kind == MessageKind.Url)
+        {
+            <svg width="24" height="24" fill="none" stroke="var(--accent, #6C3FC5)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        }
+        else if (Message.Kind == MessageKind.File)
+        {
+            <svg width="24" height="24" fill="none" stroke="#DC2626" stroke-width="1.5" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        }
+        else
+        {
+            <svg width="24" height="24" fill="none" stroke="var(--text-secondary, #6B7280)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        }
+    </div>
+    <div class="msg-body">
+        <div class="msg-top-row">
+            <span class="msg-time">@Message.CreatedAt.ToString("h:mm tt")</span>
+        </div>
+        @if (_isEditing)
+        {
+            <div class="msg-edit">
+                <textarea class="msg-edit-input" @bind="_editContent" rows="2"></textarea>
+                <div class="msg-edit-actions">
+                    <button class="msg-edit-btn save" @onclick="SaveEdit" @onclick:stopPropagation>Save</button>
+                    <button class="msg-edit-btn cancel" @onclick="CancelEdit" @onclick:stopPropagation>Cancel</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            @if (Message.Kind == MessageKind.File)
+            {
+                <div class="msg-file-name">@FileNameToShow</div>
+                <div class="msg-file-state @(Message.Downloaded ? "downloaded" : "not-downloaded")">
+                    @(Message.Downloaded ? "Downloaded" : "Not downloaded")
+                </div>
+                @if (HasFilePreview)
+                {
+                    <img class="msg-image-preview" src="@Message.FilePreviewUrl" alt="@FileNameToShow" loading="lazy" />
+                }
+                @if (!string.IsNullOrWhiteSpace(FileComment))
+                {
+                    <div class="msg-file-comment">@LinkifyText(FileComment)</div>
+                }
+            }
+            else
+            {
+                <div class="msg-preview">
+                    @LinkifyText(Message.Content)
+                </div>
+            }
+        }
+        <div class="msg-meta">
+            @if (Message.IsPinned)
+            {
+                <svg width="12" height="12" fill="var(--accent, #6C3FC5)" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            }
+        </div>
+    </div>
+    <div class="msg-actions">
+        @if (Message.Kind == MessageKind.File && Message.FileId.HasValue && OnDownload.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Download" @onclick="() => OnDownload.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnCopy.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Copy" @onclick="() => OnCopy.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnPin.HasDelegate)
+        {
+            <button class="msg-action-btn" title="@(Message.IsPinned ? "Unpin" : "Pin")" @onclick="() => OnPin.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="@(Message.IsPinned ? "var(--accent, #6C3FC5)" : "none")" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnEdit.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Edit" @onclick="StartEdit" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnRestore.HasDelegate)
+        {
+            <button class="msg-action-btn" title="Restore" @onclick="() => OnRestore.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+        @if (OnDelete.HasDelegate)
+        {
+            <button class="msg-action-btn delete" title="Delete" @onclick="() => OnDelete.InvokeAsync(Message)" @onclick:stopPropagation>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        }
+    </div>
+
+    @if (ShowContextMenu && _contextMenuVisible)
+    {
+        <div class="dropdown-menu show context-menu-dropdown" style="position:absolute; top:@(_contextMenuY)px; left:@(_contextMenuX)px; z-index:1050;">
+            @if (OnCopy.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnCopy.InvokeAsync(Message))">
+                    Copy
+                </button>
+            }
+            @if (OnPin.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnPin.InvokeAsync(Message))">
+                    @(Message.IsPinned ? "Unpin" : "Pin")
+                </button>
+            }
+            @if (OnEdit.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(StartEditAsync)">
+                    Edit
+                </button>
+            }
+            @if (OnShare.HasDelegate)
+            {
+                <button class="dropdown-item" @onclick="() => ContextAction(() => OnShare.InvokeAsync(Message))">
+                    Share
+                </button>
+            }
+            <div class="dropdown-divider"></div>
+            @if (OnDelete.HasDelegate)
+            {
+                <button class="dropdown-item text-danger" @onclick="() => ContextAction(() => OnDelete.InvokeAsync(Message))">
+                    Move to Trash
+                </button>
+            }
+        </div>
+        <div class="context-menu-backdrop" @onclick="CloseContextMenu"></div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Message Message { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Message> OnPin { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnCopy { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnDownload { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnRestore { get; set; }
+
+    [Parameter]
+    public EventCallback<Message> OnShare { get; set; }
+
+    [Parameter]
+    public bool ShowContextMenu { get; set; }
+
+    private bool _contextMenuVisible;
+    private double _contextMenuX;
+    private double _contextMenuY;
+    private bool _isEditing;
+    private string? _editContent;
+
+    private bool HasExplicitFileName => !string.IsNullOrWhiteSpace(Message.FileName);
+
+    private bool HasFilePreview => !string.IsNullOrWhiteSpace(Message.FilePreviewUrl);
+
+    private static readonly Regex UrlRegex = new(@"https?://[^\s<]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private string FileNameToShow => HasExplicitFileName
+        ? Message.FileName!
+        : !string.IsNullOrWhiteSpace(Message.Content)
+            ? Message.Content!
+            : "Attached file";
+
+    private string? FileComment => HasExplicitFileName
+        && !string.IsNullOrWhiteSpace(Message.Content)
+        && !string.Equals(Message.Content, Message.FileName, StringComparison.Ordinal)
+            ? Message.Content
+            : null;
+
+    private static MarkupString LinkifyText(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return (MarkupString)string.Empty;
+        }
+
+        var html = new StringBuilder(text.Length + 32);
+        var lastIndex = 0;
+
+        foreach (Match match in UrlRegex.Matches(text))
+        {
+            if (match.Index > lastIndex)
+            {
+                html.Append(HtmlEncoder.Default.Encode(text[lastIndex..match.Index]));
+            }
+
+            var rawUrl = match.Value;
+            var trimmedUrl = rawUrl.TrimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}');
+            var trailing = rawUrl[trimmedUrl.Length..];
+
+            if (Uri.TryCreate(trimmedUrl, UriKind.Absolute, out var parsedUri)
+                && (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps))
+            {
+                var safeUrl = HtmlEncoder.Default.Encode(parsedUri.ToString());
+                var safeLabel = HtmlEncoder.Default.Encode(trimmedUrl);
+
+                html.Append("<a class=\"msg-link\" href=\"");
+                html.Append(safeUrl);
+                html.Append("\" target=\"_blank\" rel=\"noopener noreferrer\">");
+                html.Append(safeLabel);
+                html.Append("</a>");
+            }
+            else
+            {
+                html.Append(HtmlEncoder.Default.Encode(trimmedUrl));
+            }
+
+            if (!string.IsNullOrEmpty(trailing))
+            {
+                html.Append(HtmlEncoder.Default.Encode(trailing));
+            }
+
+            lastIndex = match.Index + match.Length;
+        }
+
+        if (lastIndex < text.Length)
+        {
+            html.Append(HtmlEncoder.Default.Encode(text[lastIndex..]));
+        }
+
+        return (MarkupString)html.ToString();
+    }
+
+    private void HandleContextMenu(MouseEventArgs e)
+    {
+        if (!ShowContextMenu) return;
+        _contextMenuX = e.OffsetX;
+        _contextMenuY = e.OffsetY;
+        _contextMenuVisible = true;
+    }
+
+    private void CloseContextMenu()
+    {
+        _contextMenuVisible = false;
+    }
+
+    private async Task ContextAction(Func<Task> action)
+    {
+        _contextMenuVisible = false;
+        await action();
+    }
+
+    private void StartEdit()
+    {
+        _editContent = Message.Content;
+        _isEditing = true;
+    }
+
+    private Task StartEditAsync()
+    {
+        StartEdit();
+        return Task.CompletedTask;
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        _editContent = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (OnEdit.HasDelegate)
+        {
+            Message.Content = _editContent;
+            await OnEdit.InvokeAsync(Message);
+        }
+        _isEditing = false;
+        _editContent = null;
+    }
+}

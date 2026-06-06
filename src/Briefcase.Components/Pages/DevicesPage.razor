@@ -1,0 +1,91 @@
+@page "/devices"
+@namespace Briefcase.Components.Pages
+@inject IDeviceService DeviceService
+
+<h1>Devices</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="GeneratePairCode">
+        <span class="bi bi-qr-code"></span> Generate Pair Code
+    </button>
+    <button class="btn btn-outline-primary ms-2" @onclick="() => _showScanner = true">
+        <span class="bi bi-qr-code-scan"></span> Scan Pair Code
+    </button>
+</div>
+
+@if (_pairCode is not null)
+{
+    <div class="alert alert-info">
+        <p>Share this code with the new device:</p>
+        <code>@_pairCode</code>
+    </div>
+}
+
+@if (_showScanner)
+{
+    <div class="mb-3">
+        <Briefcase.Components.Components.QrScanner OnScanned="HandlePairCodeScanned" />
+    </div>
+}
+
+@if (_devices is null)
+{
+    <p><em>Loading devices...</em></p>
+}
+else if (_devices.Count == 0)
+{
+    <p class="text-muted">No registered devices.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var device in _devices)
+        {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@device.Name</strong>
+                    <span class="badge bg-secondary ms-2">@device.Platform</span>
+                    <br />
+                    <small class="text-muted">Last seen: @device.LastSeenAt.ToString("g")</small>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveDevice(device.Id)">
+                    <span class="bi bi-trash"></span> Remove
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Device>? _devices;
+    private string? _pairCode;
+    private bool _showScanner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDevices();
+    }
+
+    private async Task LoadDevices()
+    {
+        _devices = await DeviceService.GetDevicesAsync();
+    }
+
+    private async Task RemoveDevice(Guid deviceId)
+    {
+        await DeviceService.RemoveDeviceAsync(deviceId);
+        await LoadDevices();
+    }
+
+    private async Task GeneratePairCode()
+    {
+        _pairCode = await DeviceService.GeneratePairCodeAsync();
+    }
+
+    private async Task HandlePairCodeScanned(string token)
+    {
+        await DeviceService.ClaimDeviceAsync(token);
+        _showScanner = false;
+        await LoadDevices();
+    }
+}
