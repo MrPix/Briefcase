@@ -3,9 +3,9 @@
     Briefcase — Application Icon
     ──────────────────────────────────
     Concept : A clean briefcase silhouette to match the product name.
-    Background: Slate gradient  #1E293B -> #0F172A
+    Background: Positive gradient  #22C55E -> #0EA5E9
     Body      : White  #FFFFFF
-    Clasp     : Cyan   #22D3EE
+    Clasp     : Amber  #F59E0B
 
     Usage:
         - Standalone web icon / OG image (512 x 512)
@@ -14,8 +14,8 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#1E293B"/>
-                        <stop offset="100%" stop-color="#0F172A"/>
+                        <stop offset="0%" stop-color="#22C55E"/>
+                        <stop offset="100%" stop-color="#0EA5E9"/>
         </linearGradient>
     </defs>
 
@@ -30,8 +30,8 @@
                     fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
 
         <!-- Flap seam -->
-        <line x1="96" y1="256" x2="416" y2="256" stroke="#0F172A" stroke-opacity="0.15" stroke-width="10"/>
+        <line x1="96" y1="256" x2="416" y2="256" stroke="#0F172A" stroke-opacity="0.18" stroke-width="10"/>
 
         <!-- Clasp -->
-        <rect x="232" y="244" width="48" height="64" rx="14" fill="#22D3EE"/>
+        <rect x="232" y="244" width="48" height="64" rx="14" fill="#F59E0B"/>
 </svg>

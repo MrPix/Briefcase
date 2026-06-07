@@ -2,8 +2,8 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1E293B"/>
-            <stop offset="100%" stop-color="#0F172A"/>
+            <stop offset="0%" stop-color="#22C55E"/>
+            <stop offset="100%" stop-color="#0EA5E9"/>
         </linearGradient>
     </defs>
 
@@ -11,6 +11,6 @@
     <rect x="96" y="180" width="320" height="224" rx="40" fill="#FFFFFF"/>
     <path d="M 184 180 V 150 C 184 123 207 100 234 100 H 278 C 305 100 328 123 328 150 V 180"
           fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
-    <line x1="96" y1="256" x2="416" y2="256" stroke="#0F172A" stroke-opacity="0.15" stroke-width="10"/>
-    <rect x="232" y="244" width="48" height="64" rx="14" fill="#22D3EE"/>
+    <line x1="96" y1="256" x2="416" y2="256" stroke="#0F172A" stroke-opacity="0.18" stroke-width="10"/>
+    <rect x="232" y="244" width="48" height="64" rx="14" fill="#F59E0B"/>
 </svg>
