@@ -2,10 +2,10 @@
 <!--
     Briefcase — Application Icon
     ──────────────────────────────────
-    Concept : A clean briefcase silhouette to match the product name.
+    Concept : A compact monogram mark for Briefcase instead of a literal bag shape.
     Background: Positive gradient  #22C55E -> #0EA5E9
-    Body      : White  #FFFFFF
-    Clasp     : Amber  #F59E0B
+    Mark      : White  #FFFFFF
+    Accent    : Amber  #F59E0B
 
     Usage:
         - Standalone web icon / OG image (512 x 512)
@@ -22,16 +22,10 @@
     <!-- Background rounded square -->
     <rect width="512" height="512" rx="110" ry="110" fill="url(#bg)"/>
 
-        <!-- Briefcase body -->
-        <rect x="96" y="180" width="320" height="224" rx="40" fill="#FFFFFF"/>
+        <!-- Monogram -->
+        <path d="M176 132V380 M176 132H264C317 132 352 164 352 208C352 251 317 282 264 282H176 M176 282H272C328 282 364 314 364 358C364 401 328 432 272 432H176"
+                    fill="none" stroke="#FFFFFF" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
 
-        <!-- Handle -->
-        <path d="M 184 180 V 150 C 184 123 207 100 234 100 H 278 C 305 100 328 123 328 150 V 180"
-                    fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
-
-        <!-- Flap seam -->
-        <line x1="96" y1="256" x2="416" y2="256" stroke="#0F172A" stroke-opacity="0.18" stroke-width="10"/>
-
-        <!-- Clasp -->
-        <rect x="232" y="244" width="48" height="64" rx="14" fill="#F59E0B"/>
+        <!-- Accent tab -->
+        <rect x="288" y="230" width="52" height="52" rx="16" fill="#F59E0B" transform="rotate(12 314 256)"/>
 </svg>

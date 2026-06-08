@@ -7,7 +7,7 @@
 }
 
 .msg-card.pinned {
-    background: rgba(108, 63, 197, 0.03);
+    background: rgba(14, 165, 233, 0.08);
 }
 
 .msg-icon {
@@ -58,7 +58,7 @@
 }
 
 .msg-link {
-    color: var(--accent, #6C3FC5);
+    color: var(--accent, #0EA5E9);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
@@ -179,7 +179,7 @@
 
 .msg-edit-input:focus {
     outline: none;
-    border-color: var(--accent, #6C3FC5);
+    border-color: var(--accent, #0EA5E9);
 }
 
 .msg-edit-actions {
@@ -198,7 +198,7 @@
 }
 
 .msg-edit-btn.save {
-    background: var(--accent, #6C3FC5);
+    background: var(--accent, #0EA5E9);
     color: #fff;
 }
 
