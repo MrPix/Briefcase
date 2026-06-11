@@ -1,36 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Briefcase — Application Icon
-  ──────────────────────────────────
-  Concept : Speech bubble (Messages) + Bookmark ribbon (Saved)
-  Background: Blue gradient  #3B82F6 → #1D4ED8
-  Bubble   : White  #FFFFFF
-  Bookmark : Gold   #FBBF24
+    Briefcase — Application Icon
+    ──────────────────────────────────
+    Concept : A compact monogram mark for Briefcase instead of a literal bag shape.
+    Background: Positive gradient  #22C55E -> #0EA5E9
+    Mark      : White  #FFFFFF
+    Accent    : Amber  #F59E0B
 
-  Usage:
-    • Standalone web icon / OG image — use this file (512 × 512)
-    • MAUI native icon background   — appicon.svg   (background layer)
-    • MAUI native icon foreground   — appiconfg.svg (foreground layer)
-    • MAUI splash screen            — splash.svg
+    Usage:
+        - Standalone web icon / OG image (512 x 512)
+        - MAUI native icon background/foreground references
 -->
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#3B82F6"/>
-            <stop offset="100%" stop-color="#1D4ED8"/>
+                        <stop offset="0%" stop-color="#22C55E"/>
+                        <stop offset="100%" stop-color="#0EA5E9"/>
         </linearGradient>
     </defs>
 
     <!-- Background rounded square -->
     <rect width="512" height="512" rx="110" ry="110" fill="url(#bg)"/>
 
-    <!-- Speech bubble — represents "Messages" -->
-    <path d="M 95 60 H 405 Q 435 60 435 90 V 308 Q 435 338 405 338
-             H 175 L 80 430 L 125 338 H 95 Q 65 338 65 308
-             V 90 Q 65 60 95 60 Z" fill="white"/>
+        <!-- Monogram -->
+        <path d="M176 132V380 M176 132H264C317 132 352 164 352 208C352 251 317 282 264 282H176 M176 282H272C328 282 364 314 364 358C364 401 328 432 272 432H176"
+                    fill="none" stroke="#FFFFFF" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <!-- Bookmark ribbon — represents "Saved" -->
-    <path d="M 182 100 H 318 Q 330 100 330 112
-             V 298 L 250 255 L 170 298
-             V 112 Q 170 100 182 100 Z" fill="#FBBF24"/>
+        <!-- Accent tab -->
+        <rect x="288" y="230" width="52" height="52" rx="16" fill="#F59E0B" transform="rotate(12 314 256)"/>
 </svg>

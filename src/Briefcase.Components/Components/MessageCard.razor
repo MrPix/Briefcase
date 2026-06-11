@@ -9,7 +9,7 @@
     <div class="msg-icon">
         @if (Message.Kind == MessageKind.Url)
         {
-            <svg width="24" height="24" fill="none" stroke="var(--accent, #6C3FC5)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="24" height="24" fill="none" stroke="var(--accent, #0EA5E9)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
         }
         else if (Message.Kind == MessageKind.File)
         {
@@ -61,7 +61,7 @@
         <div class="msg-meta">
             @if (Message.IsPinned)
             {
-                <svg width="12" height="12" fill="var(--accent, #6C3FC5)" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                <svg width="12" height="12" fill="var(--accent, #0EA5E9)" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
             }
         </div>
     </div>
@@ -81,7 +81,7 @@
         @if (OnPin.HasDelegate)
         {
             <button class="msg-action-btn" title="@(Message.IsPinned ? "Unpin" : "Pin")" @onclick="() => OnPin.InvokeAsync(Message)" @onclick:stopPropagation>
-                <svg width="16" height="16" fill="@(Message.IsPinned ? "var(--accent, #6C3FC5)" : "none")" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="16" height="16" fill="@(Message.IsPinned ? "var(--accent, #0EA5E9)" : "none")" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
         }
         @if (OnEdit.HasDelegate)
