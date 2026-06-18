@@ -1,0 +1,173 @@
+@page "/"
+@namespace Briefcase.Components.Pages
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="landing-page">
+
+    <section class="landing-hero">
+        <div class="landing-hero-inner">
+            <div class="landing-logo">
+                <svg width="56" height="56" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="landingBrandBg" x1="2" y1="2" x2="26" y2="26"
+                                        gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#22C55E" />
+                            <stop offset="1" stop-color="#0EA5E9" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="28" height="28" rx="8" fill="url(#landingBrandBg)" />
+                    <path
+                    d="M9 6.5V20.9M9 6.5H13.9C16.9 6.5 18.8 8.3 18.8 10.8C18.8 13.2 16.9 15 13.9 15H9M9 15H14.5C17.7 15 19.6 16.9 19.6 19.3C19.6 21.8 17.7 23.5 14.5 23.5H9"
+                    stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                    <rect x="15.6" y="12.3" width="3.1" height="3.1" rx="0.95" fill="#F59E0B"
+                          transform="rotate(12 17.15 13.85)" />
+                </svg>
+                <h1 class="landing-title">Briefcase</h1>
+            </div>
+
+            <p class="landing-tagline">Your secure clipboard, everywhere.</p>
+            <p class="landing-description">
+                Save messages, links, and files on one device — access them instantly on all your others.
+                End-to-end encrypted, cross-platform, and always with you.
+            </p>
+
+            <div class="landing-cta-primary">
+                <a class="btn btn-primary btn-lg landing-btn" href="/login">Sign In</a>
+                <a class="btn btn-outline-primary btn-lg landing-btn" href="/signup">Create Account</a>
+            </div>
+
+            <div class="landing-cta-secondary">
+                <a class="btn btn-outline-secondary landing-btn-secondary" href="/transfer">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"
+                         viewBox="0 0 24 24">
+                        <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" stroke-linecap="round"
+                              stroke-linejoin="round" />
+                    </svg>
+                    Receive File
+                </a>
+                <a class="btn btn-outline-secondary landing-btn-secondary" href="/devices">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"
+                         viewBox="0 0 24 24">
+                        <path
+                        d="M12 4v1m6.364 1.636l-.707.707M20 12h-1M17.657 17.657l-.707-.707M12 19v1M6.343 17.657l-.707.707M5 12H4M6.343 6.343l-.707-.707"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M9 12a3 3 0 116 0 3 3 0 01-6 0z" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Add This Device
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="landing-features">
+        <div class="landing-features-inner">
+            <h2 class="landing-features-title">Everything in one place</h2>
+            <div class="landing-features-grid">
+
+                <div class="landing-feature-card">
+                    <div class="landing-feature-icon">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                             viewBox="0 0 24 24">
+                            <path
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <h3>Universal Clipboard</h3>
+                    <p>Copy anything on one device and paste it on another — text, links, and files all in one stream.
+                    </p>
+                </div>
+
+                <div class="landing-feature-card">
+                    <div class="landing-feature-icon">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                             viewBox="0 0 24 24">
+                            <path
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <h3>End-to-End Encrypted</h3>
+                    <p>Your messages are encrypted client-side. Not even the server can read your content.</p>
+                </div>
+
+                <div class="landing-feature-card">
+                    <div class="landing-feature-icon">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                             viewBox="0 0 24 24">
+                            <path
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <h3>All Your Devices</h3>
+                    <p>Native apps for Windows, macOS, Android, and iOS — plus a Progressive Web App for everything
+                        else.</p>
+                    </div>
+
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                                 viewBox="0 0 24 24">
+                                <path
+                                d="M12 4v1m6.364 1.636l-.707.707M20 12h-1M17.657 17.657l-.707-.707M12 19v1M6.343 17.657l-.707.707M5 12H4M6.343 6.343l-.707-.707"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M9 12a3 3 0 116 0 3 3 0 01-6 0z" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3>Instant QR Transfer</h3>
+                        <p>Send text or files to a nearby device in seconds by scanning a QR code — no account needed on the
+                            receiving end.</p>
+                        </div>
+
+                        <div class="landing-feature-card">
+                            <div class="landing-feature-icon">
+                                <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                                     viewBox="0 0 24 24">
+                                    <path
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <h3>File Attachments</h3>
+                            <p>Upload files up to 100 MB and access them from any device — streamed securely through the API.
+                            </p>
+                        </div>
+
+                        <div class="landing-feature-card">
+                            <div class="landing-feature-icon">
+                                <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"
+                                     viewBox="0 0 24 24">
+                                    <path
+                                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <h3>Shareable Links</h3>
+                            <p>Generate a public link for any note or file. Set it to expire or self-destruct after one view.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <footer class="landing-footer">
+                <p>
+                    Open source &mdash;
+                    <a href="https://github.com/MrPix/Briefcase" target="_blank" rel="noopener noreferrer">GitHub</a>
+                </p>
+            </footer>
+
+        </div>
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/clipboard", forceLoad: false);
+        }
+    }
+}
