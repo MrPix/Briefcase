@@ -24,7 +24,8 @@
 
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" placeholder="Enter your password" />
+                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password"
+                           placeholder="Enter your password" />
                 <ValidationMessage For="() => _model.Password" />
             </div>
 
@@ -44,6 +45,17 @@
         <div class="auth-footer">
             <span>Don't have an account?</span>
             <a href="/signup">Sign Up</a>
+        </div>
+
+        <div class="auth-footer auth-receive-row">
+            <span>Receiving a file from another device?</span>
+            <a href="/transfer" class="auth-receive-link">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                </svg>
+                Receive File
+            </a>
         </div>
     </div>
 </div>

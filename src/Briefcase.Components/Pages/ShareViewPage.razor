@@ -1,0 +1,97 @@
+@page "/share/{Slug}"
+@namespace Briefcase.Components.Pages
+@inject ITransferService TransferService
+@inject NavigationManager NavigationManager
+@using Briefcase.Domain.Entities
+
+<div class="share-container">
+    @if (_loading)
+    {
+        <div class="share-card">
+            <div class="share-loading">
+                <span class="spinner"></span>
+                <span>Loading shared message…</span>
+            </div>
+        </div>
+    }
+    else if (_notFound)
+    {
+        <div class="share-card share-error-card">
+            <div class="share-error-icon">
+                <svg width="48" height="48" fill="none" stroke="#f87171" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <h2 class="share-title">Link Unavailable</h2>
+            <p class="share-subtitle">This link has already been used, expired, or does not exist.</p>
+        </div>
+    }
+    else if (_message is not null)
+    {
+        <div class="share-card">
+            <div class="share-badge">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101
+                    M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                </svg>
+                One-time shared message
+            </div>
+
+            <div class="share-content">
+                @if (_message.Kind == MessageKind.File)
+                {
+                    <div class="share-file">
+                        <svg width="40" height="40" fill="none" stroke="#dc2626" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414
+                            A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round"
+                                  stroke-linejoin="round" />
+                        </svg>
+                        <span class="share-file-name">@(_message.FileName ?? _message.Content ?? "Attached file")</span>
+                    </div>
+                    @if (_message.FilePreviewUrl is not null)
+                    {
+                        <img class="share-preview" src="@_message.FilePreviewUrl" alt="Preview" loading="lazy" />
+                    }
+                    @if (_message.FileId.HasValue)
+                    {
+                        <a class="transfer-btn primary share-download-btn" href="@($"/api/files/{_message.FileId}/download")"
+                           download>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round"
+                                      stroke-linejoin="round" />
+                            </svg>
+                            Download
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="share-text">@_message.Content</div>
+                }
+            </div>
+
+            <div class="share-meta">
+                Shared on @_message.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private bool _notFound;
+    private SharedMessageResult? _message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _message = await TransferService.GetSharedMessageAsync(Slug);
+        _notFound = _message is null;
+        _loading = false;
+    }
+}

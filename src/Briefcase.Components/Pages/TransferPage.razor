@@ -1,84 +1,186 @@
 @page "/transfer"
 @namespace Briefcase.Components.Pages
 @inject ITransferService TransferService
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
 
-<h1>Quick Transfer</h1>
-
-<p class="text-muted">Transfer content to another device without an account.</p>
-
-@if (_sessionId is null)
+@if (_isSendMode)
 {
-    <div class="d-flex gap-2">
-        <button class="btn btn-primary" @onclick="CreateSession">
-            <span class="bi bi-qr-code"></span> Generate QR Code
-        </button>
-        <button class="btn btn-outline-primary" @onclick="() => _showScanner = true">
-            <span class="bi bi-qr-code-scan"></span> Scan QR Code
-        </button>
+    @* ── Send mode: authenticated device sends a message by entering the code ── *@
+    <div class="transfer-container">
+        <div class="transfer-card">
+            <div class="transfer-icon send">
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <h2 class="transfer-title">Send Message</h2>
+            <p class="transfer-subtitle">Enter the 8-character code shown on the receiving device.</p>
+
+            @if (!_sent)
+            {
+                <div class="code-input-group">
+                    <input class="code-input" type="text" maxlength="8" placeholder="ABCD1234" @bind="_enteredCode"
+                           @bind:event="oninput" autocomplete="off" spellcheck="false" />
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <div class="transfer-error">@_errorMessage</div>
+                }
+
+                <button class="transfer-btn primary" @onclick="HandleSend" disabled="@(_sending || _enteredCode.Length != 8)">
+                    @if (_sending)
+                    {
+                        <span class="spinner"></span>
+                        <span>Sending…</span>
+                    }
+                    else
+                    {
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Send</span>
+                    }
+                </button>
+            }
+            else
+            {
+                <div class="transfer-success">
+                    <svg width="32" height="32" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p>Message sent! The recipient can now open the link on their device.</p>
+                </div>
+                <button class="transfer-btn secondary" @onclick='() => NavigationManager.NavigateTo("/clipboard")'>
+                    Back to Clipboard
+                </button>
+            }
+        </div>
     </div>
 }
 else
 {
-    <div class="card">
-        <div class="card-body text-center">
-            <p>Share this session ID with the sending device:</p>
-            <h3><code>@_sessionId</code></h3>
-            <p class="text-muted">Waiting for content...</p>
+    @* ── Receive mode: unauthorized device shows an 8-char code and waits ── *@
+    <div class="transfer-container">
+        <div class="transfer-card">
+            <div class="transfer-icon receive">
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round"
+                          stroke-linejoin="round" />
+                </svg>
+            </div>
+            <h2 class="transfer-title">Receive Message</h2>
+            <p class="transfer-subtitle">Share this code with the sender. It expires in 10 minutes.</p>
+
+            @if (_code is null)
+            {
+                <div class="transfer-loading">
+                    <span class="spinner"></span>
+                    <span>Generating code…</span>
+                </div>
+            }
+            else if (_received)
+            {
+                <div class="transfer-success">
+                    <svg width="32" height="32" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p>Message received! Opening…</p>
+                </div>
+            }
+            else
+            {
+                <div class="code-display-group">
+                    <span class="code-half">@_code[..4]</span>
+                    <span class="code-separator">–</span>
+                    <span class="code-half">@_code[4..]</span>
+                </div>
+
+                <div class="transfer-waiting">
+                    <span class="pulse-dot"></span>
+                    <span>Waiting for sender…</span>
+                </div>
+            }
         </div>
     </div>
-}
-
-@if (_showScanner)
-{
-    <div class="mt-3">
-        <Briefcase.Components.Components.QrScanner OnScanned="HandleScanned" />
-    </div>
-}
-
-@if (_showPush)
-{
-    <div class="mt-3">
-        <div class="input-group">
-            <textarea class="form-control" @bind="_pushContent" placeholder="Enter content to transfer..." rows="3"></textarea>
-            <button class="btn btn-success" @onclick="PushContent" disabled="@string.IsNullOrWhiteSpace(_pushContent)">
-                <span class="bi bi-send"></span> Send
-            </button>
-        </div>
-    </div>
-}
-
-@if (_transferComplete)
-{
-    <div class="alert alert-success mt-3">Content transferred successfully!</div>
 }
 
 @code {
-    private string? _sessionId;
-    private string? _scannedSessionId;
-    private string? _pushContent;
-    private bool _showScanner;
-    private bool _showPush;
-    private bool _transferComplete;
+    [SupplyParameterFromQuery]
+    public Guid? MessageId { get; set; }
 
-    private async Task CreateSession()
-    {
-        _sessionId = await TransferService.CreateSessionAsync();
-    }
+    private bool _isSendMode;
+    private string? _code;
+    private bool _received;
+    private string _enteredCode = string.Empty;
+    private bool _sending;
+    private bool _sent;
+    private string? _errorMessage;
+    private CancellationTokenSource? _cts;
 
-    private void HandleScanned(string result)
+    protected override async Task OnInitializedAsync()
     {
-        _scannedSessionId = result;
-        _showScanner = false;
-        _showPush = true;
-    }
+        _isSendMode = MessageId.HasValue;
 
-    private async Task PushContent()
-    {
-        if (_scannedSessionId is not null && !string.IsNullOrWhiteSpace(_pushContent))
+        if (!_isSendMode)
         {
-            await TransferService.PushContentAsync(_scannedSessionId, _pushContent);
-            _transferComplete = true;
-            _showPush = false;
+            _code = await TransferService.CreateSessionAsync();
+            _cts = new CancellationTokenSource();
+            _ = StartListeningAsync(_cts.Token);
+        }
+    }
+
+    private async Task StartListeningAsync(CancellationToken ct)
+    {
+        try
+        {
+            await TransferService.ListenForTransferAsync(_code!, async url =>
+            {
+                await InvokeAsync(() =>
+                {
+                    _received = true;
+                    StateHasChanged();
+                    NavigationManager.NavigateTo(url);
+                });
+            }, ct);
+        }
+        catch (OperationCanceledException) { /* disposed */ }
+    }
+
+    private async Task HandleSend()
+    {
+        _errorMessage = null;
+        _sending = true;
+
+        try
+        {
+            var code = _enteredCode.Trim().ToUpperInvariant();
+            await TransferService.SendToAsync(code, MessageId!.Value);
+            _sent = true;
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode == 404)
+        {
+            _errorMessage = "Code not found or expired. Please check and try again.";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
         }
     }
 }
+

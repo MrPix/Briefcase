@@ -8,15 +8,18 @@
     var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
     var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
                   || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+    var isPublicPage = isAuthPage
+                    || uri.StartsWith("transfer", StringComparison.OrdinalIgnoreCase)
+                    || uri.StartsWith("share/", StringComparison.OrdinalIgnoreCase);
 }
 
 @if (!_sessionRestored)
 {
     <p>Loading...</p>
 }
-else if (isAuthPage || AuthService.IsAuthenticated)
+else if (isPublicPage || AuthService.IsAuthenticated)
 {
-    @if (isAuthPage)
+    @if (isAuthPage || !AuthService.IsAuthenticated)
     {
         <main class="auth-main">
             @Body
@@ -61,8 +64,11 @@ else if (isAuthPage || AuthService.IsAuthenticated)
             var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
             var isAuthPage = uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
                           || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+            var isPublicPage = isAuthPage
+                            || uri.StartsWith("transfer", StringComparison.OrdinalIgnoreCase)
+                            || uri.StartsWith("share/", StringComparison.OrdinalIgnoreCase);
 
-            if (!isAuthPage && !AuthService.IsAuthenticated)
+            if (!isPublicPage && !AuthService.IsAuthenticated)
             {
                 Navigation.NavigateTo("/login", forceLoad: false);
             }
