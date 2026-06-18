@@ -21,6 +21,7 @@ builder.AddNpgsqlDbContext<AppDbContext>("Briefcasedb");
 
 // ── Controllers ──────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
 
 // ── OpenAPI ───────────────────────────────────────────────────────────────────
 builder.Services.AddOpenApi(options =>
@@ -102,21 +103,21 @@ builder.Services
     .AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
-            ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ClockSkew                = TimeSpan.Zero, // access tokens are short-lived (15 min)
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ClockSkew = TimeSpan.Zero, // access tokens are short-lived (15 min)
         };
 
         // Allow the JWT to arrive via the SignalR query-string parameter

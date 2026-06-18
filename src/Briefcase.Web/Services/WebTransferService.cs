@@ -82,13 +82,24 @@ public class WebTransferService(IHttpClientFactory httpClientFactory) : ITransfe
 
         if (dto is null) return null;
 
+        var baseUrl = client.BaseAddress!.ToString().TrimEnd('/');
+
+        var previewUrl = dto.FilePreviewToken is not null
+            ? $"{baseUrl}/api/share/{Uri.EscapeDataString(slug)}/preview?token={Uri.EscapeDataString(dto.FilePreviewToken)}"
+            : null;
+
+        var downloadUrl = dto.FileDownloadToken is not null
+            ? $"{baseUrl}/api/share/{Uri.EscapeDataString(slug)}/file?token={Uri.EscapeDataString(dto.FileDownloadToken)}"
+            : null;
+
         return new SharedMessageResult(
             dto.MessageId,
             Enum.Parse<MessageKind>(dto.Kind, ignoreCase: true),
             dto.Content,
             dto.FileId,
             dto.FileName,
-            dto.FilePreviewUrl,
+            previewUrl,
+            downloadUrl,
             dto.CreatedAt);
     }
 
@@ -100,6 +111,7 @@ public class WebTransferService(IHttpClientFactory httpClientFactory) : ITransfe
         string? Content,
         Guid? FileId,
         string? FileName,
-        string? FilePreviewUrl,
-        DateTime CreatedAt);
+        string? FilePreviewToken,
+        DateTime CreatedAt,
+        string? FileDownloadToken);
 }

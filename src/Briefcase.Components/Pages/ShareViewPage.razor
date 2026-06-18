@@ -63,8 +63,7 @@
                     }
                     @if (_message.FileId.HasValue)
                     {
-                        <a class="transfer-btn primary share-download-btn" href="@($"/api/files/{_message.FileId}/download")"
-                           download>
+                        <a class="transfer-btn primary share-download-btn" href="@_message.FileDownloadUrl" download>
                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round"
                                       stroke-linejoin="round" />

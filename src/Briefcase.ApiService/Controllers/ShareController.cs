@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Briefcase.Domain.Entities;
+using Briefcase.Domain.Interfaces;
 using Briefcase.Infrastructure.Persistence;
 
 namespace Briefcase.ApiService.Controllers;
@@ -11,11 +13,11 @@ namespace Briefcase.ApiService.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/share")]
-public class ShareController(AppDbContext db) : ControllerBase
+public class ShareController(AppDbContext db, IFileStorageService storage, IMemoryCache cache) : ControllerBase
 {
     // GET /api/share/{slug}  →  retrieve shared message content (marks one-time links as used)
     [HttpGet("{slug}")]
-    public async Task<IActionResult> GetSharedMessage(string slug)
+    public async Task<IActionResult> GetSharedMessage(string slug, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(slug) || slug.Length > 64)
             return BadRequest();
@@ -23,7 +25,7 @@ public class ShareController(AppDbContext db) : ControllerBase
         var shareLink = await db.ShareLinks
             .Include(s => s.Message)
                 .ThenInclude(m => m.FileAttachment)
-            .FirstOrDefaultAsync(s => s.Slug == slug);
+            .FirstOrDefaultAsync(s => s.Slug == slug, ct);
 
         if (shareLink is null || shareLink.RevokedAt.HasValue)
             return NotFound();
@@ -35,12 +37,28 @@ public class ShareController(AppDbContext db) : ControllerBase
         if (message.IsDeleted)
             return NotFound();
 
+        // For file messages, generate short-lived one-time tokens so the client
+        // can download/preview without authentication and without re-using the slug.
+        string? fileDownloadToken = null;
+        string? filePreviewToken = null;
+        if (message.Kind == MessageKind.File && message.FileAttachment is not null)
+        {
+            fileDownloadToken = Guid.NewGuid().ToString("N");
+            cache.Set($"dt:{fileDownloadToken}", message.FileAttachment.Id, TimeSpan.FromMinutes(15));
+
+            if (!string.IsNullOrWhiteSpace(message.FileAttachment.PreviewBlobPath))
+            {
+                filePreviewToken = Guid.NewGuid().ToString("N");
+                cache.Set($"pt:{filePreviewToken}", message.FileAttachment.Id, TimeSpan.FromMinutes(15));
+            }
+        }
+
         // Revoke immediately if this is a one-time link
         if (shareLink.IsOneTime)
             shareLink.RevokedAt = DateTime.UtcNow;
 
         shareLink.ViewCount++;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
 
         return Ok(new SharedMessageDto(
             message.Id,
@@ -48,10 +66,51 @@ public class ShareController(AppDbContext db) : ControllerBase
             message.Content,
             message.FileId,
             message.FileAttachment?.OriginalName,
-            message.FileAttachment?.PreviewBlobPath is not null
-                ? $"/api/files/{message.FileAttachment.Id}/preview"
-                : null,
-            message.CreatedAt));
+            filePreviewToken,
+            message.CreatedAt,
+            fileDownloadToken));
+    }
+
+    // GET /api/share/{slug}/file?token={token}  →  one-time anonymous file download
+    [HttpGet("{slug}/file")]
+    public async Task<IActionResult> DownloadFile(string slug, [FromQuery] string token, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest();
+
+        if (!cache.TryGetValue($"dt:{token}", out Guid fileId))
+            return NotFound();
+
+        cache.Remove($"dt:{token}"); // one-time use
+
+        var attachment = await db.FileAttachments
+            .FirstOrDefaultAsync(f => f.Id == fileId, ct);
+
+        if (attachment is null)
+            return NotFound();
+
+        var stream = await storage.DownloadAsync(attachment.BlobPath, ct);
+        return File(stream, attachment.ContentType, attachment.OriginalName);
+    }
+
+    // GET /api/share/{slug}/preview?token={token}  →  anonymous preview image
+    [HttpGet("{slug}/preview")]
+    public async Task<IActionResult> GetPreview(string slug, [FromQuery] string token, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest();
+
+        if (!cache.TryGetValue($"pt:{token}", out Guid fileId))
+            return NotFound();
+
+        var attachment = await db.FileAttachments
+            .FirstOrDefaultAsync(f => f.Id == fileId, ct);
+
+        if (attachment is null || string.IsNullOrWhiteSpace(attachment.PreviewBlobPath))
+            return NotFound();
+
+        var stream = await storage.DownloadAsync(attachment.PreviewBlobPath, ct);
+        return File(stream, "image/jpeg");
     }
 }
 
@@ -61,5 +120,6 @@ public record SharedMessageDto(
     string? Content,
     Guid? FileId,
     string? FileName,
-    string? FilePreviewUrl,
-    DateTime CreatedAt);
+    string? FilePreviewToken,
+    DateTime CreatedAt,
+    string? FileDownloadToken);

@@ -35,4 +35,5 @@ public record SharedMessageResult(
     Guid? FileId,
     string? FileName,
     string? FilePreviewUrl,
+    string? FileDownloadUrl,
     DateTime CreatedAt);
