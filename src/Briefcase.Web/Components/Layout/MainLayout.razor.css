@@ -17,6 +17,11 @@ main.auth-main {
     justify-content: center;
 }
 
+main.landing-main {
+    overflow-y: auto;
+    height: 100vh;
+}
+
 .sidebar {
     width: var(--sidebar-width, 220px);
     height: 100vh;
