@@ -105,6 +105,25 @@
     color: var(--text-muted, #6b7280);
 }
 
+.share-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border, #2d2d3f);
+    background: transparent;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.share-back-btn:hover {
+    background: var(--surface-hover, #2d2d3f);
+    color: var(--text-primary, #f0f0f0);
+}
+
 .share-download-btn {
     display: inline-flex;
     align-items: center;

@@ -26,6 +26,12 @@
             </div>
             <h2 class="share-title">Link Unavailable</h2>
             <p class="share-subtitle">This link has already been used, expired, or does not exist.</p>
+            <button class="share-back-btn" @onclick='() => NavigationManager.NavigateTo("/")'>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Back
+            </button>
         </div>
     }
     else if (_message is not null)
@@ -76,6 +82,13 @@
             <div class="share-meta">
                 Shared on @_message.CreatedAt.ToString("yyyy-MM-dd HH:mm")
             </div>
+
+            <button class="share-back-btn" @onclick='() => NavigationManager.NavigateTo("/")'>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Back
+            </button>
         </div>
     }
 </div>
