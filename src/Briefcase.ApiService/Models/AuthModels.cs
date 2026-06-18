@@ -4,7 +4,7 @@ namespace Briefcase.ApiService.Models;
 
 public record RegisterRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
-    [Required, MinLength(1), MaxLength(128)] string Password,
+    [Required, MinLength(8), MaxLength(128)] string Password,
     [Required, MaxLength(100)] string DisplayName,
     [MaxLength(200)] string? DeviceName = null,
     string? DevicePlatform = null);
