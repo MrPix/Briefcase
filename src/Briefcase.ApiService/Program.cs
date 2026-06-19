@@ -64,6 +64,10 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var endpoint = config.GetConnectionString("s3") ?? "http://localhost:9000";
+    var accessKey = config["Storage:AccessKey"]
+        ?? throw new InvalidOperationException("Storage:AccessKey is not configured.");
+    var secretKey = config["Storage:SecretKey"]
+        ?? throw new InvalidOperationException("Storage:SecretKey is not configured.");
     var useHttps = endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
     var s3Config = new AmazonS3Config
     {
@@ -71,7 +75,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         ForcePathStyle = true,
         UseHttp = !useHttps,
     };
-    return new AmazonS3Client("minioadmin", "minioadmin", s3Config);
+    return new AmazonS3Client(accessKey, secretKey, s3Config);
 });
 builder.Services.AddSingleton<IFileStorageService>(sp =>
 {

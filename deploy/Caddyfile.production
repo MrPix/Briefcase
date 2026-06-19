@@ -1,0 +1,40 @@
+# ── Briefcase — Production Caddyfile ─────────────────────────────────────────
+#
+# HTTP-only (default for home-server LAN use).
+# To enable HTTPS with Let's Encrypt, replace ":80" with your domain name, e.g.:
+#
+#   briefcase.example.com {
+#
+# Caddy will obtain and auto-renew the TLS certificate automatically.
+# Make sure ports 80 and 443 are reachable from the internet for the ACME challenge.
+# ─────────────────────────────────────────────────────────────────────────────
+
+:80 {
+    # ── Reverse proxy — REST API ──────────────────────────────────────────────
+    reverse_proxy /api/* api:8080
+
+    # ── Reverse proxy — SignalR WebSocket hub ────────────────────────────────
+    @hubs path /hubs/*
+    reverse_proxy @hubs api:8080 {
+        # Keep WebSocket connections alive
+        flush_interval -1
+        transport http {
+            versions 1.1 2
+        }
+    }
+
+    # ── Static Blazor WASM files ──────────────────────────────────────────────
+    root * /usr/share/caddy
+    file_server
+    try_files {path} /index.html
+
+    # Cache immutable hashed assets for one year
+    @static {
+        path *.js *.css *.wasm *.woff *.woff2 *.ttf *.png *.jpg *.svg *.ico
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Disable caching for the Blazor boot descriptor so updates are picked up
+    @blazorBoot path /index.html /_framework/blazor.boot.json
+    header @blazorBoot Cache-Control "no-store"
+}
