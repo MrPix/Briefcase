@@ -120,7 +120,8 @@
                         {
                             <div class="message-item">
                                 <Briefcase.Components.Components.MessageCard Message="message" OnPin="HandlePin"
-                                                                             OnDelete="HandleDelete" OnCopy="HandleCopy" OnDownload="HandleDownload" OnEdit="HandleEdit" />
+                                                                             OnDelete="HandleDelete" OnCopy="HandleCopy" OnDownload="HandleDownload" OnEdit="HandleEdit"
+                                                                             OnSendTo="HandleSendTo" />
                             </div>
                         }
                         @if (_activeFilter == "all" && _pinnedMessages.Count > MaxPinnedInClipboard)
@@ -138,7 +139,8 @@
                             {
                                 <div class="message-item">
                                     <Briefcase.Components.Components.MessageCard Message="message" OnPin="HandlePin"
-                                                                                 OnDelete="HandleDelete" OnCopy="HandleCopy" OnDownload="HandleDownload" OnEdit="HandleEdit" />
+                                                                                 OnDelete="HandleDelete" OnCopy="HandleCopy" OnDownload="HandleDownload" OnEdit="HandleEdit"
+                                                                                 OnSendTo="HandleSendTo" />
                                 </div>
                             }
                         }
@@ -434,6 +436,11 @@
         {
             _errorMessage = $"Failed to edit message: {ex.Message}";
         }
+    }
+
+    private void HandleSendTo(Message message)
+    {
+        NavigationManager.NavigateTo($"/transfer?messageId={message.Id}");
     }
 
     private void HandleDragEnter(DragEventArgs e)

@@ -1,0 +1,225 @@
+.transfer-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    padding: 2rem 1rem;
+}
+
+.transfer-card {
+    background: var(--surface, #1e1e2e);
+    border: 1px solid var(--border, #2d2d3f);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+}
+
+.transfer-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.transfer-icon.receive {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0ea5e9;
+}
+
+.transfer-icon.send {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+
+.transfer-title {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary, #f0f0f0);
+}
+
+.transfer-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted, #6b7280);
+    text-align: center;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ── Receive mode: code display ────────────────────────────────── */
+.code-display-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.code-half {
+    font-family: 'Courier New', monospace;
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent, #0ea5e9);
+    background: rgba(14, 165, 233, 0.08);
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(14, 165, 233, 0.25);
+}
+
+.code-separator {
+    font-size: 2rem;
+    color: var(--text-muted, #6b7280);
+}
+
+/* ── Send mode: code input ──────────────────────────────────────── */
+.code-input-group {
+    width: 100%;
+}
+
+.code-input {
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: 2px solid var(--border, #e8e8e8);
+    background: var(--surface, #fff);
+    color: var(--text-primary, #1a1a1a);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.code-input:focus {
+    border-color: var(--accent, #0ea5e9);
+}
+
+/* ── Waiting indicator ─────────────────────────────────────────── */
+.transfer-waiting {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent, #0ea5e9);
+    animation: pulse 1.5s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: scale(0.75);
+    }
+}
+
+/* ── Loading / success / error ─────────────────────────────────── */
+.transfer-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted, #6b7280);
+    font-size: 0.875rem;
+}
+
+.transfer-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    color: var(--text-primary, #f0f0f0);
+}
+
+.transfer-success p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.transfer-error {
+    font-size: 0.8rem;
+    color: #f87171;
+    text-align: center;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.transfer-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.transfer-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.transfer-btn.primary {
+    background: var(--accent, #0ea5e9);
+    color: #fff;
+}
+
+.transfer-btn.primary:hover:not(:disabled) {
+    background: #0284c7;
+}
+
+.transfer-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border, #2d2d3f);
+    color: var(--text-secondary, #9ca3af);
+}
+
+.transfer-btn.secondary:hover {
+    background: var(--surface-2, #16161e);
+}
+
+/* ── Spinner ────────────────────────────────────────────────────── */
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

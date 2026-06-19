@@ -10,7 +10,9 @@
     var isAuthPage = !isLandingPage
                   && (uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
                    || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase));
-    var isPublicPage = isLandingPage || isAuthPage;
+    var isTransferPage = uri.StartsWith("transfer", StringComparison.OrdinalIgnoreCase);
+    var isSharePage = uri.StartsWith("share", StringComparison.OrdinalIgnoreCase);
+    var isPublicPage = isLandingPage || isAuthPage || isTransferPage || isSharePage;
 }
 
 @if (!_sessionRestored)
@@ -25,7 +27,7 @@ else if (isPublicPage || AuthService.IsAuthenticated)
             @Body
         </main>
     }
-    else if (isAuthPage)
+    else if (isAuthPage || isTransferPage || isSharePage)
     {
         <main class="auth-main">
             @Body
@@ -70,7 +72,9 @@ else if (isPublicPage || AuthService.IsAuthenticated)
             var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
             var isPublicPage = uri == ""
                             || uri.StartsWith("login", StringComparison.OrdinalIgnoreCase)
-                            || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase);
+                            || uri.StartsWith("signup", StringComparison.OrdinalIgnoreCase)
+                            || uri.StartsWith("transfer", StringComparison.OrdinalIgnoreCase)
+                            || uri.StartsWith("share", StringComparison.OrdinalIgnoreCase);
 
             if (!isPublicPage && !AuthService.IsAuthenticated)
             {

@@ -1,16 +1,21 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 
 namespace Briefcase.ApiService.Services;
 
 /// <summary>
 /// In-memory store for anonymous quick-transfer sessions (TTL: 10 minutes, single-use).
+/// Sessions are identified by a human-readable 8-character alphanumeric code.
 /// Replace with a distributed cache (Redis / Azure Cache for Redis) before scaling horizontally.
 /// </summary>
 public sealed class TransferSessionService
 {
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(10);
 
-    private sealed record Session(string Id, DateTimeOffset ExpiresAt)
+    // Avoid visually ambiguous characters (0/O, 1/I/l)
+    private const string CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    private sealed record Session(string Code, DateTimeOffset ExpiresAt)
     {
         public string? Content { get; set; }
         public DateTimeOffset? ClaimedAt { get; set; }
@@ -18,15 +23,17 @@ public sealed class TransferSessionService
 
     private readonly ConcurrentDictionary<string, Session> _sessions = new();
 
-    /// <summary>Creates a new transfer session and returns its ID.</summary>
+    /// <summary>Creates a new transfer session and returns its 8-character code.</summary>
     public string CreateSession()
     {
-        var id = Guid.NewGuid().ToString("N");
-        var session = new Session(id, DateTimeOffset.UtcNow.Add(SessionTtl));
-        _sessions[id] = session;
+        var code = GenerateCode();
+        var session = new Session(code, DateTimeOffset.UtcNow.Add(SessionTtl));
+        _sessions[code] = session;
         PurgeExpired();
-        return id;
+        return code;
     }
+
+    private static string GenerateCode() => RandomNumberGenerator.GetString(CodeChars, 8);
 
     /// <summary>
     /// Pushes <paramref name="content"/> into the session identified by <paramref name="sessionId"/>.
