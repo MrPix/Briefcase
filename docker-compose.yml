@@ -77,16 +77,15 @@ services:
       - briefcase-internal
     restart: on-failure
 
-  # ── Seq (structured log viewer) ──────────────────────────────────────────────
-  seq:
-    image: datalust/seq:latest
-    container_name: briefcase-seq
+  # ── Aspire Dashboard (telemetry — traces, metrics, logs) ────────────────────
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    container_name: briefcase-aspire-dashboard
     environment:
-      ACCEPT_EULA: "Y"
-    volumes:
-      - seq-data:/data
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
     ports:
-      - "127.0.0.1:5341:80"   # Seq UI — localhost only
+      - "127.0.0.1:18888:18888"   # Dashboard UI — localhost only
+      # Port 18889 (OTLP gRPC) stays internal — services reach it via Docker network
     networks:
       - briefcase-internal
     restart: unless-stopped
@@ -116,9 +115,9 @@ services:
       Storage__SecretKey: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
       # CORS — must match the public URL users open in their browser
       Cors__AllowedOrigins__0: ${PUBLIC_WEB_URL:-http://localhost}
-      # OpenTelemetry → Seq
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://seq:5341/ingest/otlp
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      # OpenTelemetry → Aspire Dashboard
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,6 +127,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      aspire-dashboard:
+        condition: service_started
     networks:
       - briefcase-internal
     restart: unless-stopped
@@ -159,7 +160,6 @@ volumes:
   postgres-data:
   redis-data:
   minio-data:
-  seq-data:
 
 networks:
   briefcase-internal:
