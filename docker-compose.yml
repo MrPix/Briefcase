@@ -1,0 +1,175 @@
+services:
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: briefcase-postgres
+    environment:
+      POSTGRES_DB: Briefcasedb
+      POSTGRES_USER: ${POSTGRES_USER:-briefcase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-briefcase} -d Briefcasedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Redis (SignalR backplane) ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: briefcase-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (S3-compatible file storage) ───────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: briefcase-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "127.0.0.1:9001:9001"   # MinIO web console — localhost only
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── MinIO bucket initialisation ───────────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    container_name: briefcase-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-briefcase}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+        mc mb --ignore-existing local/$${MINIO_BUCKET_NAME} &&
+        echo 'Bucket ready: ' $${MINIO_BUCKET_NAME}
+      "
+    networks:
+      - briefcase-internal
+    restart: on-failure
+
+  # ── Aspire Dashboard (telemetry — traces, metrics, logs) ────────────────────
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    container_name: briefcase-aspire-dashboard
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "127.0.0.1:18888:18888"   # Dashboard UI — localhost only
+      # Port 18889 (OTLP gRPC) stays internal — services reach it via Docker network
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+
+  # ── API service ───────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: src/Briefcase.ApiService/Dockerfile
+    image: ghcr.io/mrpix/briefcase-api:${IMAGE_TAG:-latest}
+    container_name: briefcase-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development   # enables auto-migrations and /health endpoint
+      ASPNETCORE_URLS: http://+:8080
+      # Connection strings — must match names used by builder.AddNpgsqlDbContext / AddRedis
+      ConnectionStrings__Briefcasedb: >-
+        Host=postgres;Port=5432;Database=Briefcasedb;
+        Username=${POSTGRES_USER:-briefcase};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__s3: http://minio:9000
+      # JWT
+      Jwt__Secret: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+      Jwt__Issuer: Briefcase
+      Jwt__Audience: Briefcase
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS:-365}
+      # Storage
+      Storage__BucketName: ${MINIO_BUCKET_NAME:-briefcase}
+      Storage__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
+      Storage__SecretKey: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      # CORS — must match the public URL users open in their browser
+      Cors__AllowedOrigins__0: ${PUBLIC_WEB_URL:-http://localhost}
+      # OpenTelemetry → Aspire Dashboard
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      aspire-dashboard:
+        condition: service_started
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+    healthcheck:
+      # bash /dev/tcp works without curl in the slim base image.
+      # Once the Dockerfile change is built & pushed, this can be replaced with:
+      #   test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s   # extra time for first-run DB migrations
+
+  # ── Web frontend (Caddy — static WASM + reverse proxy to API) ────────────────
+  web:
+    build:
+      context: .
+      dockerfile: src/Briefcase.Web/Dockerfile
+    image: ghcr.io/mrpix/briefcase-web:${IMAGE_TAG:-latest}
+    container_name: briefcase-web
+    volumes:
+      # Override the baked-in Caddyfile with the production one that proxies /api and /hubs
+      - ./deploy/Caddyfile.production:/etc/caddy/Caddyfile:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - briefcase-internal
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+
+networks:
+  briefcase-internal:
+    driver: bridge
