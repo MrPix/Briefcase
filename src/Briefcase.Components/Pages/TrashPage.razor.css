@@ -13,37 +13,6 @@
     overflow: hidden;
 }
 
-/* Filter tabs */
-.filter-tabs {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.filter-tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 5px 12px;
-    border: none;
-    border-radius: 20px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-width: 32px;
-}
-
-.filter-tab.active {
-    background: var(--accent);
-    color: white;
-}
-
 /* Message list */
 .message-list {
     flex: 1 1 0;
@@ -74,17 +43,18 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     transition: box-shadow 0.15s, transform 0.1s;
 }
 
 .message-item:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
     transform: translateY(-1px);
 }
 
 /* Empty / loading states */
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;

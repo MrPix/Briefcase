@@ -34,11 +34,6 @@ a,
     color: var(--accent);
 }
 
-/* ── Mobile: hide filter tabs (bottom nav handles type navigation) ─────── */
-.filter-tabs {
-    display: none !important;
-}
-
 /* ── Floating bottom nav ──────────────────────────────────────────────── */
 .bottom-nav {
     position: fixed;
