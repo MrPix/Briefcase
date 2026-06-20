@@ -92,6 +92,9 @@ services:
 
   # ── API service ───────────────────────────────────────────────────────────────
   api:
+    build:
+      context: .
+      dockerfile: src/Briefcase.ApiService/Dockerfile
     image: ghcr.io/mrpix/briefcase-api:${IMAGE_TAG:-latest}
     container_name: briefcase-api
     environment:
@@ -133,14 +136,20 @@ services:
       - briefcase-internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      # bash /dev/tcp works without curl in the slim base image.
+      # Once the Dockerfile change is built & pushed, this can be replaced with:
+      #   test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s   # extra time for first-run DB migrations
 
   # ── Web frontend (Caddy — static WASM + reverse proxy to API) ────────────────
   web:
+    build:
+      context: .
+      dockerfile: src/Briefcase.Web/Dockerfile
     image: ghcr.io/mrpix/briefcase-web:${IMAGE_TAG:-latest}
     container_name: briefcase-web
     volumes:

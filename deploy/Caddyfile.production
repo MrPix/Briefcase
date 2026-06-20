@@ -11,30 +11,38 @@
 
 :80 {
     # ── Reverse proxy — REST API ──────────────────────────────────────────────
-    reverse_proxy /api/* api:8080
+    # Use handle blocks so each block is mutually exclusive. Without this,
+    # try_files (a rewrite-phase directive) runs before reverse_proxy and
+    # rewrites /api/* paths to /index.html, causing file_server to return 405.
+    handle /api/* {
+        reverse_proxy api:8080
+    }
 
     # ── Reverse proxy — SignalR WebSocket hub ────────────────────────────────
-    @hubs path /hubs/*
-    reverse_proxy @hubs api:8080 {
-        # Keep WebSocket connections alive
-        flush_interval -1
-        transport http {
-            versions 1.1 2
+    handle /hubs/* {
+        reverse_proxy api:8080 {
+            # Keep WebSocket connections alive
+            flush_interval -1
+            transport http {
+                versions 1.1 2
+            }
         }
     }
 
     # ── Static Blazor WASM files ──────────────────────────────────────────────
-    root * /usr/share/caddy
-    file_server
-    try_files {path} /index.html
+    handle {
+        root * /usr/share/caddy
+        try_files {path} /index.html
+        file_server
 
-    # Cache immutable hashed assets for one year
-    @static {
-        path *.js *.css *.wasm *.woff *.woff2 *.ttf *.png *.jpg *.svg *.ico
+        # Cache immutable hashed assets for one year
+        @static {
+            path *.js *.css *.wasm *.woff *.woff2 *.ttf *.png *.jpg *.svg *.ico
+        }
+        header @static Cache-Control "public, max-age=31536000, immutable"
+
+        # Disable caching for the Blazor boot descriptor so updates are picked up
+        @blazorBoot path /index.html /_framework/blazor.boot.json
+        header @blazorBoot Cache-Control "no-store"
     }
-    header @static Cache-Control "public, max-age=31536000, immutable"
-
-    # Disable caching for the Blazor boot descriptor so updates are picked up
-    @blazorBoot path /index.html /_framework/blazor.boot.json
-    header @blazorBoot Cache-Control "no-store"
 }
