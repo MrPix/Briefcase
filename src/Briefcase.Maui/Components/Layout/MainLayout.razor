@@ -21,13 +21,33 @@
     else
     {
         <div class="page">
-            <div class="sidebar">
-                <NavMenu />
-            </div>
+            <header class="top-bar">
+                <div class="top-bar-inner">
+                    <div class="top-bar-brand">
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="brandGradient" x1="2" y1="2" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0" stop-color="#22C55E" />
+                                    <stop offset="1" stop-color="#0EA5E9" />
+                                </linearGradient>
+                            </defs>
+                            <rect width="28" height="28" rx="8" fill="url(#brandGradient)" />
+                            <path
+                            d="M9 6.5V20.9M9 6.5H13.9C16.9 6.5 18.8 8.3 18.8 10.8C18.8 13.2 16.9 15 13.9 15H9M9 15H14.5C17.7 15 19.6 16.9 19.6 19.3C19.6 21.8 17.7 23.5 14.5 23.5H9"
+                            stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                            <rect x="15.6" y="12.3" width="3.1" height="3.1" rx="0.95" fill="#F59E0B"
+                                  transform="rotate(12 17.15 13.85)" />
+                        </svg>
+                        <span class="top-bar-title">Briefcase</span>
+                    </div>
+                </div>
+            </header>
 
             <main>
                 @Body
             </main>
+
+            <NavMenu />
         </div>
     }
 }

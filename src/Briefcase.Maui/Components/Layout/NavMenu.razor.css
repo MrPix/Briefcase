@@ -1,97 +1,133 @@
-.sidebar-nav {
+/* Bottom navigation bar */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
     display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 0;
-    overflow: hidden;
+    align-items: stretch;
+    background: var(--sidebar-bg);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.sidebar-header {
-    padding: 16px 16px 12px;
-}
-
-.sidebar-brand {
+.tab-item {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    text-decoration: none !important;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.brand-text {
-    font-size: 1.05rem;
+.tab-item:hover,
+.tab-item.active,
+.tab-item.active:visited {
+    color: var(--accent);
+    text-decoration: none !important;
+}
+
+.tab-more-open {
+    color: var(--accent);
+}
+
+/* More overlay */
+.more-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+}
+
+.more-sheet {
+    width: 100%;
+    background: var(--sidebar-bg);
+    border-radius: 20px 20px 0 0;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: sheet-up 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes sheet-up {
+    from {
+        transform: translateY(100%);
+        opacity: 0.6;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.more-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 16px;
+}
+
+.more-sheet-title {
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
+    margin-bottom: 14px;
+    padding-left: 4px;
 }
 
-.sidebar-links {
+/* 3-column icon grid */
+.more-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.more-item {
     display: flex;
     flex-direction: column;
-    padding: 4px 12px;
-    gap: 6px;
-}
-
-.sidebar-link,
-.sidebar-link:visited,
-.sidebar-link:link {
-    display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    border-radius: var(--radius-sm);
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border);
-    background: var(--surface, #fff);
+    background: var(--surface);
     color: var(--text-primary);
     text-decoration: none !important;
-    font-size: 1rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
-    white-space: nowrap;
-    cursor: pointer;
-    margin-bottom: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.sidebar-link:hover {
+.more-item:hover,
+.more-item.active,
+.more-item.active:visited {
     background: var(--accent-bg-hover);
     color: var(--accent);
     border-color: var(--accent);
     text-decoration: none !important;
 }
 
-.sidebar-link:active {
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-    text-decoration: none !important;
-}
-
-.sidebar-link.active,
-.sidebar-link.active:visited {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    font-weight: 600;
-    text-decoration: none !important;
-}
-
-.sidebar-link svg {
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
-}
-
-.sidebar-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 6px 16px;
-}
-
-.sidebar-footer {
-    margin-top: auto;
-    padding: 12px 16px 16px;
-    border-top: 1px solid var(--border);
-}
-
-.status-stack {
+/* Footer inside the sheet */
+.more-sheet-footer {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
 }
 
 .encryption-status {
