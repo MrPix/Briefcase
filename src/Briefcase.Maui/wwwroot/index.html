@@ -28,6 +28,9 @@
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script>
         window.Briefcase = {
+            scrollToBottom: function (element) {
+                if (element) element.scrollTop = element.scrollHeight;
+            },
             downloadFile: function (fileName, contentType, data) {
                 var blob = new Blob([new Uint8Array(data)], { type: contentType });
                 var url = URL.createObjectURL(blob);

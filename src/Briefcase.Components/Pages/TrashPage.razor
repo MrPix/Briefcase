@@ -8,7 +8,11 @@
 
         <div class="filter-tabs">
             <span class="filter-tab active">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
                 Trash
             </span>
         </div>
@@ -29,7 +33,11 @@
         else if (_messages.Count == 0)
         {
             <div class="empty-state">
-                <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24">
+                    <path
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
                 <p>Trash is empty</p>
                 <span>Deleted messages will appear here</span>
             </div>
@@ -38,16 +46,18 @@
         {
             <div class="message-list">
                 <div class="list-section-header">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
                     Deleted Messages
                 </div>
                 @foreach (var message in _messages)
                 {
                     <div class="message-item">
-                        <Briefcase.Components.Components.MessageCard
-                            Message="message"
-                            OnRestore="HandleRestore"
-                            OnCopy="HandleCopy" />
+                        <Briefcase.Components.Components.MessageCard Message="message" OnRestore="HandleRestore"
+                                                                     OnCopy="HandleCopy" />
                     </div>
                 }
             </div>
@@ -69,7 +79,8 @@
         try
         {
             _errorMessage = null;
-            _messages = await TrashService.GetTrashedMessagesAsync();
+            var items = await TrashService.GetTrashedMessagesAsync();
+            _messages = items.OrderBy(m => m.CreatedAt).ToList();
         }
         catch (Exception ex)
         {

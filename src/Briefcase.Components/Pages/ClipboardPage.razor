@@ -106,7 +106,7 @@
             }
             else
             {
-                <div class="message-list">
+                <div class="message-list" @ref="_messageListRef">
                     @if (_pinnedMessages.Count > 0 && _activeFilter is "all" or "pinned")
                     {
                         <div class="list-section-header">
@@ -222,6 +222,9 @@
 @code {
     private const int MaxPinnedInClipboard = 3;
 
+    private ElementReference _messageListRef;
+    private bool _shouldScrollToBottom;
+
     private IReadOnlyList<Message>? _messages;
     private List<Message> _pinnedMessages = new();
     private List<(string Label, List<Message> Items)> _recentGroups = new();
@@ -272,6 +275,15 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToBottom)
+        {
+            _shouldScrollToBottom = false;
+            try { await JS.InvokeVoidAsync("Briefcase.scrollToBottom", _messageListRef); } catch { }
+        }
+    }
+
     private async Task LoadMessages()
     {
         try
@@ -286,6 +298,7 @@
         }
 
         ApplyFilters();
+        _shouldScrollToBottom = true;
     }
 
     private void ApplyFilters()
@@ -314,8 +327,8 @@
         var today = DateTime.Today;
         _recentGroups = unpinned
             .GroupBy(m => GetDateLabel(m.CreatedAt, today))
-            .OrderByDescending(g => g.Max(m => m.CreatedAt))
-            .Select(g => (g.Key, g.OrderByDescending(m => m.CreatedAt).ToList()))
+            .OrderBy(g => g.Max(m => m.CreatedAt))
+            .Select(g => (g.Key, g.OrderBy(m => m.CreatedAt).ToList()))
             .ToList();
     }
 
