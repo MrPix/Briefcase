@@ -1,110 +1,40 @@
 <nav class="bottom-nav">
     <NavLink class="tab-item" href="clipboard" Match="NavLinkMatch.All">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round"
                   stroke-linejoin="round" />
         </svg>
     </NavLink>
     <NavLink class="tab-item" href="favorites">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path
             d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
             stroke-linecap="round" stroke-linejoin="round" />
         </svg>
     </NavLink>
-    <NavLink class="tab-item" href="transfer">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round" />
+    <NavLink class="tab-item" href="links">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </NavLink>
+    <NavLink class="tab-item" href="files">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path
+            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            stroke-linecap="round" stroke-linejoin="round" />
         </svg>
     </NavLink>
     <NavLink class="tab-item" href="settings">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
             stroke-linecap="round" stroke-linejoin="round" />
             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
     </NavLink>
-    <button class="tab-item tab-more @(_showMore ? "tab-more-open" : "")" @onclick="ToggleMore">
-        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-    </button>
 </nav>
-
-@if (_showMore)
-{
-    <div class="more-overlay" @onclick="CloseMore">
-        <div class="more-sheet" @onclick:stopPropagation>
-            <div class="more-sheet-handle"></div>
-            <div class="more-sheet-title">More</div>
-
-            <div class="more-grid">
-                <NavLink class="more-item" href="files" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span>Files</span>
-                </NavLink>
-                <NavLink class="more-item" href="links" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path
-                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span>Links</span>
-                </NavLink>
-                <NavLink class="more-item" href="text" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path d="M4 6h16M4 12h10M4 18h14" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span>Text</span>
-                </NavLink>
-                <NavLink class="more-item" href="devices" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path
-                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span>Devices</span>
-                </NavLink>
-                <NavLink class="more-item" href="trash" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span>Trash</span>
-                </NavLink>
-                <NavLink class="more-item" href="about" @onclick="CloseMore">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"
-                              stroke-linejoin="round" />
-                    </svg>
-                    <span>About</span>
-                </NavLink>
-            </div>
-
-            <div class="more-sheet-footer">
-                <div class="encryption-status">
-                    <svg width="16" height="16" fill="var(--green)" viewBox="0 0 24 24">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                        <span class="footer-label">End-to-End Encryption</span>
-                        <span class="footer-value">Enabled</span>
-                    </div>
-                </div>
-                <div class="connection-status @ConnectionClass">
-                    <span class="connection-dot" aria-hidden="true"></span>
-                    <span>@ConnectionLabel</span>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 @inject Microsoft.Maui.Networking.IConnectivity Connectivity
 @inject IHttpClientFactory HttpClientFactory
@@ -112,7 +42,6 @@
 @implements IDisposable
 
 @code {
-    private bool _showMore;
     private readonly SemaphoreSlim _probeLock = new(1, 1);
     private CancellationTokenSource? _probeCts;
     private bool _isBackendReachable;
@@ -121,9 +50,6 @@
     private bool IsOnline => HasInternet && _isBackendReachable;
     private string ConnectionLabel => IsOnline ? "Online mode" : "Offline mode";
     private string ConnectionClass => IsOnline ? "is-online" : "is-offline";
-
-    private void ToggleMore() => _showMore = !_showMore;
-    private void CloseMore() => _showMore = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

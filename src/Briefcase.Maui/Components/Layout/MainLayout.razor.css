@@ -9,7 +9,7 @@ main {
     flex: 1;
     overflow-y: auto;
     padding-top: 56px;
-    padding-bottom: 56px;
+    padding-bottom: calc(60px + 32px + env(safe-area-inset-bottom, 0px));
 }
 
 main.auth-main {
