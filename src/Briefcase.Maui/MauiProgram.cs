@@ -19,6 +19,7 @@ namespace Briefcase.Maui
             builder.Services.AddMauiBlazorWebView();
 
             // ── App services ──────────────────────────────────────────────────
+            builder.Services.AddSingleton<IAppVersionService, AppVersionService>();
             builder.Services.AddSingleton<IClipboardService, MauiClipboardService>();
             builder.Services.AddSingleton<Microsoft.Maui.Networking.IConnectivity>(_ => Microsoft.Maui.Networking.Connectivity.Current);
             builder.Services.AddSingleton<IMessageService, MauiMessageService>();

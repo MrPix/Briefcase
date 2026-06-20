@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Version defaults used for local / CI builds.
+      Release builds override these via MSBuild properties:
+        /p:Version=1.2.3  /p:BuildNumber=42
+    -->
+    <Version Condition="'$(Version)' == '' or '$(Version)' == '1.0.0'">0.0.0</Version>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version).$(BuildNumber)</FileVersion>
+    <InformationalVersion>$(Version)+$(BuildNumber)</InformationalVersion>
+  </PropertyGroup>
+</Project>

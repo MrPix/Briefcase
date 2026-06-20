@@ -40,6 +40,7 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
     .AddHttpMessageHandler<AuthDelegatingHandler>();
 
 // ── App services ──────────────────────────────────────────────────────────────
+builder.Services.AddSingleton<IAppVersionService, AppVersionService>();
 builder.Services.AddScoped<IClipboardService, WebClipboardService>();
 builder.Services.AddScoped<IMessageService, WebMessageService>();
 builder.Services.AddScoped<IDeviceService, WebDeviceService>();
