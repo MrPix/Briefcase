@@ -34,7 +34,9 @@ async function onActivate(event) {
 async function onFetch(event) {
     let cachedResponse = null;
     if (event.request.method === 'GET') {
-        const shouldServeIndexHtml = event.request.mode === 'navigate';
+        const url = new URL(event.request.url);
+        const isApiOrHubRequest = url.pathname.startsWith('/api/') || url.pathname.startsWith('/hubs/');
+        const shouldServeIndexHtml = event.request.mode === 'navigate' && !isApiOrHubRequest;
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
         cachedResponse = await cache.match(request);
