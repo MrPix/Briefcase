@@ -12,6 +12,12 @@
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
     z-index: 100;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+}
+
+.bottom-nav.nav-hidden {
+    transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px)));
 }
 
 .tab-item {

@@ -108,6 +108,7 @@
 
 @inject Microsoft.Maui.Networking.IConnectivity Connectivity
 @inject IHttpClientFactory HttpClientFactory
+@inject Microsoft.JSInterop.IJSRuntime JS
 @implements IDisposable
 
 @code {
@@ -123,6 +124,21 @@
 
     private void ToggleMore() => _showMore = !_showMore;
     private void CloseMore() => _showMore = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("BriefcaseNav.initHideOnScroll");
+            }
+            catch
+            {
+                // Ignore if JS bridge is not ready.
+            }
+        }
+    }
 
     protected override void OnInitialized()
     {
