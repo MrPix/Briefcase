@@ -34,6 +34,55 @@ a,
     color: var(--accent);
 }
 
+/* ── Floating bottom nav ──────────────────────────────────────────────── */
+.bottom-nav {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    height: 60px;
+    display: flex;
+    align-items: stretch;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 100;
+    padding: 0 8px;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+}
+
+.bottom-nav.nav-hidden {
+    transform: translateY(calc(100% + 16px + env(safe-area-inset-bottom, 0px)));
+}
+
+.bottom-nav .tab-item,
+.bottom-nav .tab-item:visited,
+.bottom-nav .tab-item:link {
+    flex: 1;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--text-secondary);
+    text-decoration: none !important;
+    background: none !important;
+    border: none !important;
+    border-radius: 999px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav .tab-item:hover,
+.bottom-nav .tab-item.active,
+.bottom-nav .tab-item.active:visited {
+    color: var(--accent) !important;
+    text-decoration: none !important;
+    background: none !important;
+}
+
 a.sidebar-link,
 a.sidebar-link:visited,
 a.sidebar-link:link {

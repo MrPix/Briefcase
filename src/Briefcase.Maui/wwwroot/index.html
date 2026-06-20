@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Briefcase.Maui</title>
     <base href="/" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -26,6 +28,9 @@
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script>
         window.Briefcase = {
+            scrollToBottom: function (element) {
+                if (element) element.scrollTop = element.scrollHeight;
+            },
             downloadFile: function (fileName, contentType, data) {
                 var blob = new Blob([new Uint8Array(data)], { type: contentType });
                 var url = URL.createObjectURL(blob);
@@ -36,6 +41,65 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+            }
+        };
+
+        window.BriefcaseNav = {
+            _cleanup: null,
+            initHideOnScroll: function () {
+                if (this._cleanup) {
+                    this._cleanup();
+                    this._cleanup = null;
+                }
+
+                var lastY = 0;
+                var ticking = false;
+                var threshold = 8;
+                var pendingY = 0;
+
+                var update = function () {
+                    var nav = document.querySelector('.bottom-nav');
+                    if (nav) {
+                        var y = pendingY;
+                        var delta = y - lastY;
+
+                        if (y <= 0) {
+                            nav.classList.remove('nav-hidden');
+                            lastY = y;
+                        } else if (delta > threshold) {
+                            nav.classList.add('nav-hidden');
+                            lastY = y;
+                        } else if (delta < -threshold) {
+                            nav.classList.remove('nav-hidden');
+                            lastY = y;
+                        }
+                    }
+                    ticking = false;
+                };
+
+                var onScroll = function (e) {
+                    var target = e.target;
+                    if (target === document || target === document.documentElement || target === window) {
+                        pendingY = window.scrollY || window.pageYOffset || 0;
+                    } else if (target && typeof target.scrollTop === 'number') {
+                        pendingY = target.scrollTop;
+                    } else {
+                        return;
+                    }
+
+                    if (!ticking) {
+                        window.requestAnimationFrame(update);
+                        ticking = true;
+                    }
+                };
+
+                // Capture phase catches scroll on any nested scroll container,
+                // since scroll events do not bubble.
+                document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+
+                this._cleanup = function () {
+                    document.removeEventListener('scroll', onScroll, { capture: true });
+                };
             }
         };
     </script>

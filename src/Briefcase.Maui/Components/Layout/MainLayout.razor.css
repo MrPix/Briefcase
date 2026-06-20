@@ -1,6 +1,6 @@
 .page {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     min-height: 100vh;
     background: #F0F0F0;
 }
@@ -8,26 +8,46 @@
 main {
     flex: 1;
     overflow-y: auto;
-    height: 100vh;
+    padding-top: 56px;
+    padding-bottom: calc(60px + 32px + env(safe-area-inset-bottom, 0px));
 }
 
 main.auth-main {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    min-height: 100vh;
 }
 
-.sidebar {
-    width: var(--sidebar-width, 220px);
-    height: 100vh;
-    position: sticky;
+/* Top app bar */
+.top-bar {
+    position: fixed;
     top: 0;
-    flex-shrink: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 100;
     background: var(--sidebar-bg);
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
-body.theme-dark .sidebar {
-    background: var(--sidebar-bg);
+.top-bar-inner {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+.top-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.top-bar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
 }

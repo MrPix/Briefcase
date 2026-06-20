@@ -35,6 +35,9 @@
     <script>navigator.serviceWorker.register('service-worker.js');</script>
     <script>
         window.Briefcase = {
+            scrollToBottom: function (element) {
+                if (element) element.scrollTop = element.scrollHeight;
+            },
             downloadFile: function (fileName, contentType, data) {
                 var blob = new Blob([new Uint8Array(data)], { type: contentType });
                 var url = URL.createObjectURL(blob);

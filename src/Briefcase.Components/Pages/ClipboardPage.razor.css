@@ -242,45 +242,6 @@ label.toolbar-btn {
     margin-top: 8px;
 }
 
-/* Filter tabs */
-.filter-tabs {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.filter-tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 5px 12px;
-    border: none;
-    border-radius: 20px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-width: 32px;
-}
-
-.filter-tab:hover {
-    background: var(--surface-hover);
-}
-
-.filter-tab.active {
-    background: var(--accent);
-    color: white;
-}
-
-.filter-spacer {
-    flex: 1;
-}
-
 /* Message list */
 .message-list {
     flex: 1 1 0;
