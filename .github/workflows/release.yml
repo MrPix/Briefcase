@@ -1,8 +1,8 @@
 name: Release
 
 on:
-  push:
-    branches: ['release/*']
+  release:
+    types: [published]
 
 jobs:
   build-and-test:
@@ -18,10 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from branch
+      - name: Extract version from tag
         id: version
         run: |
-          VERSION="${GITHUB_REF#refs/heads/release/}"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
