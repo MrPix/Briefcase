@@ -1,7 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG VERSION=0.0.0
+ARG BUILD_NUMBER=0
 WORKDIR /src
 
 COPY nuget.config .
+COPY Directory.Build.props .
 COPY src/Briefcase.Domain/Briefcase.Domain.csproj src/Briefcase.Domain/
 COPY src/Briefcase.Components/Briefcase.Components.csproj src/Briefcase.Components/
 COPY src/Briefcase.Web/Briefcase.Web.csproj src/Briefcase.Web/
@@ -11,7 +14,8 @@ COPY src/Briefcase.Domain/ src/Briefcase.Domain/
 COPY src/Briefcase.Components/ src/Briefcase.Components/
 COPY src/Briefcase.Web/ src/Briefcase.Web/
 RUN dotnet publish src/Briefcase.Web/Briefcase.Web.csproj \
-    -c Release -o /app/publish --no-restore
+    -c Release -o /app/publish --no-restore \
+    /p:Version=$VERSION /p:BuildNumber=$BUILD_NUMBER
 
 FROM caddy:alpine AS final
 COPY --from=build /app/publish/wwwroot /usr/share/caddy

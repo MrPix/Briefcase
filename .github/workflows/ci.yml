@@ -28,7 +28,7 @@ jobs:
         run: dotnet restore Briefcase.slnx
 
       - name: Build
-        run: dotnet build Briefcase.slnx --no-restore --configuration Release
+        run: dotnet build Briefcase.slnx --no-restore --configuration Release /p:BuildNumber=${{ github.run_number }}
 
       - name: Run unit tests
         run: dotnet test tests/Briefcase.UnitTests/Briefcase.UnitTests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"

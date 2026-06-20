@@ -8,9 +8,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG VERSION=0.0.0
+ARG BUILD_NUMBER=0
 WORKDIR /src
 
 COPY nuget.config .
+COPY Directory.Build.props .
 COPY src/Briefcase.Domain/Briefcase.Domain.csproj src/Briefcase.Domain/
 COPY src/Briefcase.ServiceDefaults/Briefcase.ServiceDefaults.csproj src/Briefcase.ServiceDefaults/
 COPY src/Briefcase.Infrastructure/Briefcase.Infrastructure.csproj src/Briefcase.Infrastructure/
@@ -22,7 +25,8 @@ COPY src/Briefcase.ServiceDefaults/ src/Briefcase.ServiceDefaults/
 COPY src/Briefcase.Infrastructure/ src/Briefcase.Infrastructure/
 COPY src/Briefcase.ApiService/ src/Briefcase.ApiService/
 RUN dotnet publish src/Briefcase.ApiService/Briefcase.ApiService.csproj \
-    -c Release -o /app/publish --no-restore
+    -c Release -o /app/publish --no-restore \
+    /p:Version=$VERSION /p:BuildNumber=$BUILD_NUMBER
 
 FROM base AS final
 WORKDIR /app

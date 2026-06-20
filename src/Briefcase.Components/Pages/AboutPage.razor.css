@@ -31,6 +31,13 @@
     font-size: 0.9rem;
 }
 
+.about-build {
+    display: block;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 0.8rem;
+    margin-top: 0.15rem;
+}
+
 .about-section {
     margin-bottom: 2rem;
 }
