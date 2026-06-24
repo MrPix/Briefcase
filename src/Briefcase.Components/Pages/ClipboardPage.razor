@@ -6,6 +6,7 @@
 @namespace Briefcase.Components.Pages
 @inject IMessageService MessageService
 @inject IClipboardService ClipboardService
+@inject IE2eeService E2eeService
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @implements IDisposable
@@ -248,7 +249,19 @@
         try
         {
             _errorMessage = null;
-            _messages = await MessageService.GetMessagesAsync();
+            var messages = await MessageService.GetMessagesAsync();
+
+            // Decrypt in-memory if the vault is unlocked.
+            if (E2eeService.IsUnlocked)
+            {
+                foreach (var m in messages.Where(m => m.IsEncrypted && m.Content is not null && m.EncryptionIV is not null))
+                {
+                    try { m.Content = await E2eeService.DecryptAsync(m.Content!, m.EncryptionIV!); }
+                    catch { /* leave ciphertext if decryption fails */ }
+                }
+            }
+
+            _messages = messages;
         }
         catch (Exception ex)
         {
@@ -335,7 +348,17 @@
                     ? MessageKind.Url
                     : MessageKind.Text;
 
-                await MessageService.CreateMessageAsync(kind, _newContent!);
+                string content = _newContent!;
+                bool isEncrypted = false;
+                string? encryptionIV = null;
+
+                if (E2eeService.IsUnlocked)
+                {
+                    (content, encryptionIV) = await E2eeService.EncryptAsync(content);
+                    isEncrypted = true;
+                }
+
+                await MessageService.CreateMessageAsync(kind, content, isEncrypted, encryptionIV);
             }
 
             _newContent = null;
@@ -401,7 +424,17 @@
     {
         try
         {
-            await MessageService.EditMessageAsync(message.Id, message.Content);
+            string? content = message.Content;
+            bool isEncrypted = false;
+            string? encryptionIV = null;
+
+            if (E2eeService.IsUnlocked && content is not null)
+            {
+                (content, encryptionIV) = await E2eeService.EncryptAsync(content);
+                isEncrypted = true;
+            }
+
+            await MessageService.EditMessageAsync(message.Id, content, isEncrypted, encryptionIV);
             await LoadMessages();
         }
         catch (Exception ex)
