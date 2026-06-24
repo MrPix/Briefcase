@@ -2,6 +2,7 @@
 @namespace Briefcase.Components.Pages
 @inject IAuthService AuthService
 @inject IDeviceService DeviceService
+@inject IE2eeService E2eeService
 @inject NavigationManager Navigation
 
 <div class="settings-container">
@@ -50,19 +51,22 @@
 
                 <div class="mb-3">
                     <label for="currentPassword" class="form-label">Current Password</label>
-                    <InputText id="currentPassword" type="password" class="form-control" @bind-Value="_passwordModel.CurrentPassword" />
+                    <InputText id="currentPassword" type="password" class="form-control"
+                               @bind-Value="_passwordModel.CurrentPassword" />
                     <ValidationMessage For="() => _passwordModel.CurrentPassword" />
                 </div>
 
                 <div class="mb-3">
                     <label for="newPassword" class="form-label">New Password</label>
-                    <InputText id="newPassword" type="password" class="form-control" @bind-Value="_passwordModel.NewPassword" />
+                    <InputText id="newPassword" type="password" class="form-control"
+                               @bind-Value="_passwordModel.NewPassword" />
                     <ValidationMessage For="() => _passwordModel.NewPassword" />
                 </div>
 
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                    <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_passwordModel.ConfirmPassword" />
+                    <InputText id="confirmPassword" type="password" class="form-control"
+                               @bind-Value="_passwordModel.ConfirmPassword" />
                     <ValidationMessage For="() => _passwordModel.ConfirmPassword" />
                 </div>
 
@@ -78,6 +82,149 @@
                     }
                 </button>
             </EditForm>
+        </div>
+
+        @* ── End-to-End Encryption ── *@
+        <div class="settings-section">
+            <h5>End-to-End Encryption</h5>
+            <p class="text-muted small">
+                When enabled, messages are encrypted in your browser before being sent to the server.
+                Your passphrase never leaves your device.
+            </p>
+
+            @if (_e2eeMessage is not null)
+            {
+                <div class="alert @(_e2eeSuccess ? "alert-success" : "alert-danger")">@_e2eeMessage</div>
+            }
+
+            @if (_e2eeSettings is null)
+            {
+                <p class="text-muted"><em>Loading…</em></p>
+            }
+            else if (!_e2eeSettings.IsEnabled)
+            {
+                @if (_showEnableForm)
+                {
+                    <EditForm Model="_e2eeEnableModel" OnValidSubmit="HandleEnableE2ee" FormName="enableE2eeForm">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="e2eePassphrase" class="form-label">Passphrase</label>
+                            <InputText id="e2eePassphrase" type="password" class="form-control"
+                                       @bind-Value="_e2eeEnableModel.Passphrase" />
+                            <ValidationMessage For="() => _e2eeEnableModel.Passphrase" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="e2eePassphraseConfirm" class="form-label">Confirm Passphrase</label>
+                            <InputText id="e2eePassphraseConfirm" type="password" class="form-control"
+                                       @bind-Value="_e2eeEnableModel.ConfirmPassphrase" />
+                            <ValidationMessage For="() => _e2eeEnableModel.ConfirmPassphrase" />
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@_isE2eeWorking">
+                                @if (_isE2eeWorking)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Enable
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => _showEnableForm = false">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+                else
+                {
+                    <button class="btn btn-outline-primary" @onclick="() => _showEnableForm = true">
+                        Enable E2EE
+                    </button>
+                }
+            }
+            else
+            {
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-success">Enabled</span>
+                    @if (E2eeService.IsUnlocked)
+                    {
+                        <span class="badge bg-secondary">Unlocked</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Locked</span>
+                    }
+                </div>
+
+                @if (!E2eeService.IsUnlocked && _showUnlockForm)
+                {
+                    <EditForm Model="_e2eeUnlockModel" OnValidSubmit="HandleUnlockE2ee" FormName="unlockE2eeForm">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="e2eeUnlockPassphrase" class="form-label">Passphrase</label>
+                            <InputText id="e2eeUnlockPassphrase" type="password" class="form-control"
+                                       @bind-Value="_e2eeUnlockModel.Passphrase" />
+                            <ValidationMessage For="() => _e2eeUnlockModel.Passphrase" />
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@_isE2eeWorking">
+                                @if (_isE2eeWorking)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Unlock
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => _showUnlockForm = false">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+                else if (!E2eeService.IsUnlocked)
+                {
+                    <button class="btn btn-outline-primary mb-2" @onclick="() => _showUnlockForm = true">
+                        Unlock
+                    </button>
+                }
+
+                @if (_showChangePassphraseForm)
+                {
+                    <EditForm Model="_e2eeChangeModel" OnValidSubmit="HandleChangePassphrase" FormName="changePassphraseForm">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="e2eeNewPassphrase" class="form-label">New Passphrase</label>
+                            <InputText id="e2eeNewPassphrase" type="password" class="form-control"
+                                       @bind-Value="_e2eeChangeModel.NewPassphrase" />
+                            <ValidationMessage For="() => _e2eeChangeModel.NewPassphrase" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="e2eeNewPassphraseConfirm" class="form-label">Confirm New Passphrase</label>
+                            <InputText id="e2eeNewPassphraseConfirm" type="password" class="form-control"
+                                       @bind-Value="_e2eeChangeModel.ConfirmPassphrase" />
+                            <ValidationMessage For="() => _e2eeChangeModel.ConfirmPassphrase" />
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning" disabled="@_isE2eeWorking">
+                                @if (_isE2eeWorking)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Change Passphrase
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => _showChangePassphraseForm = false">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+                else
+                {
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(!E2eeService.IsUnlocked)"
+                                @onclick="() => _showChangePassphraseForm = true">
+                            Change Passphrase
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" @onclick="HandleDisableE2ee" disabled="@_isE2eeWorking">
+                            Disable E2EE
+                        </button>
+                    </div>
+                }
+            }
         </div>
 
         @* ── Logout ── *@
@@ -105,16 +252,25 @@
     private bool _isChangingPassword;
     private bool _isLoggingOut;
 
+    // ── E2EE state ────────────────────────────────────────────────────────────
+    private E2eeSettingsDto? _e2eeSettings;
+    private string? _e2eeMessage;
+    private bool _e2eeSuccess;
+    private bool _isE2eeWorking;
+    private bool _showEnableForm;
+    private bool _showUnlockForm;
+    private bool _showChangePassphraseForm;
+    private E2eeEnableModel _e2eeEnableModel = new();
+    private E2eeUnlockModel _e2eeUnlockModel = new();
+    private E2eeChangeModel _e2eeChangeModel = new();
+
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            _devices = await DeviceService.GetDevicesAsync();
-        }
-        catch
-        {
-            _devices = [];
-        }
+        try { _devices = await DeviceService.GetDevicesAsync(); }
+        catch { _devices = []; }
+
+        try { _e2eeSettings = await E2eeService.GetSettingsAsync(); }
+        catch { _e2eeSettings = new E2eeSettingsDto(false, null, null, null, null); }
     }
 
     private async Task HandleChangePassword()
@@ -171,5 +327,128 @@
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please confirm your new password.")]
         [System.ComponentModel.DataAnnotations.Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    // ── E2EE handlers ─────────────────────────────────────────────────────────
+
+    private async Task HandleEnableE2ee()
+    {
+        _isE2eeWorking = true;
+        _e2eeMessage = null;
+        try
+        {
+            await E2eeService.EnableAsync(_e2eeEnableModel.Passphrase);
+            _e2eeSettings = await E2eeService.GetSettingsAsync();
+            _showEnableForm = false;
+            _e2eeEnableModel = new();
+            _e2eeMessage = "E2EE enabled. Your messages will now be encrypted.";
+            _e2eeSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _e2eeMessage = $"Failed to enable E2EE: {ex.Message}";
+            _e2eeSuccess = false;
+        }
+        finally { _isE2eeWorking = false; }
+    }
+
+    private async Task HandleDisableE2ee()
+    {
+        _isE2eeWorking = true;
+        _e2eeMessage = null;
+        try
+        {
+            await E2eeService.DisableAsync();
+            _e2eeSettings = await E2eeService.GetSettingsAsync();
+            _e2eeMessage = "E2EE disabled.";
+            _e2eeSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _e2eeMessage = $"Failed to disable E2EE: {ex.Message}";
+            _e2eeSuccess = false;
+        }
+        finally { _isE2eeWorking = false; }
+    }
+
+    private async Task HandleUnlockE2ee()
+    {
+        _isE2eeWorking = true;
+        _e2eeMessage = null;
+        try
+        {
+            var ok = await E2eeService.TryUnlockAsync(_e2eeUnlockModel.Passphrase);
+            if (ok)
+            {
+                _showUnlockForm = false;
+                _e2eeUnlockModel = new();
+                _e2eeMessage = "Vault unlocked. Messages will be decrypted.";
+                _e2eeSuccess = true;
+            }
+            else
+            {
+                _e2eeMessage = "Incorrect passphrase.";
+                _e2eeSuccess = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _e2eeMessage = $"Unlock failed: {ex.Message}";
+            _e2eeSuccess = false;
+        }
+        finally { _isE2eeWorking = false; }
+    }
+
+    private async Task HandleChangePassphrase()
+    {
+        _isE2eeWorking = true;
+        _e2eeMessage = null;
+        try
+        {
+            // Load current encrypted messages to re-key them.
+            // We pass an empty list here; real usage supplies them from ClipboardPage/TrashPage.
+            await E2eeService.ChangePassphraseAsync(
+                _e2eeChangeModel.NewPassphrase,
+                [],
+                (_, _, _) => Task.CompletedTask);
+            _showChangePassphraseForm = false;
+            _e2eeChangeModel = new();
+            _e2eeMessage = "Passphrase changed.";
+            _e2eeSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _e2eeMessage = $"Failed to change passphrase: {ex.Message}";
+            _e2eeSuccess = false;
+        }
+        finally { _isE2eeWorking = false; }
+    }
+
+    private sealed class E2eeEnableModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Passphrase is required.")]
+        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Passphrase must be at least 8 characters.")]
+        public string Passphrase { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please confirm your passphrase.")]
+        [System.ComponentModel.DataAnnotations.Compare(nameof(Passphrase), ErrorMessage = "Passphrases do not match.")]
+        public string ConfirmPassphrase { get; set; } = string.Empty;
+    }
+
+    private sealed class E2eeUnlockModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Passphrase is required.")]
+        public string Passphrase { get; set; } = string.Empty;
+    }
+
+    private sealed class E2eeChangeModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "New passphrase is required.")]
+        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Passphrase must be at least 8 characters.")]
+        public string NewPassphrase { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please confirm the new passphrase.")]
+        [System.ComponentModel.DataAnnotations.Compare(nameof(NewPassphrase), ErrorMessage = "Passphrases do not match.")]
+        public string ConfirmPassphrase { get; set; } = string.Empty;
     }
 }

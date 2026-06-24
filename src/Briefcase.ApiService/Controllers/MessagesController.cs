@@ -26,7 +26,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         m.Id, m.Kind, m.Content, m.FileId,
         m.FileName,
         BuildPreviewUrl(m.FileAttachment),
-        m.IsPinned, m.PinnedAt, m.IsEncrypted,
+        m.IsPinned, m.PinnedAt, m.IsEncrypted, m.EncryptionIV,
         m.CreatedAt, m.UpdatedAt);
 
     // GET /api/messages  →  list active messages (paged, newest first)
@@ -57,6 +57,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
                 m.IsPinned,
                 m.PinnedAt,
                 m.IsEncrypted,
+                m.EncryptionIV,
                 m.CreatedAt,
                 m.UpdatedAt))
             .ToListAsync();
@@ -80,7 +81,8 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             FileId = request.FileId,
             IsPinned = false,
             IsDeleted = false,
-            IsEncrypted = false,
+            IsEncrypted = request.IsEncrypted,
+            EncryptionIV = request.IsEncrypted ? request.EncryptionIV : null,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -148,6 +150,8 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             return NotFound();
 
         message.Content = request.Content;
+        message.IsEncrypted = request.IsEncrypted;
+        message.EncryptionIV = request.IsEncrypted ? request.EncryptionIV : null;
         message.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 

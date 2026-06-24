@@ -26,7 +26,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
         m.Id, m.Kind, m.Content, m.FileId,
         m.FileName,
         BuildPreviewUrl(m.FileAttachment),
-        m.IsPinned, m.PinnedAt, m.IsEncrypted,
+        m.IsPinned, m.PinnedAt, m.IsEncrypted, m.EncryptionIV,
         m.CreatedAt, m.UpdatedAt);
 
     // GET /api/trash  →  list trashed messages (paged, IsDeleted = true)
@@ -55,6 +55,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
                 m.IsPinned,
                 m.PinnedAt,
                 m.IsEncrypted,
+                m.EncryptionIV,
                 m.CreatedAt,
                 m.UpdatedAt))
             .ToListAsync();
