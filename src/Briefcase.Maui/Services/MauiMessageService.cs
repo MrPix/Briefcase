@@ -53,7 +53,7 @@ public class MauiMessageService : IMessageService
 
     private record MessageResponse(
         Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName, string? FilePreviewUrl,
-        bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
+        bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, string? EncryptionIV, DateTime CreatedAt, DateTime UpdatedAt);
 
     private record FileUploadResponse(Guid Id, string OriginalName, string ContentType, long SizeBytes, DateTime CreatedAt);
 
@@ -86,6 +86,7 @@ public class MauiMessageService : IMessageService
         public bool IsPinned { get; set; }
         public DateTime? PinnedAt { get; set; }
         public bool IsEncrypted { get; set; }
+        public string? EncryptionIV { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
@@ -101,6 +102,8 @@ public class MauiMessageService : IMessageService
         public byte[]? FileData { get; set; }
         public string? Comment { get; set; }
         public Guid? LocalFileId { get; set; }
+        public bool IsEncrypted { get; set; }
+        public string? EncryptionIV { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -163,7 +166,8 @@ public class MauiMessageService : IMessageService
         return $"{resolvedPreviewUrl}{separator}access_token={Uri.EscapeDataString(accessToken)}";
     }
 
-    public async Task<Message> CreateMessageAsync(MessageKind kind, string content)
+    public async Task<Message> CreateMessageAsync(MessageKind kind, string content,
+        bool isEncrypted = false, string? encryptionIV = null)
     {
         await _stateLock.WaitAsync();
         try
@@ -175,6 +179,8 @@ public class MauiMessageService : IMessageService
                 Id = Guid.NewGuid(),
                 Kind = kind,
                 Content = content,
+                IsEncrypted = isEncrypted,
+                EncryptionIV = isEncrypted ? encryptionIV : null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsPinned = false
@@ -187,6 +193,8 @@ public class MauiMessageService : IMessageService
                 MessageId = offlineMessage.Id,
                 Kind = kind,
                 Content = content,
+                IsEncrypted = isEncrypted,
+                EncryptionIV = isEncrypted ? encryptionIV : null,
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -274,7 +282,8 @@ public class MauiMessageService : IMessageService
         }
     }
 
-    public async Task EditMessageAsync(Guid messageId, string? content)
+    public async Task EditMessageAsync(Guid messageId, string? content,
+        bool isEncrypted = false, string? encryptionIV = null)
     {
         await _stateLock.WaitAsync();
         try
@@ -284,6 +293,8 @@ public class MauiMessageService : IMessageService
             if (cached is not null)
             {
                 cached.Content = content;
+                cached.IsEncrypted = isEncrypted;
+                cached.EncryptionIV = isEncrypted ? encryptionIV : null;
                 cached.UpdatedAt = DateTime.UtcNow;
             }
 
@@ -292,6 +303,8 @@ public class MauiMessageService : IMessageService
                 Type = PendingOperationType.EditMessage,
                 MessageId = messageId,
                 Content = content,
+                IsEncrypted = isEncrypted,
+                EncryptionIV = isEncrypted ? encryptionIV : null,
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -439,6 +452,7 @@ public class MauiMessageService : IMessageService
             IsPinned = r.IsPinned,
             PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,
+            EncryptionIV = r.EncryptionIV,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt
         }).ToList().AsReadOnly();
@@ -483,93 +497,98 @@ public class MauiMessageService : IMessageService
                 switch (operation.Type)
                 {
                     case PendingOperationType.CreateMessage:
-                    {
-                        var response = await client.PostAsJsonAsync("api/messages", new
                         {
-                            kind = operation.Kind ?? MessageKind.Text,
-                            content = operation.Content
-                        });
-                        response.EnsureSuccessStatusCode();
-                        var created = (await response.Content.ReadFromJsonAsync<Message>())!;
-                        idMap[operation.MessageId] = created.Id;
-                        ReplaceLocalMessage(state, operation.MessageId, created);
-                        break;
-                    }
+                            var response = await client.PostAsJsonAsync("api/messages", new
+                            {
+                                kind = operation.Kind ?? MessageKind.Text,
+                                content = operation.Content,
+                                isEncrypted = operation.IsEncrypted,
+                                encryptionIV = operation.EncryptionIV
+                            });
+                            response.EnsureSuccessStatusCode();
+                            var created = (await response.Content.ReadFromJsonAsync<Message>())!;
+                            idMap[operation.MessageId] = created.Id;
+                            ReplaceLocalMessage(state, operation.MessageId, created);
+                            break;
+                        }
                     case PendingOperationType.UploadFile:
-                    {
-                        var fileData = operation.FileData ?? [];
-                        using var uploadContent = new MultipartFormDataContent();
-                        using var bytesContent = new ByteArrayContent(fileData);
-                        bytesContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(operation.ContentType ?? "application/octet-stream");
-                        uploadContent.Add(bytesContent, "file", operation.FileName ?? "upload.bin");
-
-                        var uploadResponse = await client.PostAsync("api/files", uploadContent);
-                        uploadResponse.EnsureSuccessStatusCode();
-                        var fileResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
-
-                        var msgResponse = await client.PostAsJsonAsync("api/messages", new
                         {
-                            kind = MessageKind.File,
-                            content = operation.Content,
-                            fileId = fileResult!.Id
-                        });
-                        msgResponse.EnsureSuccessStatusCode();
-                        var created = (await msgResponse.Content.ReadFromJsonAsync<Message>())!;
-                        created.FileId = fileResult.Id;
-                        created.FileName = operation.FileName;
-                        created.Downloaded = true;
+                            var fileData = operation.FileData ?? [];
+                            using var uploadContent = new MultipartFormDataContent();
+                            using var bytesContent = new ByteArrayContent(fileData);
+                            bytesContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(operation.ContentType ?? "application/octet-stream");
+                            uploadContent.Add(bytesContent, "file", operation.FileName ?? "upload.bin");
 
-                        idMap[operation.MessageId] = created.Id;
-                        ReplaceLocalMessage(state, operation.MessageId, created);
+                            var uploadResponse = await client.PostAsync("api/files", uploadContent);
+                            uploadResponse.EnsureSuccessStatusCode();
+                            var fileResult = await uploadResponse.Content.ReadFromJsonAsync<FileUploadResponse>();
 
-                        if (operation.LocalFileId.HasValue)
-                        {
-                            RemapDownloadedFile(state, operation.LocalFileId.Value, fileResult.Id);
-                            RemapCachedPreview(state, operation.LocalFileId.Value, fileResult.Id);
+                            var msgResponse = await client.PostAsJsonAsync("api/messages", new
+                            {
+                                kind = MessageKind.File,
+                                content = operation.Content,
+                                fileId = fileResult!.Id
+                            });
+                            msgResponse.EnsureSuccessStatusCode();
+                            var created = (await msgResponse.Content.ReadFromJsonAsync<Message>())!;
+                            created.FileId = fileResult.Id;
+                            created.FileName = operation.FileName;
+                            created.Downloaded = true;
+
+                            idMap[operation.MessageId] = created.Id;
+                            ReplaceLocalMessage(state, operation.MessageId, created);
+
+                            if (operation.LocalFileId.HasValue)
+                            {
+                                RemapDownloadedFile(state, operation.LocalFileId.Value, fileResult.Id);
+                                RemapCachedPreview(state, operation.LocalFileId.Value, fileResult.Id);
+                            }
+
+                            if (IsImageContentType(operation.ContentType) && fileData.Length > 0)
+                                await SavePreviewImageAsync(state, fileResult.Id, operation.ContentType!, fileData);
+
+                            break;
                         }
-
-                        if (IsImageContentType(operation.ContentType) && fileData.Length > 0)
-                            await SavePreviewImageAsync(state, fileResult.Id, operation.ContentType!, fileData);
-
-                        break;
-                    }
                     case PendingOperationType.EditMessage:
-                    {
-                        var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
-                        var response = await client.PutAsJsonAsync($"api/messages/{serverMessageId}", new { content = operation.Content });
-                        response.EnsureSuccessStatusCode();
-
-                        var message = state.Messages.FirstOrDefault(m => m.Id == operation.MessageId || m.Id == serverMessageId);
-                        if (message is not null)
                         {
-                            message.Content = operation.Content;
-                            message.UpdatedAt = DateTime.UtcNow;
+                            var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
+                            var response = await client.PutAsJsonAsync($"api/messages/{serverMessageId}",
+                                new { content = operation.Content, isEncrypted = operation.IsEncrypted, encryptionIV = operation.EncryptionIV });
+                            response.EnsureSuccessStatusCode();
+
+                            var message = state.Messages.FirstOrDefault(m => m.Id == operation.MessageId || m.Id == serverMessageId);
+                            if (message is not null)
+                            {
+                                message.Content = operation.Content;
+                                message.IsEncrypted = operation.IsEncrypted;
+                                message.EncryptionIV = operation.IsEncrypted ? operation.EncryptionIV : null;
+                                message.UpdatedAt = DateTime.UtcNow;
+                            }
+                            break;
                         }
-                        break;
-                    }
                     case PendingOperationType.DeleteMessage:
-                    {
-                        var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
-                        var response = await client.DeleteAsync($"api/messages/{serverMessageId}");
-                        response.EnsureSuccessStatusCode();
-                        state.Messages.RemoveAll(m => m.Id == operation.MessageId || m.Id == serverMessageId);
-                        break;
-                    }
-                    case PendingOperationType.TogglePin:
-                    {
-                        var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
-                        var response = await client.PatchAsync($"api/messages/{serverMessageId}/pin", null);
-                        response.EnsureSuccessStatusCode();
-
-                        var message = state.Messages.FirstOrDefault(m => m.Id == operation.MessageId || m.Id == serverMessageId);
-                        if (message is not null)
                         {
-                            message.IsPinned = !message.IsPinned;
-                            message.PinnedAt = message.IsPinned ? DateTime.UtcNow : null;
-                            message.UpdatedAt = DateTime.UtcNow;
+                            var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
+                            var response = await client.DeleteAsync($"api/messages/{serverMessageId}");
+                            response.EnsureSuccessStatusCode();
+                            state.Messages.RemoveAll(m => m.Id == operation.MessageId || m.Id == serverMessageId);
+                            break;
                         }
-                        break;
-                    }
+                    case PendingOperationType.TogglePin:
+                        {
+                            var serverMessageId = ResolveMessageId(operation.MessageId, idMap);
+                            var response = await client.PatchAsync($"api/messages/{serverMessageId}/pin", null);
+                            response.EnsureSuccessStatusCode();
+
+                            var message = state.Messages.FirstOrDefault(m => m.Id == operation.MessageId || m.Id == serverMessageId);
+                            if (message is not null)
+                            {
+                                message.IsPinned = !message.IsPinned;
+                                message.PinnedAt = message.IsPinned ? DateTime.UtcNow : null;
+                                message.UpdatedAt = DateTime.UtcNow;
+                            }
+                            break;
+                        }
                 }
             }
             catch
@@ -793,6 +812,7 @@ public class MauiMessageService : IMessageService
         IsPinned = message.IsPinned,
         PinnedAt = message.PinnedAt,
         IsEncrypted = message.IsEncrypted,
+        EncryptionIV = message.EncryptionIV,
         CreatedAt = message.CreatedAt,
         UpdatedAt = message.UpdatedAt
     };
@@ -809,6 +829,7 @@ public class MauiMessageService : IMessageService
         IsPinned = message.IsPinned,
         PinnedAt = message.PinnedAt,
         IsEncrypted = message.IsEncrypted,
+        EncryptionIV = message.EncryptionIV,
         CreatedAt = message.CreatedAt,
         UpdatedAt = message.UpdatedAt
     };

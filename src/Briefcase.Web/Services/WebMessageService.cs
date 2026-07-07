@@ -12,7 +12,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
 
     private record MessageResponse(
         Guid Id, MessageKind Kind, string? Content, Guid? FileId, string? FileName, string? FilePreviewUrl,
-        bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, DateTime CreatedAt, DateTime UpdatedAt);
+        bool IsPinned, DateTime? PinnedAt, bool IsEncrypted, string? EncryptionIV, DateTime CreatedAt, DateTime UpdatedAt);
 
     public async Task<IReadOnlyList<Message>> GetMessagesAsync(int page = 1, int pageSize = 20)
     {
@@ -35,6 +35,7 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
             IsPinned = r.IsPinned,
             PinnedAt = r.PinnedAt,
             IsEncrypted = r.IsEncrypted,
+            EncryptionIV = r.EncryptionIV,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt
         }).ToList().AsReadOnly();
@@ -56,10 +57,12 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
         return $"{resolvedPreviewUrl}{separator}access_token={Uri.EscapeDataString(accessToken)}";
     }
 
-    public async Task<Message> CreateMessageAsync(MessageKind kind, string content)
+    public async Task<Message> CreateMessageAsync(MessageKind kind, string content,
+        bool isEncrypted = false, string? encryptionIV = null)
     {
         var client = CreateClient();
-        var response = await client.PostAsJsonAsync("api/messages", new { kind, content });
+        var response = await client.PostAsJsonAsync("api/messages",
+            new { kind, content, isEncrypted, encryptionIV });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<Message>())!;
     }
@@ -84,10 +87,12 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task EditMessageAsync(Guid messageId, string? content)
+    public async Task EditMessageAsync(Guid messageId, string? content,
+        bool isEncrypted = false, string? encryptionIV = null)
     {
         var client = CreateClient();
-        var response = await client.PutAsJsonAsync($"api/messages/{messageId}", new { content });
+        var response = await client.PutAsJsonAsync($"api/messages/{messageId}",
+            new { content, isEncrypted, encryptionIV });
         response.EnsureSuccessStatusCode();
     }
 

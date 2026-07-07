@@ -5,8 +5,10 @@ namespace Briefcase.ApiService.Models;
 
 public record CreateMessageRequest(
     [Required] MessageKind Kind,
-    [MaxLength(50_000)] string? Content,
-    Guid? FileId = null);
+    [MaxLength(100_000)] string? Content,
+    Guid? FileId = null,
+    bool IsEncrypted = false,
+    [MaxLength(24)] string? EncryptionIV = null);
 
 public record MessageResponse(
     Guid Id,
@@ -18,11 +20,14 @@ public record MessageResponse(
     bool IsPinned,
     DateTime? PinnedAt,
     bool IsEncrypted,
+    string? EncryptionIV,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
 public record UpdateMessageRequest(
-    [MaxLength(50_000)] string? Content);
+    [MaxLength(100_000)] string? Content,
+    bool IsEncrypted = false,
+    [MaxLength(24)] string? EncryptionIV = null);
 
 public record PagedResponse<T>(
     IReadOnlyList<T> Items,

@@ -28,6 +28,13 @@ namespace Briefcase.Maui
             builder.Services.AddTransient<IDeviceService, MauiDeviceService>();
             builder.Services.AddTransient<ITransferService, MauiTransferService>();
 
+            // ── E2EE service ──────────────────────────────────────────────────
+            builder.Services.AddSingleton<IE2eeService>(sp =>
+            {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                return new MauiE2eeService(factory.CreateClient("ApiClient"));
+            });
+
             // ── Auth services ─────────────────────────────────────────────────
             builder.Services.AddSingleton<ITokenStorageService, MauiTokenStorageService>();
             builder.Services.AddTransient<AuthDelegatingHandler>();

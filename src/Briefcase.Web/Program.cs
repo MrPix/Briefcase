@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Briefcase.Components.Services;
 using Briefcase.Web;
 using Briefcase.Web.Services;
+using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -46,5 +47,11 @@ builder.Services.AddScoped<IMessageService, WebMessageService>();
 builder.Services.AddScoped<IDeviceService, WebDeviceService>();
 builder.Services.AddScoped<ITransferService, WebTransferService>();
 builder.Services.AddScoped<ITrashService, WebTrashService>();
+builder.Services.AddScoped<IE2eeService>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var js = sp.GetRequiredService<IJSRuntime>();
+    return new WebE2eeService(factory.CreateClient("ApiClient"), js);
+});
 
 await builder.Build().RunAsync();
