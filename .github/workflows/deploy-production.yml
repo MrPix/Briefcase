@@ -1,10 +1,8 @@
 name: Deploy Production
 
 on:
-  workflow_run:
-    workflows: ["Docker Publish"]
-    types: [completed]
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -13,7 +11,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: Production
     permissions:
