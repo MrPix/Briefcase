@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-briefcase}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ./volumes/postgres:/var/lib/postgresql/data
     networks:
       - briefcase-internal
     restart: unless-stopped
@@ -24,7 +24,7 @@ services:
     image: redis:7-alpine
     container_name: briefcase-redis
     volumes:
-      - redis-data:/data
+      - ./volumes/redis:/data
     networks:
       - briefcase-internal
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - minio-data:/data
+      - ./volumes/uploads:/data
     ports:
       - "127.0.0.1:9001:9001"   # MinIO web console — localhost only
     networks:
@@ -164,11 +164,6 @@ services:
     networks:
       - briefcase-internal
     restart: unless-stopped
-
-volumes:
-  postgres-data:
-  redis-data:
-  minio-data:
 
 networks:
   briefcase-internal:
