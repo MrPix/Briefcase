@@ -249,6 +249,8 @@
         try
         {
             _errorMessage = null;
+
+            await E2eeService.TryAutoUnlockAsync();
             var messages = await MessageService.GetMessagesAsync();
 
             // Decrypt in-memory if the vault is unlocked.
@@ -352,6 +354,8 @@
                 bool isEncrypted = false;
                 string? encryptionIV = null;
 
+                await E2eeService.TryAutoUnlockAsync();
+
                 if (E2eeService.IsUnlocked)
                 {
                     (content, encryptionIV) = await E2eeService.EncryptAsync(content);
@@ -427,6 +431,8 @@
             string? content = message.Content;
             bool isEncrypted = false;
             string? encryptionIV = null;
+
+            await E2eeService.TryAutoUnlockAsync();
 
             if (E2eeService.IsUnlocked && content is not null)
             {

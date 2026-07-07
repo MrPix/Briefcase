@@ -153,6 +153,17 @@
                     }
                 </div>
 
+                <div class="form-check mb-3">
+                    <InputCheckbox id="rememberPassphrase" class="form-check-input" Value="_rememberPassphrase"
+                                   ValueChanged="OnRememberPassphraseChanged" ValueExpression="() => _rememberPassphrase" />
+                    <label class="form-check-label" for="rememberPassphrase">
+                        Remember passphrase on this browser
+                    </label>
+                    <div class="text-muted small">
+                        When off, passphrase is kept only for this tab/session.
+                    </div>
+                </div>
+
                 @if (!E2eeService.IsUnlocked && _showUnlockForm)
                 {
                     <EditForm Model="_e2eeUnlockModel" OnValidSubmit="HandleUnlockE2ee" FormName="unlockE2eeForm">
@@ -260,6 +271,7 @@
     private bool _showEnableForm;
     private bool _showUnlockForm;
     private bool _showChangePassphraseForm;
+    private bool _rememberPassphrase;
     private E2eeEnableModel _e2eeEnableModel = new();
     private E2eeUnlockModel _e2eeUnlockModel = new();
     private E2eeChangeModel _e2eeChangeModel = new();
@@ -271,6 +283,9 @@
 
         try { _e2eeSettings = await E2eeService.GetSettingsAsync(); }
         catch { _e2eeSettings = new E2eeSettingsDto(false, null, null, null, null); }
+
+        try { _rememberPassphrase = await E2eeService.GetRememberPassphraseAsync(); }
+        catch { _rememberPassphrase = false; }
     }
 
     private async Task HandleChangePassword()
@@ -306,6 +321,7 @@
 
         try
         {
+            E2eeService.Lock();
             await AuthService.LogoutAsync();
             Navigation.NavigateTo("/login", forceLoad: true);
         }
@@ -422,6 +438,20 @@
             _e2eeSuccess = false;
         }
         finally { _isE2eeWorking = false; }
+    }
+
+    private async Task OnRememberPassphraseChanged(bool remember)
+    {
+        _rememberPassphrase = remember;
+        try
+        {
+            await E2eeService.SetRememberPassphraseAsync(remember);
+        }
+        catch (Exception ex)
+        {
+            _e2eeMessage = $"Failed to update remember-passphrase setting: {ex.Message}";
+            _e2eeSuccess = false;
+        }
     }
 
     private sealed class E2eeEnableModel

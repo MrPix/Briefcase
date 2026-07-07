@@ -5,15 +5,16 @@ window.BriefcaseE2ee = {
 
     // Derives a 256-bit AES-GCM key from a passphrase using PBKDF2-SHA256.
     // Returns the raw key bytes as Base64.
-    async deriveKey(passphraseB64, saltB64, iterations) {
+    async deriveKey(passphraseB64, saltB64, iterations, hashAlgorithm) {
         const passphraseBytes = b64ToBytes(passphraseB64);
         const salt = b64ToBytes(saltB64);
+        const hash = normalizeHashAlgorithm(hashAlgorithm);
 
         const keyMaterial = await crypto.subtle.importKey(
             "raw", passphraseBytes, "PBKDF2", false, ["deriveBits"]);
 
         const keyBits = await crypto.subtle.deriveBits(
-            { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+            { name: "PBKDF2", salt, iterations, hash },
             keyMaterial, 256);
 
         return bytesToB64(new Uint8Array(keyBits));
@@ -106,4 +107,16 @@ function bytesToB64(bytes) {
     let binary = "";
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary);
+}
+
+function normalizeHashAlgorithm(hashAlgorithm) {
+    if (!hashAlgorithm) return "SHA-256";
+
+    const normalized = String(hashAlgorithm).trim().toUpperCase();
+    if (normalized === "SHA256" || normalized === "SHA-256") return "SHA-256";
+    if (normalized === "SHA384" || normalized === "SHA-384") return "SHA-384";
+    if (normalized === "SHA512" || normalized === "SHA-512") return "SHA-512";
+    if (normalized === "SHA1" || normalized === "SHA-1") return "SHA-1";
+
+    return "SHA-256";
 }

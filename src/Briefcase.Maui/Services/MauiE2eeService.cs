@@ -15,6 +15,7 @@ public sealed class MauiE2eeService(HttpClient httpClient) : IE2eeService
 {
     private const string KdfAlgorithmName = "PBKDF2-SHA256";
     private const int KdfIterations = 600_000;
+    private static readonly HashAlgorithmName KdfHashAlgorithm = HashAlgorithmName.SHA256;
     private const int KeyBytes = 32;
     private const int SaltBytes = 16;
     private const int NonceBytes = 12;
@@ -36,7 +37,7 @@ public sealed class MauiE2eeService(HttpClient httpClient) : IE2eeService
     public async Task EnableAsync(string passphrase)
     {
         var salt = RandomNumberGenerator.GetBytes(SaltBytes);
-        var key = DeriveKey(passphrase, salt);
+        var key = DeriveKey(passphrase, salt, KdfIterations, KdfHashAlgorithm);
 
         var request = new
         {
@@ -62,7 +63,7 @@ public sealed class MauiE2eeService(HttpClient httpClient) : IE2eeService
         if (_key is null) throw new InvalidOperationException("Service must be unlocked first.");
 
         var newSalt = RandomNumberGenerator.GetBytes(SaltBytes);
-        var newKey = DeriveKey(newPassphrase, newSalt);
+        var newKey = DeriveKey(newPassphrase, newSalt, KdfIterations, KdfHashAlgorithm);
 
         foreach (var m in encryptedMessages.Where(m => m.IsEncrypted && m.Content is not null && m.EncryptionIV is not null))
         {
@@ -92,12 +93,19 @@ public sealed class MauiE2eeService(HttpClient httpClient) : IE2eeService
         if (settings is null || !settings.IsEnabled || settings.KdfSalt is null || settings.KeyVerifier is null)
             return false;
 
-        var key = DeriveKey(passphrase, Convert.FromBase64String(settings.KdfSalt));
+        var (iterations, hashAlgorithm) = ParseKdfParams(settings.KdfParams);
+        var key = DeriveKey(passphrase, Convert.FromBase64String(settings.KdfSalt), iterations, hashAlgorithm);
         if (!VerifyKey(key, settings.KeyVerifier)) return false;
 
         _key = key;
         return true;
     }
+
+    public Task<bool> TryAutoUnlockAsync() => Task.FromResult(IsUnlocked);
+
+    public Task<bool> GetRememberPassphraseAsync() => Task.FromResult(false);
+
+    public Task SetRememberPassphraseAsync(bool remember) => Task.CompletedTask;
 
     public Task<(string Ciphertext, string Iv)> EncryptAsync(string plaintext)
     {
@@ -113,13 +121,59 @@ public sealed class MauiE2eeService(HttpClient httpClient) : IE2eeService
 
     // ── Crypto ────────────────────────────────────────────────────────────────
 
-    private static byte[] DeriveKey(string passphrase, byte[] salt) =>
+    private static byte[] DeriveKey(string passphrase, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm) =>
         Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(passphrase),
             salt,
-            KdfIterations,
-            HashAlgorithmName.SHA256,
+            iterations,
+            hashAlgorithm,
             KeyBytes);
+
+    private static (int Iterations, HashAlgorithmName HashAlgorithm) ParseKdfParams(string? kdfParamsJson)
+    {
+        var iterations = KdfIterations;
+        var hashAlgorithm = KdfHashAlgorithm;
+
+        if (string.IsNullOrWhiteSpace(kdfParamsJson))
+            return (iterations, hashAlgorithm);
+
+        try
+        {
+            using var json = JsonDocument.Parse(kdfParamsJson);
+            if (json.RootElement.TryGetProperty("iterations", out var iterationsProp)
+                && iterationsProp.ValueKind == JsonValueKind.Number
+                && iterationsProp.TryGetInt32(out var parsedIterations)
+                && parsedIterations > 0)
+            {
+                iterations = parsedIterations;
+            }
+
+            if (json.RootElement.TryGetProperty("hashAlgorithm", out var hashProp)
+                && hashProp.ValueKind == JsonValueKind.String)
+            {
+                hashAlgorithm = ParseHashAlgorithm(hashProp.GetString()) ?? KdfHashAlgorithm;
+            }
+        }
+        catch
+        {
+            // Fall back to defaults when stored KDF params are malformed.
+        }
+
+        return (iterations, hashAlgorithm);
+    }
+
+    private static HashAlgorithmName? ParseHashAlgorithm(string? hashAlgorithm)
+    {
+        var normalized = hashAlgorithm?.Trim().ToUpperInvariant();
+        return normalized switch
+        {
+            "SHA1" or "SHA-1" => HashAlgorithmName.SHA1,
+            "SHA256" or "SHA-256" => HashAlgorithmName.SHA256,
+            "SHA384" or "SHA-384" => HashAlgorithmName.SHA384,
+            "SHA512" or "SHA-512" => HashAlgorithmName.SHA512,
+            _ => null
+        };
+    }
 
     private static string BuildVerifier(byte[] key)
     {

@@ -45,6 +45,22 @@ public interface IE2eeService
     /// </summary>
     Task<bool> TryUnlockAsync(string passphrase);
 
+    /// <summary>
+    /// Attempts to unlock using a client-persisted secret (if available).
+    /// Returns true when unlocked, false otherwise.
+    /// </summary>
+    Task<bool> TryAutoUnlockAsync();
+
+    /// <summary>
+    /// Returns whether passphrase persistence across browser restarts is enabled.
+    /// </summary>
+    Task<bool> GetRememberPassphraseAsync();
+
+    /// <summary>
+    /// Enables or disables passphrase persistence across browser restarts.
+    /// </summary>
+    Task SetRememberPassphraseAsync(bool remember);
+
     /// <summary>Clears the in-memory key so messages can no longer be encrypted/decrypted.</summary>
     void Lock();
 
