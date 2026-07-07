@@ -152,12 +152,18 @@ services:
       dockerfile: src/Briefcase.Web/Dockerfile
     image: ghcr.io/mrpix/briefcase-web:${IMAGE_TAG:-latest}
     container_name: briefcase-web
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env (for example briefcase.page)}
     volumes:
       # Override the baked-in Caddyfile with the production one that proxies /api and /hubs
       - ./deploy/Caddyfile.production:/etc/caddy/Caddyfile:ro
+      # Persist ACME account data and certificates across container restarts/recreates
+      - ./volumes/caddy/data:/data
+      - ./volumes/caddy/config:/config
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     depends_on:
       api:
         condition: service_healthy

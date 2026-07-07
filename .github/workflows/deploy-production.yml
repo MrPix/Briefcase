@@ -41,6 +41,11 @@ jobs:
           set -euo pipefail
           scp docker-compose.yml "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_DIR}/docker-compose.yml"
 
+      - name: Upload production Caddyfile
+        run: |
+          set -euo pipefail
+          scp deploy/Caddyfile.production "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_DIR}/deploy/Caddyfile.production"
+
       - name: Pull images and restart services
         run: |
           set -euo pipefail

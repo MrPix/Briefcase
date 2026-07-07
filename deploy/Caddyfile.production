@@ -1,15 +1,12 @@
 # ── Briefcase — Production Caddyfile ─────────────────────────────────────────
 #
-# HTTP-only (default for home-server LAN use).
-# To enable HTTPS with Let's Encrypt, replace ":80" with your domain name, e.g.:
-#
-#   briefcase.example.com {
-#
-# Caddy will obtain and auto-renew the TLS certificate automatically.
-# Make sure ports 80 and 443 are reachable from the internet for the ACME challenge.
+# HTTPS-first config for internet-facing production deploys.
+# Set SITE_DOMAIN in docker-compose/.env (for example: briefcase.page).
+# Caddy will obtain and auto-renew a Let's Encrypt certificate automatically.
+# Keep ports 80 and 443 reachable from the internet for ACME validation.
 # ─────────────────────────────────────────────────────────────────────────────
 
-:80 {
+{$SITE_DOMAIN} {
     # ── Reverse proxy — REST API ──────────────────────────────────────────────
     # Use handle blocks so each block is mutually exclusive. Without this,
     # try_files (a rewrite-phase directive) runs before reverse_proxy and
