@@ -1,0 +1,55 @@
+name: Deploy Production
+
+on:
+  workflow_run:
+    workflows: ["Docker Publish"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: Production
+    permissions:
+      contents: read
+    env:
+      APP_DIR: /srv/briefcase
+      DEPLOY_IMAGE_TAG: edge
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Ensure application directory exists
+        run: |
+          set -euo pipefail
+          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p '${APP_DIR}/deploy'"
+
+      - name: Upload docker-compose.yml
+        run: |
+          set -euo pipefail
+          scp docker-compose.yml "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_DIR}/docker-compose.yml"
+
+      - name: Pull images and restart services
+        run: |
+          set -euo pipefail
+          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "
+            set -euo pipefail
+            cd '${APP_DIR}'
+            docker compose pull
+            IMAGE_TAG='${DEPLOY_IMAGE_TAG}' docker compose up -d --remove-orphans
+          "
