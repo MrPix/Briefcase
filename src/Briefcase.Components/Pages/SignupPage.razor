@@ -18,7 +18,8 @@
 
             <div class="mb-3">
                 <label for="displayName" class="form-label">Display Name</label>
-                <InputText id="displayName" class="form-control" @bind-Value="_model.DisplayName" placeholder="Your name" />
+                <InputText id="displayName" class="form-control" @bind-Value="_model.DisplayName"
+                           placeholder="Your name" />
                 <ValidationMessage For="() => _model.DisplayName" />
             </div>
 
@@ -30,13 +31,15 @@
 
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" placeholder="Create a password" />
+                <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password"
+                           placeholder="Create a password" />
                 <ValidationMessage For="() => _model.Password" />
             </div>
 
             <div class="mb-3">
                 <label for="confirmPassword" class="form-label">Confirm Password</label>
-                <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_model.ConfirmPassword" placeholder="Confirm your password" />
+                <InputText id="confirmPassword" type="password" class="form-control"
+                           @bind-Value="_model.ConfirmPassword" placeholder="Confirm your password" />
                 <ValidationMessage For="() => _model.ConfirmPassword" />
             </div>
 
@@ -53,6 +56,18 @@
             </button>
         </EditForm>
 
+        <div class="auth-divider">
+            <span>or</span>
+        </div>
+
+        @foreach (var provider in AuthService.ExternalProviders)
+        {
+            <button type="button" class="btn btn-outline-secondary w-100 auth-social-btn"
+                    @onclick="() => StartExternalLogin(provider.Key)" disabled="@_isLoading">
+                Continue with @provider.DisplayName
+            </button>
+        }
+
         <div class="auth-footer">
             <span>Already have an account?</span>
             <a href="/login">Sign In</a>
@@ -64,6 +79,16 @@
     private SignupModel _model = new();
     private string? _errorMessage;
     private bool _isLoading;
+    private bool _externalHandled;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _externalHandled)
+            return;
+
+        _externalHandled = true;
+        await TryCompleteExternalLoginAsync();
+    }
 
     private async Task HandleSignup()
     {
@@ -93,6 +118,46 @@
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private void StartExternalLogin(string provider)
+    {
+        var redirectUri = Navigation.ToAbsoluteUri("/signup").ToString();
+        var url = AuthService.BuildExternalLoginUrl(provider, redirectUri);
+        Navigation.NavigateTo(url, forceLoad: true);
+    }
+
+    private async Task TryCompleteExternalLoginAsync()
+    {
+        var uri = new Uri(Navigation.Uri);
+        if (string.IsNullOrWhiteSpace(uri.Fragment))
+            return;
+
+        var fragment = uri.Fragment.TrimStart('#');
+        var pairs = fragment.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => Uri.UnescapeDataString(parts[0]), parts => Uri.UnescapeDataString(parts[1]),
+StringComparer.OrdinalIgnoreCase);
+
+        if (!pairs.TryGetValue("access_token", out var accessToken) ||
+            !pairs.TryGetValue("refresh_token", out var refreshToken) ||
+            !pairs.TryGetValue("access_token_expires_at", out var expiresAtRaw) ||
+            !DateTime.TryParse(expiresAtRaw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var expiresAt))
+        {
+            return;
+        }
+
+        try
+        {
+            await AuthService.CompleteExternalLoginAsync(accessToken, refreshToken, expiresAt);
+            Navigation.NavigateTo("/clipboard", replace: true);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"External sign-up failed: {ex.Message}";
+            StateHasChanged();
         }
     }
 

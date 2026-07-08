@@ -18,7 +18,12 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
     public string NormalizeProvider(string provider) =>
         SupportedProviders.First(p => p.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
-    public (string AuthorizationUrl, string State) BuildAuthorizationUrl(string provider, string redirectUri)
+    public (string AuthorizationUrl, string State) BuildAuthorizationUrl(
+        string provider,
+        string redirectUri,
+        string? clientRedirectUri = null,
+        string? deviceName = null,
+        string? devicePlatform = null)
     {
         provider = NormalizeProvider(provider);
         var config = GetProviderConfig(provider);
@@ -27,7 +32,14 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
         var codeVerifier = GenerateRandomString(64);
         var codeChallenge = ComputeCodeChallenge(codeVerifier);
 
-        PendingStates[state] = new OAuthPendingState(provider, codeVerifier, redirectUri, DateTime.UtcNow);
+        PendingStates[state] = new OAuthPendingState(
+            provider,
+            codeVerifier,
+            redirectUri,
+            clientRedirectUri,
+            deviceName,
+            devicePlatform,
+            DateTime.UtcNow);
 
         var callbackUrl = redirectUri.TrimEnd('/');
         // The callback goes back to our API, not to the client directly
@@ -194,7 +206,14 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
     }
 }
 
-public record OAuthPendingState(string Provider, string CodeVerifier, string RedirectUri, DateTime CreatedAt);
+public record OAuthPendingState(
+    string Provider,
+    string CodeVerifier,
+    string RedirectUri,
+    string? ClientRedirectUri,
+    string? DeviceName,
+    string? DevicePlatform,
+    DateTime CreatedAt);
 public record OAuthTokenResponse(string AccessToken, string? IdToken);
 public record OAuthUserInfo(string ProviderKey, string Email, string Name, string? AvatarUrl);
 public record OAuthProviderConfig(string ClientId, string ClientSecret, string AuthorizationEndpoint, string TokenEndpoint, string UserInfoEndpoint, string Scopes);
