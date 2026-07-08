@@ -431,6 +431,29 @@ public class MauiMessageService : IMessageService
         }
     }
 
+    public async Task<ShareLinkResult> CreateShareLinkAsync(Guid messageId, bool oneTime, int? expiresInMinutes)
+    {
+        var client = CreateClient();
+        var response = await client.PostAsJsonAsync($"api/messages/{messageId}/share",
+            new { oneTime, expiresInMinutes }, JsonOptions);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ShareLinkResponseDto>(JsonOptions);
+        if (result is null)
+            throw new InvalidOperationException("No share link returned.");
+        return new ShareLinkResult(result.Slug, result.Url, result.ExpiresAt, result.OneTime);
+    }
+
+    public async Task RevokeShareLinkAsync(Guid messageId)
+    {
+        var client = CreateClient();
+        var response = await client.DeleteAsync($"api/messages/{messageId}/share");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return;
+        response.EnsureSuccessStatusCode();
+    }
+
+    private record ShareLinkResponseDto(string Slug, string Url, DateTime? ExpiresAt, bool OneTime);
+
     private async Task<IReadOnlyList<Message>> GetRemoteMessagesAsync(int page, int pageSize)
     {
         var client = CreateClient();

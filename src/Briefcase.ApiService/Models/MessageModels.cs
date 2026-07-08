@@ -29,6 +29,16 @@ public record UpdateMessageRequest(
     bool IsEncrypted = false,
     [MaxLength(24)] string? EncryptionIV = null);
 
+public record CreateShareLinkRequest(
+    bool OneTime = false,
+    [Range(1, 525_600)] int? ExpiresInMinutes = null);
+
+public record ShareLinkResponse(
+    string Slug,
+    string Url,
+    DateTime? ExpiresAt,
+    bool OneTime);
+
 public record PagedResponse<T>(
     IReadOnlyList<T> Items,
     int Page,
