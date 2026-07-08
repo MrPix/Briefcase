@@ -42,6 +42,18 @@
             </button>
         </EditForm>
 
+        <div class="auth-divider">
+            <span>or</span>
+        </div>
+
+        @foreach (var provider in AuthService.ExternalProviders)
+        {
+            <button type="button" class="btn btn-outline-secondary w-100 auth-social-btn"
+                    @onclick="() => StartExternalLogin(provider.Key)" disabled="@_isLoading">
+                Continue with @provider.DisplayName
+            </button>
+        }
+
         <div class="auth-footer">
             <span>Don't have an account?</span>
             <a href="/signup">Sign Up</a>
@@ -64,6 +76,16 @@
     private LoginModel _model = new();
     private string? _errorMessage;
     private bool _isLoading;
+    private bool _externalHandled;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _externalHandled)
+            return;
+
+        _externalHandled = true;
+        await TryCompleteExternalLoginAsync();
+    }
 
     private async Task HandleLogin()
     {
@@ -90,6 +112,46 @@
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private void StartExternalLogin(string provider)
+    {
+        var redirectUri = Navigation.ToAbsoluteUri("/login").ToString();
+        var url = AuthService.BuildExternalLoginUrl(provider, redirectUri);
+        Navigation.NavigateTo(url, forceLoad: true);
+    }
+
+    private async Task TryCompleteExternalLoginAsync()
+    {
+        var uri = new Uri(Navigation.Uri);
+        if (string.IsNullOrWhiteSpace(uri.Fragment))
+            return;
+
+        var fragment = uri.Fragment.TrimStart('#');
+        var pairs = fragment.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => Uri.UnescapeDataString(parts[0]), parts => Uri.UnescapeDataString(parts[1]),
+StringComparer.OrdinalIgnoreCase);
+
+        if (!pairs.TryGetValue("access_token", out var accessToken) ||
+            !pairs.TryGetValue("refresh_token", out var refreshToken) ||
+            !pairs.TryGetValue("access_token_expires_at", out var expiresAtRaw) ||
+            !DateTime.TryParse(expiresAtRaw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var expiresAt))
+        {
+            return;
+        }
+
+        try
+        {
+            await AuthService.CompleteExternalLoginAsync(accessToken, refreshToken, expiresAt);
+            Navigation.NavigateTo("/clipboard", replace: true);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"External sign-in failed: {ex.Message}";
+            StateHasChanged();
         }
     }
 

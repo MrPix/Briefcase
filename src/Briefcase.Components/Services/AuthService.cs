@@ -12,11 +12,17 @@ internal sealed class ProblemDetails
 
 public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorage, IDeviceInfoProvider deviceInfoProvider) : IAuthService
 {
+    private static readonly IReadOnlyList<ExternalAuthProvider> Providers =
+    [
+        new("Google", "Google")
+    ];
+
     private string? _accessToken;
     private DateTime _expiresAt;
 
     public string? AccessToken => _accessToken;
     public bool IsAuthenticated => _accessToken is not null && DateTime.UtcNow < _expiresAt;
+    public IReadOnlyList<ExternalAuthProvider> ExternalProviders => Providers;
 
     public async Task TryRestoreSessionAsync()
     {
@@ -86,6 +92,33 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
         var result = await response.Content.ReadFromJsonAsync<AuthResult>()
             ?? throw new InvalidOperationException("Invalid auth response.");
 
+        await StoreTokensAsync(result);
+        return result;
+    }
+
+    public string BuildExternalLoginUrl(string provider, string clientRedirectUri)
+    {
+        if (httpClient.BaseAddress is null)
+            throw new InvalidOperationException("Auth client base address is not configured.");
+
+        if (Providers.All(p => !string.Equals(p.Key, provider, StringComparison.OrdinalIgnoreCase)))
+            throw new AuthException($"Unsupported external auth provider: {provider}.");
+
+        var encodedProvider = Uri.EscapeDataString(provider);
+        var callbackUri = new Uri(httpClient.BaseAddress, $"api/auth/oauth/{encodedProvider}/callback").ToString();
+
+        var query =
+            $"redirect_uri={Uri.EscapeDataString(callbackUri)}" +
+            $"&client_redirect_uri={Uri.EscapeDataString(clientRedirectUri)}" +
+            $"&device_name={Uri.EscapeDataString(deviceInfoProvider.DeviceName)}" +
+            $"&device_platform={Uri.EscapeDataString(deviceInfoProvider.Platform)}";
+
+        return new Uri(httpClient.BaseAddress, $"api/auth/oauth/{encodedProvider}?{query}").ToString();
+    }
+
+    public async Task<AuthResult> CompleteExternalLoginAsync(string accessToken, string refreshToken, DateTime accessTokenExpiresAt)
+    {
+        var result = new AuthResult(accessToken, refreshToken, accessTokenExpiresAt);
         await StoreTokensAsync(result);
         return result;
     }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Briefcase.ApiService.Models;
 using Briefcase.ApiService.Services;
 using Briefcase.Domain.Entities;
@@ -14,17 +15,21 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
 {
     private const string RefreshTokenCookieName = "refresh_token";
 
+    private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
     // POST /api/auth/register
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        if (await db.Users.AnyAsync(u => u.Email == request.Email))
+        var normalizedEmail = NormalizeEmail(request.Email);
+
+        if (await db.Users.AnyAsync(u => u.Email.ToLower() == normalizedEmail))
             return Conflict(new ProblemDetails { Title = "Email already registered." });
 
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = request.Email,
+            Email = normalizedEmail,
             DisplayName = request.DisplayName,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             CreatedAt = DateTime.UtcNow,
@@ -46,7 +51,8 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var normalizedEmail = NormalizeEmail(request.Email);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
         if (user is null || user.PasswordHash is null ||
             !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
@@ -136,7 +142,12 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
 
     // GET /api/auth/oauth/{provider}
     [HttpGet("oauth/{provider}")]
-    public IActionResult OAuthRedirect(string provider, [FromQuery] string redirect_uri)
+    public IActionResult OAuthRedirect(
+        string provider,
+        [FromQuery] string redirect_uri,
+        [FromQuery] string? client_redirect_uri,
+        [FromQuery] string? device_name,
+        [FromQuery] string? device_platform)
     {
         if (!oAuthService.IsProviderSupported(provider))
             return BadRequest(new ProblemDetails { Title = $"Unsupported OAuth provider: {provider}" });
@@ -144,7 +155,15 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         if (string.IsNullOrWhiteSpace(redirect_uri))
             return BadRequest(new ProblemDetails { Title = "redirect_uri query parameter is required." });
 
-        var (authorizationUrl, _) = oAuthService.BuildAuthorizationUrl(provider, redirect_uri);
+        if (!IsClientRedirectUriAllowed(client_redirect_uri))
+            return BadRequest(new ProblemDetails { Title = "client_redirect_uri is not allowed." });
+
+        var (authorizationUrl, _) = oAuthService.BuildAuthorizationUrl(
+            provider,
+            redirect_uri,
+            client_redirect_uri,
+            device_name,
+            device_platform);
         return Redirect(authorizationUrl);
     }
 
@@ -187,26 +206,41 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         {
             // Existing linked account — just issue tokens
             user = externalLogin.User;
+
+            var normalizedEmail = NormalizeEmail(userInfo.Email);
+            if (!string.Equals(user.Email, normalizedEmail, StringComparison.Ordinal))
+                user.Email = normalizedEmail;
+
+            if (!string.IsNullOrWhiteSpace(userInfo.Name))
+                user.DisplayName = userInfo.Name;
+
+            if (!string.IsNullOrWhiteSpace(userInfo.AvatarUrl))
+                user.AvatarUrl = userInfo.AvatarUrl;
         }
         else
         {
             // Check if a user with the same email already exists
-            user = await db.Users.FirstOrDefaultAsync(u => u.Email == userInfo.Email)
-                ?? new User
+            var normalizedEmail = NormalizeEmail(userInfo.Email);
+            var existingUser = await db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+            if (existingUser is not null)
+            {
+                user = existingUser;
+                user.Email = normalizedEmail;
+                if (!string.IsNullOrWhiteSpace(userInfo.Name))
+                    user.DisplayName = userInfo.Name;
+                if (!string.IsNullOrWhiteSpace(userInfo.AvatarUrl))
+                    user.AvatarUrl = userInfo.AvatarUrl;
+            }
+            else
+            {
+                user = new User
                 {
                     Id = Guid.NewGuid(),
-                    Email = userInfo.Email,
-                    DisplayName = userInfo.Name,
+                    Email = normalizedEmail,
+                    DisplayName = string.IsNullOrWhiteSpace(userInfo.Name) ? normalizedEmail : userInfo.Name,
                     AvatarUrl = userInfo.AvatarUrl,
                     CreatedAt = DateTime.UtcNow,
                 };
-
-            if (user.CreatedAt == default)
-            {
-                // Existing user without this provider linked — just add the external login
-            }
-            else if (!db.Entry(user).IsKeySet || db.Entry(user).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
-            {
                 db.Users.Add(user);
             }
 
@@ -221,10 +255,24 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
             await db.SaveChangesAsync();
         }
 
+        await UpsertDeviceAsync(user.Id, pendingState.DeviceName, pendingState.DevicePlatform);
+
         var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
         SetRefreshTokenCookie(refreshToken);
+
+        if (!string.IsNullOrWhiteSpace(pendingState.ClientRedirectUri))
+        {
+            var fragment =
+                $"access_token={Uri.EscapeDataString(accessToken)}" +
+                $"&refresh_token={Uri.EscapeDataString(refreshToken)}" +
+                $"&access_token_expires_at={Uri.EscapeDataString(expiresAt.ToString("O"))}";
+
+            var redirectBase = pendingState.ClientRedirectUri.TrimEnd('#');
+            return Redirect($"{redirectBase}#{fragment}");
+        }
+
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
     }
 
@@ -296,5 +344,25 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
             SameSite = SameSiteMode.Strict,
             Path = "/api/auth",
         });
+    }
+
+    private bool IsClientRedirectUriAllowed(string? clientRedirectUri)
+    {
+        if (string.IsNullOrWhiteSpace(clientRedirectUri))
+            return true;
+
+        if (!Uri.TryCreate(clientRedirectUri, UriKind.Absolute, out var uri))
+            return false;
+
+        var requestHost = Request.Host.Host;
+        if (string.Equals(uri.Host, requestHost, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var allowed = HttpContext.RequestServices
+            .GetRequiredService<IConfiguration>()
+            .GetSection("OAuth:AllowedClientRedirectUris")
+            .Get<string[]>() ?? [];
+
+        return allowed.Any(allowedUri => string.Equals(allowedUri, clientRedirectUri, StringComparison.OrdinalIgnoreCase));
     }
 }

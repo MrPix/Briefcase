@@ -118,6 +118,13 @@ services:
       Storage__SecretKey: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
       # CORS — must match the public URL users open in their browser
       Cors__AllowedOrigins__0: ${PUBLIC_WEB_URL:-http://localhost}
+      # OAuth (Google)
+      OAuth__Google__ClientId: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAuth__Google__ClientSecret: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      # Optional for split-origin setups (for example API and Web on different hosts/ports).
+      # Exact redirect URLs are required (no wildcards).
+      OAuth__AllowedClientRedirectUris__0: ${OAUTH_ALLOWED_CLIENT_REDIRECT_URI_1:-}
+      OAuth__AllowedClientRedirectUris__1: ${OAUTH_ALLOWED_CLIENT_REDIRECT_URI_2:-}
       # OpenTelemetry → Aspire Dashboard
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
