@@ -122,7 +122,7 @@
         }
         @if (OnSendTo.HasDelegate)
         {
-            <button class="msg-action-btn" title="Send to device" @onclick="() => OnSendTo.InvokeAsync(Message)"
+            <button class="msg-action-btn" title="Share" @onclick="() => OnSendTo.InvokeAsync(Message)"
                     @onclick:stopPropagation>
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round" />

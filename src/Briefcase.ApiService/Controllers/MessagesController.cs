@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -164,9 +165,65 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
 
     // POST /api/messages/{id}/share  →  generate share link
     [HttpPost("{id:guid}/share")]
-    public IActionResult CreateShareLink(Guid id) => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> CreateShareLink(Guid id, [FromBody] CreateShareLinkRequest request)
+    {
+        var userId = GetUserId();
+        var message = await db.Messages
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted);
 
-    // DELETE /api/messages/{id}/share  →  revoke share link
+        if (message is null)
+            return NotFound();
+
+        const string slugChars = "abcdefghjkmnpqrstuvwxyz23456789";
+        var slug = RandomNumberGenerator.GetString(slugChars, 16);
+
+        DateTime? expiresAt = request.ExpiresInMinutes is int minutes and > 0
+            ? DateTime.UtcNow.AddMinutes(minutes)
+            : null;
+
+        var shareLink = new ShareLink
+        {
+            Id = Guid.NewGuid(),
+            MessageId = message.Id,
+            UserId = userId,
+            Slug = slug,
+            ExpiresAt = expiresAt,
+            IsOneTime = request.OneTime,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        db.ShareLinks.Add(shareLink);
+        await db.SaveChangesAsync();
+
+        var response = new ShareLinkResponse(slug, $"/share/{slug}", expiresAt, request.OneTime);
+
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.ShareLinkCreated, new { messageId = message.Id, response.Slug, response.Url });
+
+        return Ok(response);
+    }
+
+    // DELETE /api/messages/{id}/share  →  revoke all active share links for a message
     [HttpDelete("{id:guid}/share")]
-    public IActionResult RevokeShareLink(Guid id) => StatusCode(StatusCodes.Status501NotImplemented);
+    public async Task<IActionResult> RevokeShareLink(Guid id)
+    {
+        var userId = GetUserId();
+        var links = await db.ShareLinks
+            .Where(s => s.MessageId == id && s.UserId == userId && s.RevokedAt == null)
+            .ToListAsync();
+
+        if (links.Count == 0)
+            return NotFound();
+
+        var now = DateTime.UtcNow;
+        foreach (var link in links)
+            link.RevokedAt = now;
+
+        await db.SaveChangesAsync();
+
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.ShareLinkRevoked, new { messageId = id });
+
+        return NoContent();
+    }
 }

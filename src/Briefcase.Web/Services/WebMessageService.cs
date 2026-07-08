@@ -123,4 +123,27 @@ public class WebMessageService(IHttpClientFactory httpClientFactory, ITokenStora
         var response = await client.PatchAsync($"api/messages/{messageId}/pin", null);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<ShareLinkResult> CreateShareLinkAsync(Guid messageId, bool oneTime, int? expiresInMinutes)
+    {
+        var client = CreateClient();
+        var response = await client.PostAsJsonAsync($"api/messages/{messageId}/share",
+            new { oneTime, expiresInMinutes });
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ShareLinkResponse>();
+        if (result is null)
+            throw new InvalidOperationException("No share link returned.");
+        return new ShareLinkResult(result.Slug, result.Url, result.ExpiresAt, result.OneTime);
+    }
+
+    public async Task RevokeShareLinkAsync(Guid messageId)
+    {
+        var client = CreateClient();
+        var response = await client.DeleteAsync($"api/messages/{messageId}/share");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return;
+        response.EnsureSuccessStatusCode();
+    }
+
+    private record ShareLinkResponse(string Slug, string Url, DateTime? ExpiresAt, bool OneTime);
 }

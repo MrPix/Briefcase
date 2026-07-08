@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Briefcase.ApiService.Controllers;
 using Briefcase.ApiService.Models;
 using Briefcase.Domain.Entities;
 
@@ -269,6 +270,107 @@ public sealed class MessagesControllerTests
         var client = await CreateAuthenticatedClientAsync();
 
         var response = await client.DeleteAsync($"/api/messages/{Guid.NewGuid()}");
+
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── Share links ───────────────────────────────────────────────────────────
+
+    private async Task<Guid> CreateTextMessageAsync(HttpClient client, string content)
+    {
+        var resp = await client.PostAsJsonAsync("/api/messages",
+            new CreateMessageRequest(MessageKind.Text, content));
+        var msg = await resp.Content.ReadFromJsonAsync<MessageResponse>();
+        return msg!.Id;
+    }
+
+    [TestMethod]
+    public async Task CreateShareLink_ReturnsSlug_AndPubliclyViewable()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var messageId = await CreateTextMessageAsync(client, "Shareable note");
+
+        var response = await client.PostAsJsonAsync($"/api/messages/{messageId}/share",
+            new CreateShareLinkRequest(OneTime: false, ExpiresInMinutes: 60));
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var link = await response.Content.ReadFromJsonAsync<ShareLinkResponse>();
+        Assert.IsNotNull(link);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(link.Slug));
+        Assert.AreEqual($"/share/{link.Slug}", link.Url);
+        Assert.IsNotNull(link.ExpiresAt);
+
+        // The slug is anonymously viewable.
+        var shared = await _anonClient.GetFromJsonAsync<SharedMessageDto>($"/api/share/{link.Slug}");
+        Assert.IsNotNull(shared);
+        Assert.AreEqual("Shareable note", shared.Content);
+    }
+
+    [TestMethod]
+    public async Task CreateShareLink_OneTime_SelfDestructsAfterFirstView()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var messageId = await CreateTextMessageAsync(client, "Burn after reading");
+
+        var response = await client.PostAsJsonAsync($"/api/messages/{messageId}/share",
+            new CreateShareLinkRequest(OneTime: true, ExpiresInMinutes: null));
+        var link = await response.Content.ReadFromJsonAsync<ShareLinkResponse>();
+
+        // First view succeeds.
+        var first = await _anonClient.GetAsync($"/api/share/{link!.Slug}");
+        Assert.AreEqual(HttpStatusCode.OK, first.StatusCode);
+
+        // Second view is revoked.
+        var second = await _anonClient.GetAsync($"/api/share/{link.Slug}");
+        Assert.AreEqual(HttpStatusCode.NotFound, second.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task RevokeShareLink_MakesLinkUnavailable()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var messageId = await CreateTextMessageAsync(client, "Revoke me");
+
+        var createResp = await client.PostAsJsonAsync($"/api/messages/{messageId}/share",
+            new CreateShareLinkRequest(OneTime: false, ExpiresInMinutes: null));
+        var link = await createResp.Content.ReadFromJsonAsync<ShareLinkResponse>();
+
+        var revokeResp = await client.DeleteAsync($"/api/messages/{messageId}/share");
+        Assert.AreEqual(HttpStatusCode.NoContent, revokeResp.StatusCode);
+
+        var view = await _anonClient.GetAsync($"/api/share/{link!.Slug}");
+        Assert.AreEqual(HttpStatusCode.NotFound, view.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task CreateShareLink_OtherUsersMessage_Returns404()
+    {
+        var clientA = await CreateAuthenticatedClientAsync();
+        var clientB = await CreateAuthenticatedClientAsync();
+        var messageId = await CreateTextMessageAsync(clientA, "Private");
+
+        var response = await clientB.PostAsJsonAsync($"/api/messages/{messageId}/share",
+            new CreateShareLinkRequest());
+
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task CreateShareLink_Unauthenticated_Returns401()
+    {
+        var response = await _anonClient.PostAsJsonAsync($"/api/messages/{Guid.NewGuid()}/share",
+            new CreateShareLinkRequest());
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task RevokeShareLink_NoActiveLinks_Returns404()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var messageId = await CreateTextMessageAsync(client, "No links yet");
+
+        var response = await client.DeleteAsync($"/api/messages/{messageId}/share");
 
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
