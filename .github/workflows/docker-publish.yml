@@ -1,16 +1,6 @@
 name: Docker Publish
 
 on:
-  workflow_call:
-    inputs:
-      tags:
-        required: false
-        type: string
-        default: ''
-      build_args:
-        required: false
-        type: string
-        default: ''
   push:
     branches: [main]
 
@@ -42,9 +32,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata for push
-        if: ${{ github.event_name == 'push' }}
-        id: meta-push
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}
@@ -52,35 +41,13 @@ jobs:
             type=sha
             type=raw,value=edge,enable={{is_default_branch}}
 
-      - name: Extract metadata for release
-        if: ${{ github.event_name == 'workflow_call' }}
-        id: meta-release
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}
-          tags: ${{ inputs.tags }}
-
-      - name: Build and push for push
-        if: ${{ github.event_name == 'push' }}
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta-push.outputs.tags }}
-          labels: ${{ steps.meta-push.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-
-      - name: Build and push for release
-        if: ${{ github.event_name == 'workflow_call' }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta-release.outputs.tags }}
-          labels: ${{ steps.meta-release.outputs.labels }}
-          build-args: ${{ inputs.build_args }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
