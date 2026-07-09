@@ -208,6 +208,23 @@ Every authenticated client connects to the hub. When a message is created or a q
    → Returns a full session JWT for the new device
 ```
 
+**Login by Code** (reverse of Quick Device Add — no camera required)
+```
+1. New (signed-out) device opens  /login  and chooses "Add this device with a code"
+   → Calls  POST /api/devices/login-code  { deviceName, platform }
+   → Server stores a single-use, 8-char code (5 min TTL) and returns it
+   → Device connects to the SignalR hub and joins group  login-code:{code}
+     (falls back to redeeming immediately in case it was approved first)
+2. Signed-in device opens  Devices → Add device  and types the code
+   → Calls  POST /api/devices/login-code/approve  { code }
+   → Server attaches the code to that user account, marks it approved, and
+     pushes a  LoginCodeApproved  event to the  login-code:{code}  group
+3. New device receives the SignalR event
+   → Calls  GET /api/devices/login-code/{code}  once to redeem
+   → Server registers the device, mints access + refresh tokens, consumes the code
+   → New device stores the tokens and is signed in
+```
+
 **Quick Transfer**
 ```
 1. Target device (browser) opens  /transfer
@@ -382,6 +399,9 @@ ShareLink
 | DELETE | `/api/devices/{id}` | Remove device |
 | POST | `/api/devices/pair-code` | Generate device-pairing QR token |
 | POST | `/api/devices/claim` | Claim device via QR token |
+| POST | `/api/devices/login-code` | (anon) New device requests an 8-char login code |
+| GET | `/api/devices/login-code/{code}` | (anon) New device polls for approval → tokens |
+| POST | `/api/devices/login-code/approve` | Signed-in device approves a login code |
 
 ### Transfer
 | Method | Path | Description |

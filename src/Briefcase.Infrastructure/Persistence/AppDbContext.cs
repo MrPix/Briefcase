@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TransferSession> TransferSessions => Set<TransferSession>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<DeviceLoginCode> DeviceLoginCodes => Set<DeviceLoginCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +132,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Ignore(r => r.IsRevoked);
             e.Ignore(r => r.IsExpired);
             e.Ignore(r => r.IsActive);
+        });
+
+        // ── DeviceLoginCode ───────────────────────────────────────────────────
+        modelBuilder.Entity<DeviceLoginCode>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => c.Code).IsUnique();
+            e.Property(c => c.Code).IsRequired().HasMaxLength(16);
+            e.Property(c => c.DeviceName).IsRequired().HasMaxLength(100);
+            e.Property(c => c.Platform)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            e.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.Ignore(c => c.IsExpired);
         });
 
         // ── ShareLink ────────────────────────────────────────────────────────

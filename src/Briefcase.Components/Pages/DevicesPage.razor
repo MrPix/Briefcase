@@ -11,7 +11,47 @@
     <button class="btn btn-outline-primary ms-2" @onclick="() => _showScanner = true">
         <span class="bi bi-qr-code-scan"></span> Scan Pair Code
     </button>
+    <button class="btn btn-outline-primary ms-2" @onclick="ToggleAddDevice">
+        <span class="bi bi-plus-circle"></span> Add device
+    </button>
 </div>
+
+@if (_showAddDevice)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Add a device with a code</h5>
+            <p class="card-text text-muted">
+                On the new device, choose <strong>Add this device</strong> to get an 8-character code,
+                then enter it below.
+            </p>
+            <div class="input-group" style="max-width: 22rem;">
+                <input class="form-control text-uppercase" maxlength="8" placeholder="Enter code" @bind="_addDeviceCode"
+                       @bind:event="oninput" @onkeydown="@(e => { if (e.Key == "Enter") { _ = ApproveLoginCode(); } })"
+                       disabled="@_isApproving" />
+                <button class="btn btn-primary" @onclick="ApproveLoginCode"
+                        disabled="@(_isApproving || string.IsNullOrWhiteSpace(_addDeviceCode))">
+                    @if (_isApproving)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                    }
+                    else
+                    {
+                        <span>Add</span>
+                    }
+                </button>
+            </div>
+            @if (_addDeviceError is not null)
+            {
+                <div class="text-danger mt-2">@_addDeviceError</div>
+            }
+            @if (_addDeviceSuccess is not null)
+            {
+                <div class="text-success mt-2">@_addDeviceSuccess</div>
+            }
+        </div>
+    </div>
+}
 
 @if (_pairCode is not null)
 {
@@ -61,6 +101,12 @@ else
     private string? _pairCode;
     private bool _showScanner;
 
+    private bool _showAddDevice;
+    private string _addDeviceCode = string.Empty;
+    private bool _isApproving;
+    private string? _addDeviceError;
+    private string? _addDeviceSuccess;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadDevices();
@@ -87,5 +133,38 @@ else
         await DeviceService.ClaimDeviceAsync(token);
         _showScanner = false;
         await LoadDevices();
+    }
+
+    private void ToggleAddDevice()
+    {
+        _showAddDevice = !_showAddDevice;
+        _addDeviceError = null;
+        _addDeviceSuccess = null;
+    }
+
+    private async Task ApproveLoginCode()
+    {
+        if (_isApproving || string.IsNullOrWhiteSpace(_addDeviceCode))
+            return;
+
+        _isApproving = true;
+        _addDeviceError = null;
+        _addDeviceSuccess = null;
+
+        try
+        {
+            var deviceName = await DeviceService.ApproveLoginCodeAsync(_addDeviceCode.Trim());
+            _addDeviceSuccess = $"“{deviceName}” has been signed in.";
+            _addDeviceCode = string.Empty;
+            await LoadDevices();
+        }
+        catch (Exception ex)
+        {
+            _addDeviceError = ex.Message;
+        }
+        finally
+        {
+            _isApproving = false;
+        }
     }
 }
