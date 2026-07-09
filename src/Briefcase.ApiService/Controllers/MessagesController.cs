@@ -136,7 +136,11 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         message.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        return Ok(ToResponse(message));
+        var response = ToResponse(message);
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.MessageUpdated, response);
+
+        return Ok(response);
     }
 
     // PUT /api/messages/{id}  →  update message content
