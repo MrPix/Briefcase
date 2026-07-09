@@ -208,6 +208,20 @@ Every authenticated client connects to the hub. When a message is created or a q
    → Returns a full session JWT for the new device
 ```
 
+**Login by Code** (reverse of Quick Device Add — no camera required)
+```
+1. New (signed-out) device opens  /login  and chooses "Add this device with a code"
+   → Calls  POST /api/devices/login-code  { deviceName, platform }
+   → Server stores a single-use, 8-char code (5 min TTL) and returns it
+   → Page displays the code and polls  GET /api/devices/login-code/{code}
+2. Signed-in device opens  Devices → Add device  and types the code
+   → Calls  POST /api/devices/login-code/approve  { code }
+   → Server attaches the code to that user account and marks it approved
+3. New device's poll observes "approved"
+   → Server registers the device, mints access + refresh tokens, consumes the code
+   → New device stores the tokens and is signed in
+```
+
 **Quick Transfer**
 ```
 1. Target device (browser) opens  /transfer
@@ -382,6 +396,9 @@ ShareLink
 | DELETE | `/api/devices/{id}` | Remove device |
 | POST | `/api/devices/pair-code` | Generate device-pairing QR token |
 | POST | `/api/devices/claim` | Claim device via QR token |
+| POST | `/api/devices/login-code` | (anon) New device requests an 8-char login code |
+| GET | `/api/devices/login-code/{code}` | (anon) New device polls for approval → tokens |
+| POST | `/api/devices/login-code/approve` | Signed-in device approves a login code |
 
 ### Transfer
 | Method | Path | Description |

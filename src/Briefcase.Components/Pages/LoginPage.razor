@@ -1,7 +1,10 @@
 @page "/login"
 @namespace Briefcase.Components.Pages
 @inject IAuthService AuthService
+@inject IDeviceService DeviceService
+@inject IDeviceInfoProvider DeviceInfo
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <div class="auth-container">
     <div class="auth-card">
@@ -69,14 +72,69 @@
                 Receive File
             </a>
         </div>
+
+        <div class="auth-divider">
+            <span>or</span>
+        </div>
+
+        @if (!_showLoginCode)
+        {
+            <button type="button" class="btn btn-outline-secondary w-100 auth-social-btn" @onclick="StartLoginByCode"
+                    disabled="@(_isLoading || _isGeneratingCode)">
+                @if (_isGeneratingCode)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Preparing…</span>
+                }
+                else
+                {
+                    <span>Add this device with a code</span>
+                }
+            </button>
+        }
+        else
+        {
+            <div class="login-code-panel text-center">
+                <p class="mb-1">On a device you're already signed in on, open <strong>Devices</strong>,
+                    choose <strong>Add device</strong>, and enter this code:</p>
+                    <div class="login-code" aria-label="Login code">@_loginCode</div>
+                    <p class="text-muted small mb-2">Waiting for approval…</p>
+                    @if (_loginCodeError is not null)
+                    {
+                        <div class="alert alert-warning py-2">@_loginCodeError</div>
+                    }
+                    <button type="button" class="btn btn-link btn-sm" @onclick="CancelLoginByCode">Cancel</button>
+                </div>
+            }
+        </div>
     </div>
-</div>
+
+    <style>
+        .login-code-panel {
+            margin-top: .5rem;
+        }
+
+        .login-code {
+            font-family: var(--bs-font-monospace, monospace);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: .4rem;
+            padding: .5rem 0;
+            user-select: all;
+        }
+    </style>
 
 @code {
     private LoginModel _model = new();
     private string? _errorMessage;
     private bool _isLoading;
     private bool _externalHandled;
+
+    private bool _showLoginCode;
+    private bool _isGeneratingCode;
+    private string? _loginCode;
+    private string? _loginCodeError;
+    private CancellationTokenSource? _pollCts;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -120,6 +178,94 @@
         var redirectUri = Navigation.ToAbsoluteUri("/login").ToString();
         var url = AuthService.BuildExternalLoginUrl(provider, redirectUri);
         Navigation.NavigateTo(url, forceLoad: true);
+    }
+
+    private async Task StartLoginByCode()
+    {
+        _isGeneratingCode = true;
+        _loginCodeError = null;
+        _errorMessage = null;
+
+        try
+        {
+            var info = await DeviceService.GenerateLoginCodeAsync(DeviceInfo.DeviceName, DeviceInfo.Platform);
+            _loginCode = info.Code;
+            _showLoginCode = true;
+
+            _pollCts?.Cancel();
+            _pollCts = new CancellationTokenSource();
+            _ = PollForApprovalAsync(_loginCode, _pollCts.Token);
+        }
+        catch (Exception ex)
+        {
+            _loginCodeError = $"Couldn't start device sign-in: {ex.Message}";
+        }
+        finally
+        {
+            _isGeneratingCode = false;
+        }
+    }
+
+    private async Task PollForApprovalAsync(string code, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+
+                LoginCodePollResult result;
+                try
+                {
+                    result = await DeviceService.PollLoginCodeAsync(code);
+                }
+                catch (HttpRequestException)
+                {
+                    continue; // transient network error — keep polling
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                switch (result.Status)
+                {
+                    case LoginCodeStatus.Approved when result.Auth is not null:
+                        await AuthService.CompleteExternalLoginAsync(
+                            result.Auth.AccessToken, result.Auth.RefreshToken, result.Auth.AccessTokenExpiresAt);
+                        await InvokeAsync(() => Navigation.NavigateTo("/clipboard", replace: true));
+                        return;
+
+                    case LoginCodeStatus.Expired:
+                    case LoginCodeStatus.NotFound:
+                        await InvokeAsync(() =>
+                        {
+                            _loginCodeError = "This code expired. Please generate a new one.";
+                            _showLoginCode = false;
+                            _loginCode = null;
+                            StateHasChanged();
+                        });
+                        return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled by the user or navigation — nothing to do.
+        }
+    }
+
+    private void CancelLoginByCode()
+    {
+        _pollCts?.Cancel();
+        _showLoginCode = false;
+        _loginCode = null;
+        _loginCodeError = null;
+    }
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
     }
 
     private async Task TryCompleteExternalLoginAsync()
