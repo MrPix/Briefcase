@@ -13,15 +13,16 @@ namespace Briefcase.ApiService.Hubs;
 public class MessageHub(TransferSessionService sessions) : Hub
 {
     // Server → client event names (match client-side expectations exactly)
-    public const string MessageCreated    = nameof(MessageCreated);
-    public const string MessageUpdated    = nameof(MessageUpdated);
-    public const string MessageDeleted    = nameof(MessageDeleted);
-    public const string MessageTrashed    = nameof(MessageTrashed);
-    public const string MessageRestored   = nameof(MessageRestored);
-    public const string TransferReceived  = nameof(TransferReceived);
-    public const string ShareLinkCreated  = nameof(ShareLinkCreated);
-    public const string ShareLinkRevoked  = nameof(ShareLinkRevoked);
+    public const string MessageCreated = nameof(MessageCreated);
+    public const string MessageUpdated = nameof(MessageUpdated);
+    public const string MessageDeleted = nameof(MessageDeleted);
+    public const string MessageTrashed = nameof(MessageTrashed);
+    public const string MessageRestored = nameof(MessageRestored);
+    public const string TransferReceived = nameof(TransferReceived);
+    public const string ShareLinkCreated = nameof(ShareLinkCreated);
+    public const string ShareLinkRevoked = nameof(ShareLinkRevoked);
     public const string E2eeSettingsChanged = nameof(E2eeSettingsChanged);
+    public const string LoginCodeApproved = nameof(LoginCodeApproved);
 
     public override async Task OnConnectedAsync()
     {
@@ -62,6 +63,24 @@ public class MessageHub(TransferSessionService sessions) : Hub
     public async Task LeaveTransferSession(string sessionId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"transfer:{sessionId}");
+    }
+
+    /// <summary>
+    /// Allows a not-yet-authenticated device to join a login-code group so it receives
+    /// the <see cref="LoginCodeApproved"/> event when an authenticated device approves
+    /// the code. No authentication required — the code is the auth.
+    /// </summary>
+    public async Task JoinLoginCode(string code)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"login-code:{code}");
+    }
+
+    /// <summary>
+    /// Removes the client from a login-code group.
+    /// </summary>
+    public async Task LeaveLoginCode(string code)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"login-code:{code}");
     }
 
     private string? GetUserId() =>

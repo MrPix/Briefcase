@@ -194,7 +194,7 @@
 
             _pollCts?.Cancel();
             _pollCts = new CancellationTokenSource();
-            _ = PollForApprovalAsync(_loginCode, _pollCts.Token);
+            _ = WaitForApprovalAsync(_loginCode, _pollCts.Token);
         }
         catch (Exception ex)
         {
@@ -206,51 +206,45 @@
         }
     }
 
-    private async Task PollForApprovalAsync(string code, CancellationToken cancellationToken)
+    private async Task WaitForApprovalAsync(string code, CancellationToken cancellationToken)
     {
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
+            var result = await DeviceService.WaitForLoginApprovalAsync(code, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            switch (result.Status)
             {
-                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                case LoginCodeStatus.Approved when result.Auth is not null:
+                    await AuthService.CompleteExternalLoginAsync(
+                        result.Auth.AccessToken, result.Auth.RefreshToken, result.Auth.AccessTokenExpiresAt);
+                    await InvokeAsync(() => Navigation.NavigateTo("/clipboard", replace: true));
+                    break;
 
-                LoginCodePollResult result;
-                try
-                {
-                    result = await DeviceService.PollLoginCodeAsync(code);
-                }
-                catch (HttpRequestException)
-                {
-                    continue; // transient network error — keep polling
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                switch (result.Status)
-                {
-                    case LoginCodeStatus.Approved when result.Auth is not null:
-                        await AuthService.CompleteExternalLoginAsync(
-                            result.Auth.AccessToken, result.Auth.RefreshToken, result.Auth.AccessTokenExpiresAt);
-                        await InvokeAsync(() => Navigation.NavigateTo("/clipboard", replace: true));
-                        return;
-
-                    case LoginCodeStatus.Expired:
-                    case LoginCodeStatus.NotFound:
-                        await InvokeAsync(() =>
-                        {
-                            _loginCodeError = "This code expired. Please generate a new one.";
-                            _showLoginCode = false;
-                            _loginCode = null;
-                            StateHasChanged();
-                        });
-                        return;
-                }
+                default:
+                    await InvokeAsync(() =>
+                    {
+                        _loginCodeError = "This code expired. Please generate a new one.";
+                        _showLoginCode = false;
+                        _loginCode = null;
+                        StateHasChanged();
+                    });
+                    break;
             }
         }
         catch (OperationCanceledException)
         {
             // Cancelled by the user or navigation — nothing to do.
+        }
+        catch (Exception ex)
+        {
+            await InvokeAsync(() =>
+            {
+                _loginCodeError = $"Device sign-in failed: {ex.Message}";
+                StateHasChanged();
+            });
         }
     }
 

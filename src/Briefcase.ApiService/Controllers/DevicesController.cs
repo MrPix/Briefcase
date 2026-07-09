@@ -3,7 +3,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Briefcase.ApiService.Hubs;
 using Briefcase.ApiService.Models;
 using Briefcase.ApiService.Services;
 using Briefcase.Domain.Entities;
@@ -14,7 +16,7 @@ namespace Briefcase.ApiService.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/devices")]
-public class DevicesController(AppDbContext db, TokenService tokenService) : ControllerBase
+public class DevicesController(AppDbContext db, TokenService tokenService, IHubContext<MessageHub> hub) : ControllerBase
 {
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -187,6 +189,10 @@ public class DevicesController(AppDbContext db, TokenService tokenService) : Con
         entry.UserId = userId;
         entry.IsApproved = true;
         await db.SaveChangesAsync();
+
+        // Notify the waiting device over SignalR so it can redeem its tokens immediately.
+        await hub.Clients.Group($"login-code:{normalized}")
+            .SendAsync(MessageHub.LoginCodeApproved, new { code = normalized });
 
         return Ok(new ApproveLoginCodeResponse(entry.DeviceName, entry.Platform));
     }
