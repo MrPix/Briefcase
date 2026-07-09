@@ -44,6 +44,7 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
 builder.Services.AddSingleton<IAppVersionService, AppVersionService>();
 builder.Services.AddScoped<IClipboardService, WebClipboardService>();
 builder.Services.AddScoped<IMessageService, WebMessageService>();
+builder.Services.AddScoped<IMessageStreamService, WebMessageStreamService>();
 builder.Services.AddScoped<IDeviceService, WebDeviceService>();
 builder.Services.AddScoped<ITransferService, WebTransferService>();
 builder.Services.AddScoped<ITrashService, WebTrashService>();

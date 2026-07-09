@@ -5,6 +5,7 @@
 @page "/text"
 @namespace Briefcase.Components.Pages
 @inject IMessageService MessageService
+@inject IMessageStreamService MessageStream
 @inject IClipboardService ClipboardService
 @inject IE2eeService E2eeService
 @inject IJSRuntime JS
@@ -206,8 +207,14 @@
     protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
+        MessageStream.MessageCreated += OnRemoteUpsert;
+        MessageStream.MessageUpdated += OnRemoteUpsert;
+        MessageStream.MessageRemoved += OnRemoteRemoved;
         UpdateFilterFromUrl();
         await LoadMessages();
+
+        try { await MessageStream.StartAsync(); }
+        catch { /* live updates are best-effort; the page still works without them */ }
     }
 
     private void UpdateFilterFromUrl()
@@ -233,6 +240,56 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        MessageStream.MessageCreated -= OnRemoteUpsert;
+        MessageStream.MessageUpdated -= OnRemoteUpsert;
+        MessageStream.MessageRemoved -= OnRemoteRemoved;
+    }
+
+    // ── Real-time SignalR handlers ────────────────────────────────────────────
+    // Invoked off the render thread when another device changes a message, so we
+    // marshal back onto the component's sync context before touching state.
+
+    private Task OnRemoteUpsert(Message message) => InvokeAsync(async () =>
+    {
+        await DecryptInPlaceAsync(message);
+
+        var list = _messages?.ToList() ?? new List<Message>();
+        var index = list.FindIndex(m => m.Id == message.Id);
+        var isNew = index < 0;
+        if (isNew)
+            list.Add(message);
+        else
+            list[index] = message;
+
+        _messages = list;
+        ApplyFilters();
+        if (isNew)
+            _shouldScrollToBottom = true;
+        StateHasChanged();
+    });
+
+    private Task OnRemoteRemoved(Guid messageId) => InvokeAsync(() =>
+    {
+        if (_messages is null)
+            return;
+
+        var list = _messages.ToList();
+        if (list.RemoveAll(m => m.Id == messageId) == 0)
+            return;
+
+        _messages = list;
+        ApplyFilters();
+        StateHasChanged();
+    });
+
+    private async Task DecryptInPlaceAsync(Message message)
+    {
+        if (E2eeService.IsUnlocked && message.IsEncrypted
+            && message.Content is not null && message.EncryptionIV is not null)
+        {
+            try { message.Content = await E2eeService.DecryptAsync(message.Content!, message.EncryptionIV!); }
+            catch { /* leave ciphertext if decryption fails */ }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

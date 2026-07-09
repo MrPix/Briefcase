@@ -84,5 +84,5 @@ public class MessageHub(TransferSessionService sessions) : Hub
     }
 
     private string? GetUserId() =>
-        Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        Context.User?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
 }
