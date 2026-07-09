@@ -6,6 +6,12 @@
     # Cache immutable static assets
     @static {
         path *.js *.css *.wasm *.woff *.woff2 *.ttf *.png *.jpg *.svg *.ico
+        not path /service-worker.js /service-worker-assets.js
     }
     header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Never cache the service worker or its asset manifest so redeploys are
+    # detected immediately and the app auto-updates without a hard reload.
+    @serviceWorker path /service-worker.js /service-worker-assets.js
+    header @serviceWorker Cache-Control "no-cache, no-store, must-revalidate"
 }

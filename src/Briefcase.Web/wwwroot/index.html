@@ -32,7 +32,44 @@
 
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="e2ee.js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script>
+        // Register the service worker and automatically apply new deployments.
+        // When a redeploy is detected the new worker is activated right away and
+        // the page reloads once, so users never need "Clear cache and hard reload".
+        if ('serviceWorker' in navigator) {
+            let refreshing = false;
+
+            // Reload exactly once when the new worker takes control of the page.
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            });
+
+            navigator.serviceWorker.register('service-worker.js').then(registration => {
+                // When an updated worker finishes installing, tell it to activate
+                // immediately (only if the page is already controlled, i.e. this is
+                // an update and not the very first install).
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (!newWorker) return;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+
+                // Proactively check for a new deployment on load, when the tab
+                // regains focus, and periodically while it stays open.
+                registration.update();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') registration.update();
+                });
+                setInterval(() => registration.update(), 60 * 1000);
+            });
+        }
+    </script>
     <script>
         window.Briefcase = {
             scrollToBottom: function (element) {
