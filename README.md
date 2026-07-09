@@ -64,6 +64,7 @@ Briefcase/
 │   └── Briefcase.Maui/             # .NET MAUI + Blazor Hybrid (Win/Android/iOS/macOS)
 └── docs/
     └── ARCHITECTURE.md
+    └── GOOGLE-LOGIN-SETUP.md
 ```
 
 ## Getting Started
@@ -77,6 +78,10 @@ dotnet run --project src/Briefcase.AppHost
 ```
 
 Aspire will launch the API, database migrations, and the web frontend. Navigate to the Aspire dashboard URL printed in the console to see all running services.
+
+## Configuration
+
+- [Configure Login with Google](docs/GOOGLE-LOGIN-SETUP.md) — enable "Sign in with Google" (OAuth 2.0 / OIDC)
 
 ## Architecture
 
