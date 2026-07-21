@@ -240,7 +240,7 @@ Every authenticated client connects to the hub. When a message is created or a q
 
 ### 3.5 Shared Razor Component Library
 
-Contains all pages and UI components as Razor components. Both `Briefcase.Web` (WASM) and `Briefcase.Maui` (Blazor Hybrid) reference this library. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
+Contains all pages and UI components as Razor components. `Briefcase.Maui` (Blazor Hybrid) references this library for the native apps; the web frontend is now the standalone `Briefcase.React` SPA. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
 
 ### 3.6 .NET MAUI Blazor Hybrid
 
