@@ -29,10 +29,14 @@ var apiService = builder.AddProject<Projects.Briefcase_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     .WithUrls(context => context.Urls.Add(new ResourceUrlAnnotation { Url = $"{context.Urls[0].Url}/scalar/v1", DisplayText = "Scalar" }));
 
-// Web frontend — depends on the API service
-builder.AddProject<Projects.Briefcase_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
+// React (Vite) web frontend — lightweight SPA that talks to the API.
+// Fixed port 5173 (not proxied) so the browser origin matches the API's
+// Cors:AllowedOrigins entry for local development.
+builder.AddNpmApp("webfrontend", "../Briefcase.React", "dev")
     .WithReference(apiService)
-    .WaitFor(apiService);
+    .WaitFor(apiService)
+    .WithEnvironment("VITE_API_BASE_URL", apiService.GetEndpoint("https"))
+    .WithHttpEndpoint(env: "PORT", port: 5173, isProxied: false)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();

@@ -11,7 +11,6 @@
     <Project Path="src/Briefcase.Domain/Briefcase.Domain.csproj" Id="b351b9a3-9c6c-445e-af87-c051758ff2e2" />
     <Project Path="src/Briefcase.Maui/Briefcase.Maui.csproj" />
     <Project Path="src/Briefcase.ServiceDefaults/Briefcase.ServiceDefaults.csproj" />
-    <Project Path="src/Briefcase.Web/Briefcase.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Briefcase.IntegrationTests/Briefcase.IntegrationTests.csproj" Id="2b777278-95f6-49ee-b2f8-7b4e7547c473" />

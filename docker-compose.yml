@@ -152,11 +152,11 @@ services:
       retries: 5
       start_period: 60s   # extra time for first-run DB migrations
 
-  # ── Web frontend (Caddy — static WASM + reverse proxy to API) ────────────────
+  # ── Web frontend (Caddy — static React SPA + reverse proxy to API) ───────────
   web:
     build:
       context: .
-      dockerfile: src/Briefcase.Web/Dockerfile
+      dockerfile: src/Briefcase.React/Dockerfile
     image: ghcr.io/mrpix/briefcase-web:${IMAGE_TAG:-latest}
     container_name: briefcase-web
     environment:
