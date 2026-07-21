@@ -13,7 +13,7 @@ import {
     LockIcon,
 } from './icons'
 
-function BrandLogo() {
+export function BrandLogo() {
     return (
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>

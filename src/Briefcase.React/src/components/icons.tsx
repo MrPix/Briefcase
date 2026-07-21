@@ -119,6 +119,8 @@ export const BackIcon = (p: IconProps) => base({ ...p, children: <path d="M19 12
 
 export const PlusIcon = (p: IconProps) => base({ ...p, children: <path d="M12 5v14M5 12h14" /> })
 
+export const MenuIcon = (p: IconProps) => base({ ...p, children: <path d="M4 6h16M4 12h16M4 18h16" /> })
+
 export const CloseIcon = (p: IconProps) => base({ ...p, children: <path d="M18 6L6 18M6 6l12 12" /> })
 
 export const PaperclipIcon = (p: IconProps) =>

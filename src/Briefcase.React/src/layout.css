@@ -5,12 +5,14 @@
     gap: 0.5rem;
     justify-content: center;
     height: 100vh;
+    height: 100dvh;
     color: var(--text-secondary);
 }
 
 .page {
     display: flex;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
@@ -26,6 +28,37 @@
     flex: 1;
     overflow-y: auto;
     min-width: 0;
+}
+
+/* Mobile top bar + drawer scrim: hidden on desktop, shown via media query below. */
+.mobile-topbar {
+    display: none;
+}
+
+.mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.mobile-nav-toggle:hover {
+    background: var(--surface-hover);
+}
+
+.nav-scrim {
+    display: none;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
@@ -461,6 +494,7 @@
 /* ── Auth pages ──────────────────────────────────────────────────────────── */
 .auth-container {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -549,6 +583,7 @@
 /* ── Transfer ────────────────────────────────────────────────────────────── */
 .transfer-container {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -742,6 +777,7 @@
 /* ── Share view ──────────────────────────────────────────────────────────── */
 .share-container {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -839,6 +875,7 @@
 /* ── Landing ─────────────────────────────────────────────────────────────── */
 .landing-page {
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .landing-hero {
@@ -1151,4 +1188,113 @@
     max-width: 320px;
     border-radius: var(--radius-md);
     background: #000;
+}
+
+/* ── Responsive: phones & small tablets ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .page {
+        flex-direction: column;
+    }
+
+    /* Top bar with hamburger + brand. */
+    .mobile-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+        height: 56px;
+        padding: 0 0.75rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--sidebar-bg);
+        z-index: 40;
+    }
+
+    /* Sidebar becomes an off-canvas drawer. */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        max-width: 85vw;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 60;
+        box-shadow: var(--shadow-md);
+    }
+
+    .page.nav-open .sidebar {
+        transform: translateX(0);
+    }
+
+    /* Backdrop shown while the drawer is open. */
+    .nav-scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        z-index: 50;
+    }
+
+    .page.nav-open .nav-scrim {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .page-main {
+        width: 100%;
+    }
+
+    /* Tighter horizontal padding for the message list & compose area. */
+    .message-list {
+        padding: 0.75rem 0.85rem;
+    }
+
+    .compose-area {
+        padding: 0.6rem 0.85rem 0.85rem;
+    }
+
+    .upload-progress,
+    .mx-3 {
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Actions can't be revealed by hover on touch — always show them. */
+    .msg-actions {
+        opacity: 1;
+    }
+
+    /* Roomier page containers on small screens. */
+    .settings-container,
+    .devices-page,
+    .about-container {
+        padding: 1.25rem 1rem;
+    }
+
+    .auth-container,
+    .transfer-container,
+    .share-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .landing-hero {
+        padding: 2.5rem 1.25rem 2rem;
+    }
+
+    .landing-title {
+        font-size: 2rem;
+    }
+}
+
+/* Touch devices without hover: keep message actions visible at any width. */
+@media (hover: none) {
+    .msg-actions {
+        opacity: 1;
+    }
 }
