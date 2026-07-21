@@ -59,8 +59,8 @@ Briefcase/
 │   ├── Briefcase.ApiService/       # ASP.NET Core Web API
 │   ├── Briefcase.Domain/           # Domain models, interfaces
 │   ├── Briefcase.Infrastructure/   # EF Core, Azure integrations
-│   ├── Briefcase.Components/       # Shared Razor component library
-│   ├── Briefcase.Web/              # Blazor WebAssembly PWA
+│   ├── Briefcase.Components/       # Shared Razor component library (MAUI)
+│   ├── Briefcase.React/            # React + Vite web PWA (lightweight SPA)
 │   └── Briefcase.Maui/             # .NET MAUI + Blazor Hybrid (Win/Android/iOS/macOS)
 └── docs/
     └── ARCHITECTURE.md

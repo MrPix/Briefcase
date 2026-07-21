@@ -124,17 +124,17 @@ Briefcase/
 │   │       ├── IFileDropService.cs
 │   │       ├── AuthService.cs         # shared token management + session restore
 │   │       └── AuthDelegatingHandler.cs  # HTTP handler with auto token refresh
-│   ├── Briefcase.Web/              # Blazor WebAssembly PWA
-│   │   ├── Program.cs
-│   │   ├── Services/
-│   │   │   ├── WebMessageService.cs
-│   │   │   ├── WebDeviceService.cs
-│   │   │   ├── WebTransferService.cs
-│   │   │   ├── WebTrashService.cs
-│   │   │   ├── WebClipboardService.cs      # JS interop via Clipboard API
-│   │   │   └── WebTokenStorageService.cs  # localStorage via JS interop
-│   │   └── wwwroot/
-│   │       └── manifest.json          # PWA manifest
+│   ├── Briefcase.React/            # React + Vite web PWA (lightweight SPA)
+│   │   ├── src/
+│   │   │   ├── auth/                   # AuthContext, token storage, device info
+│   │   │   ├── crypto/e2ee.ts          # zero-knowledge E2EE (PBKDF2 + AES-GCM)
+│   │   │   ├── lib/                    # api client (auto refresh), config, media
+│   │   │   ├── realtime/               # SignalR message stream
+│   │   │   ├── services/               # messages/devices/transfer/trash/share
+│   │   │   ├── components/             # NavMenu, MessageCard, QrScanner, layout
+│   │   │   └── pages/                  # Landing/Login/Clipboard/Devices/…
+│   │   ├── Dockerfile                  # node build → Caddy static
+│   │   └── vite.config.ts             # PWA manifest + service worker
 │   └── Briefcase.Maui/            # .NET MAUI Blazor Hybrid
 │       ├── MauiProgram.cs
 │       ├── Platforms/

@@ -1,0 +1,16 @@
+:80 {
+    root * /usr/share/caddy
+    try_files {path} /index.html
+    file_server
+
+    # Cache immutable, content-hashed assets aggressively.
+    @static {
+        path *.js *.css *.woff *.woff2 *.ttf *.png *.jpg *.jpeg *.gif *.svg *.ico *.webp
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Never cache the app shell or the service worker so redeploys are picked up
+    # immediately and the PWA auto-updates.
+    @noCache path /index.html /sw.js /registerSW.js /manifest.webmanifest
+    header @noCache Cache-Control "no-cache, no-store, must-revalidate"
+}

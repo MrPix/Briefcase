@@ -31,15 +31,41 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         m.CreatedAt, m.UpdatedAt);
 
     // GET /api/messages  →  list active messages (paged, newest first)
+    // Optional server-side filters keep mobile payloads small:
+    //   kind   — only messages of the given kind (Text/Url/File)
+    //   pinned — true → only pinned, false → only unpinned
+    //   q      — case-insensitive substring match over non-encrypted content
+    //            (encrypted messages are excluded from text search since the
+    //             server only stores ciphertext)
     [HttpGet]
-    public async Task<IActionResult> GetMessages([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetMessages(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] MessageKind? kind = null,
+        [FromQuery] bool? pinned = null,
+        [FromQuery] string? q = null)
     {
         var userId = GetUserId();
         pageSize = Math.Clamp(pageSize, 1, 100);
         page = Math.Max(page, 1);
 
-        var query = db.Messages
-            .Where(m => m.UserId == userId && !m.IsDeleted)
+        var filtered = db.Messages
+            .Where(m => m.UserId == userId && !m.IsDeleted);
+
+        if (kind is not null)
+            filtered = filtered.Where(m => m.Kind == kind);
+
+        if (pinned is not null)
+            filtered = filtered.Where(m => m.IsPinned == pinned);
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var pattern = $"%{q.Trim()}%";
+            filtered = filtered.Where(m =>
+                !m.IsEncrypted && m.Content != null && EF.Functions.ILike(m.Content, pattern));
+        }
+
+        var query = filtered
             .OrderByDescending(m => m.IsPinned)
             .ThenByDescending(m => m.PinnedAt)
             .ThenByDescending(m => m.CreatedAt);

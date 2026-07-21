@@ -87,7 +87,7 @@ jobs:
           - service: briefcase-api
             dockerfile: src/Briefcase.ApiService/Dockerfile
           - service: briefcase-web
-            dockerfile: src/Briefcase.Web/Dockerfile
+            dockerfile: src/Briefcase.React/Dockerfile
 
     steps:
       - uses: actions/checkout@v4
