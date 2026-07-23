@@ -19,6 +19,15 @@ services:
       retries: 5
       start_period: 20s
 
+  # ── pgAdmin init (fixes bind-mount ownership for uid 5050) ──────────────────
+  pgadmin-init:
+    image: alpine:3
+    container_name: briefcase-pgadmin-init
+    command: ["sh", "-c", "mkdir -p /pgadmin && chown -R 5050:5050 /pgadmin"]
+    volumes:
+      - ./volumes/pgadmin:/pgadmin
+    restart: on-failure
+
   # ── pgAdmin (PostgreSQL web UI) ───────────────────────────────────────────────
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -34,6 +43,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgadmin-init:
+        condition: service_completed_successfully
     networks:
       - briefcase-internal
     restart: unless-stopped
