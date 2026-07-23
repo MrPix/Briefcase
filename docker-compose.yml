@@ -38,6 +38,7 @@ services:
       PGADMIN_LISTEN_PORT: 80
     volumes:
       - ./volumes/pgadmin:/var/lib/pgadmin
+      - ./deploy/pgadmin/servers.json:/pgadmin4/servers.json:ro
     ports:
       - "5050:80"   # pgAdmin web UI — reachable from the internal network (all interfaces)
     depends_on:

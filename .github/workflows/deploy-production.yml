@@ -38,7 +38,7 @@ jobs:
       - name: Ensure application directory exists
         run: |
           set -euo pipefail
-          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p '${APP_DIR}/deploy'"
+          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p '${APP_DIR}/deploy/pgadmin'"
 
       - name: Upload docker-compose.yml
         run: |
@@ -49,6 +49,11 @@ jobs:
         run: |
           set -euo pipefail
           scp deploy/Caddyfile.production "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_DIR}/deploy/Caddyfile.production"
+
+      - name: Upload pgAdmin servers config
+        run: |
+          set -euo pipefail
+          scp deploy/pgadmin/servers.json "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_DIR}/deploy/pgadmin/servers.json"
 
       - name: Pull images and restart services
         run: |
