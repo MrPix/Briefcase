@@ -7,7 +7,7 @@ import { messageStream } from '../realtime/messageStream'
 import { MessageCard } from '../components/MessageCard'
 import { downloadFile } from '../utils/download'
 import { getDateLabel, formatFileSize } from '../utils/format'
-import { PaperclipIcon, PasteIcon, SendIcon, CloseIcon, PlusIcon } from '../components/icons'
+import { PaperclipIcon, PasteIcon, SendIcon, CloseIcon, PlusIcon, ClipboardIcon } from '../components/icons'
 
 type Filter = 'all' | 'pinned' | 'file' | 'url' | 'text'
 const MAX_PINNED_IN_CLIPBOARD = 3
@@ -284,6 +284,7 @@ export function ClipboardPage() {
                         </div>
                     ) : visiblePinned.length === 0 && recentGroups.length === 0 ? (
                         <div className="empty-state">
+                            <ClipboardIcon size={48} style={{ stroke: 'var(--text-muted)', strokeWidth: 1 }} />
                             <p>No messages yet</p>
                             <span>Send your first message to get started</span>
                         </div>
