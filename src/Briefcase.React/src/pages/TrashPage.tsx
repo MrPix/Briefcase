@@ -3,6 +3,7 @@ import type { Message } from '../types'
 import { trashApi } from '../services/trash'
 import { e2eeService } from '../crypto/e2ee'
 import { MessageCard } from '../components/MessageCard'
+import { TrashIcon } from '../components/icons'
 
 async function decryptInPlace(message: Message): Promise<Message> {
     if (e2eeService.isUnlocked && message.isEncrypted && message.content && message.encryptionIV) {
@@ -76,6 +77,7 @@ export function TrashPage() {
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="empty-state">
+                        <TrashIcon size={48} style={{ stroke: 'var(--text-muted)', strokeWidth: 1 }} />
                         <p>Trash is empty</p>
                         <span>Deleted messages will appear here</span>
                     </div>
