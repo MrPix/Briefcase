@@ -254,16 +254,21 @@ label.toolbar-btn {
 }
 
 .list-section-header {
+    align-self: center;
+    width: fit-content;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 16px 6px;
+    justify-content: center;
+    gap: 5px;
+    margin: 8px auto 4px;
+    padding: 3px 12px;
     flex-shrink: 0;
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.7rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
+    background: var(--surface-muted, rgba(0, 0, 0, 0.05));
+    border-radius: 999px;
 }
 
 .message-item {

@@ -197,21 +197,21 @@
 }
 
 .list-section-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    align-self: center;
+    width: fit-content;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    justify-content: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     color: var(--text-muted);
-    margin: 0.6rem -0.9rem 0.3rem;
-    padding: 0.35rem 0.9rem;
+    margin: 0.5rem auto 0.3rem;
+    padding: 0.2rem 0.75rem;
     background: color-mix(in srgb, var(--surface) 86%, transparent);
-    backdrop-filter: blur(6px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
 }
 
 .list-section-header:first-child {
