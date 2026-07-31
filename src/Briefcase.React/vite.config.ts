@@ -14,6 +14,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Register the worker from src/pwa.ts so we can auto-reload open tabs on update.
+      injectRegister: null,
       includeAssets: ['icon.svg', 'favicon.png'],
       manifest: {
         name: 'Briefcase',
