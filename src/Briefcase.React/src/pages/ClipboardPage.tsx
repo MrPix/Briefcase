@@ -55,6 +55,8 @@ export function ClipboardPage() {
     const [isUploading, setIsUploading] = useState(false)
     const [isDragOver, setIsDragOver] = useState(false)
     const listEndRef = useRef<HTMLDivElement>(null)
+    const listRef = useRef<HTMLDivElement>(null)
+    const didInitialScrollRef = useRef(false)
 
     const loadMessages = useCallback(async () => {
         try {
@@ -72,6 +74,42 @@ export function ClipboardPage() {
     useEffect(() => {
         loadMessages()
     }, [loadMessages])
+
+    // Land at the newest message on first load/reload. Keep pinning to the bottom
+    // for a short window so late reflow (lazy image previews, decrypt, real-time
+    // upserts) can't drift the view, and bail out as soon as the user scrolls.
+    useEffect(() => {
+        if (didInitialScrollRef.current) return
+        if (!messages || messages.length === 0) return
+        didInitialScrollRef.current = true
+
+        const el = listRef.current
+        if (!el) return
+
+        let cancelled = false
+        const start = performance.now()
+        const DURATION_MS = 800
+
+        const stop = () => {
+            cancelled = true
+            el.removeEventListener('wheel', stop)
+            el.removeEventListener('touchmove', stop)
+            window.removeEventListener('keydown', stop)
+        }
+        el.addEventListener('wheel', stop, { passive: true })
+        el.addEventListener('touchmove', stop, { passive: true })
+        window.addEventListener('keydown', stop)
+
+        const tick = () => {
+            if (cancelled) return
+            el.scrollTop = el.scrollHeight
+            if (performance.now() - start < DURATION_MS) requestAnimationFrame(tick)
+            else stop()
+        }
+        requestAnimationFrame(tick)
+
+        return stop
+    }, [messages])
 
     // Real-time updates from other devices.
     useEffect(() => {
@@ -289,7 +327,7 @@ export function ClipboardPage() {
                             <span>Send your first message to get started</span>
                         </div>
                     ) : (
-                        <div className="message-list">
+                        <div className="message-list" ref={listRef}>
                             {pinnedMessages.length > 0 && (filter === 'all' || filter === 'pinned') && (
                                 <>
                                     <div className="list-section-header">Pinned</div>
