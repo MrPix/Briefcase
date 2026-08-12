@@ -56,7 +56,7 @@ export function LandingPage() {
 
             <section className="landing-features">
                 <div className="landing-features-inner">
-                    <h2 className="landing-features-title">Everything you need, everywhere you go</h2>
+                    <h2 className="landing-features-title">One Briefcase. All your devices.</h2>
                     <div className="landing-features-grid">
                         {FEATURES.map(({ icon: Icon, title, text }) => (
                             <div className="landing-feature-card" key={title}>
