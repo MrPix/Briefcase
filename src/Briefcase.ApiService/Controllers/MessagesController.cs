@@ -50,7 +50,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         page = Math.Max(page, 1);
 
         var filtered = db.Messages
-            .Where(m => m.UserId == userId && !m.IsDeleted);
+            .Where(m => m.UserId == userId && !m.IsDeleted && !m.IsPermanentlyDeleted);
 
         if (kind is not null)
             filtered = filtered.Where(m => m.Kind == kind);
@@ -108,6 +108,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             FileId = request.FileId,
             IsPinned = false,
             IsDeleted = false,
+            IsPermanentlyDeleted = false,
             IsEncrypted = request.IsEncrypted,
             EncryptionIV = request.IsEncrypted ? request.EncryptionIV : null,
             CreatedAt = now,
@@ -130,7 +131,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
     {
         var userId = GetUserId();
         var message = await db.Messages
-            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted);
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && !m.IsDeleted && !m.IsPermanentlyDeleted);
 
         if (message is null)
             return NotFound();

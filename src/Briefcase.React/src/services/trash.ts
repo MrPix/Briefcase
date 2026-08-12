@@ -9,4 +9,10 @@ export const trashApi = {
     restore(id: string): Promise<Message> {
         return api.post<Message>(`api/trash/${id}/restore`)
     },
+    deleteForever(id: string): Promise<void> {
+        return api.del(`api/trash/${id}`)
+    },
+    empty(): Promise<void> {
+        return api.del('api/trash')
+    },
 }

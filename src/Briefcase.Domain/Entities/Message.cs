@@ -20,6 +20,8 @@ public class Message
     public DateTime? PinnedAt { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+    public bool IsPermanentlyDeleted { get; set; }
+    public DateTime? PermanentlyDeletedAt { get; set; }
     public bool IsEncrypted { get; set; }
     public string? EncryptionIV { get; set; }
     [NotMapped]

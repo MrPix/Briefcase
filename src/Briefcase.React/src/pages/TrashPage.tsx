@@ -21,6 +21,7 @@ export function TrashPage() {
     const { t } = useTranslation()
     const [messages, setMessages] = useState<Message[] | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     const didLoadMessages = useRef(false)
 
     const loadMessages = useCallback(async () => {
@@ -66,6 +67,34 @@ export function TrashPage() {
         }
     }
 
+    const handleDeleteForever = async (m: Message) => {
+        if (isDeleting || !window.confirm(t('trash.deleteForeverConfirm'))) return
+
+        try {
+            setIsDeleting(true)
+            await trashApi.deleteForever(m.id)
+            await loadMessages()
+        } catch (err) {
+            setError(t('trash.deleteForeverFailed', { error: err instanceof Error ? err.message : String(err) }))
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleEmptyTrash = async () => {
+        if (isDeleting || !window.confirm(t('trash.emptyConfirm'))) return
+
+        try {
+            setIsDeleting(true)
+            await trashApi.empty()
+            await loadMessages()
+        } catch (err) {
+            setError(t('trash.emptyFailed', { error: err instanceof Error ? err.message : String(err) }))
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     return (
         <div className="clipboard-layout">
             <div className="clipboard-list">
@@ -87,14 +116,26 @@ export function TrashPage() {
                         <span>{t('trash.emptyHint')}</span>
                     </div>
                 ) : (
-                    <div className="message-list">
-                        <div className="list-section-header">{t('trash.section')}</div>
-                        {messages.map((m) => (
-                            <div className="message-item" key={m.id}>
-                                <MessageCard message={m} onRestore={handleRestore} onCopy={handleCopy} />
-                            </div>
-                        ))}
-                    </div>
+                    <>
+                        <div className="trash-toolbar">
+                            <div className="list-section-header">{t('trash.section')}</div>
+                            <button className="btn btn-danger btn-sm" onClick={handleEmptyTrash} disabled={isDeleting}>
+                                {t('trash.emptyAction')}
+                            </button>
+                        </div>
+                        <div className="message-list">
+                            {messages.map((m) => (
+                                <div className="message-item" key={m.id}>
+                                    <MessageCard
+                                        message={m}
+                                        onRestore={handleRestore}
+                                        onCopy={handleCopy}
+                                        onDeleteForever={handleDeleteForever}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
         </div>

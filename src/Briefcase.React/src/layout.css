@@ -206,6 +206,18 @@
     padding: 0.5rem 0.9rem 0.75rem;
 }
 
+.trash-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.9rem 0;
+}
+
+.trash-toolbar .list-section-header {
+    margin: 0;
+}
+
 .list-section-header {
     align-self: center;
     width: fit-content;

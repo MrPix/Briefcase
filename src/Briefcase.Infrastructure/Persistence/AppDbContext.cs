@@ -69,7 +69,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasConversion<string>()
                 .HasMaxLength(10);
             e.Property(m => m.EncryptionIV).HasMaxLength(24);
-            e.HasIndex(m => new { m.UserId, m.IsDeleted, m.CreatedAt });
+            e.HasIndex(m => new { m.UserId, m.IsDeleted, m.IsPermanentlyDeleted, m.CreatedAt });
 
             e.HasOne(m => m.User)
                 .WithMany(u => u.Messages)
