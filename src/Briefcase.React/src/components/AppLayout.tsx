@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { BrandLogo, NavMenu } from './NavMenu'
+import { BrandLogo } from './BrandLogo'
+import { NavMenu } from './NavMenu'
 import { MenuIcon } from './icons'
 
 /** Protected shell: sidebar + routed content. Redirects to /login when signed out. */

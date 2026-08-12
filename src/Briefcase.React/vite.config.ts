@@ -16,18 +16,17 @@ export default defineConfig({
       registerType: 'autoUpdate',
       // Register the worker from src/pwa.ts so we can auto-reload open tabs on update.
       injectRegister: null,
-      includeAssets: ['icon.svg', 'favicon.png'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Briefcase',
         short_name: 'Briefcase',
-        description: 'Your secure clipboard, everywhere.',
+        description: 'Your stuff. Everywhere.',
         theme_color: '#0EA5E9',
         background_color: '#F0F0F0',
         display: 'standalone',
         start_url: '/',
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
       },
     }),

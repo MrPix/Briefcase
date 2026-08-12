@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { Platform, platformLabel, type Device } from '../types'
 import { devicesApi } from '../services/devices'
@@ -16,6 +16,7 @@ export function DevicesPage() {
     const [isApproving, setIsApproving] = useState(false)
     const [addDeviceError, setAddDeviceError] = useState<string | null>(null)
     const [addDeviceSuccess, setAddDeviceSuccess] = useState<string | null>(null)
+    const didLoadDevices = useRef(false)
 
     const loadDevices = async () => {
         try {
@@ -26,6 +27,8 @@ export function DevicesPage() {
     }
 
     useEffect(() => {
+        if (didLoadDevices.current) return
+        didLoadDevices.current = true
         loadDevices()
     }, [])
 

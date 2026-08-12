@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthException, useAuth } from '../auth/AuthContext'
 import { devicesApi } from '../services/devices'
 import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
 import { platformLabel, type Device, type E2eeSettings } from '../types'
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0'
 
 export function SettingsPage() {
     const { changePassword, logout } = useAuth()
@@ -38,18 +40,21 @@ export function SettingsPage() {
     const [newPassConfirm, setNewPassConfirm] = useState('')
 
     const [isLoggingOut, setIsLoggingOut] = useState(false)
+    const didLoadSettings = useRef(false)
 
     useEffect(() => {
-        ; (async () => {
-            try {
-                setDevices(await devicesApi.list())
-            } catch {
-                setDevices([])
-            }
-            setE2eeSettings((await e2eeService.getSettings()) ?? { isEnabled: false, kdfAlgorithm: null, kdfSalt: null, kdfParams: null, keyVerifier: null })
-            setRememberPassphrase(e2eeService.getRememberPassphrase())
-            setUnlocked(e2eeService.isUnlocked)
-        })()
+        if (didLoadSettings.current) return
+        didLoadSettings.current = true
+            ; (async () => {
+                try {
+                    setDevices(await devicesApi.list())
+                } catch {
+                    setDevices([])
+                }
+                setE2eeSettings((await e2eeService.getSettings()) ?? { isEnabled: false, kdfAlgorithm: null, kdfSalt: null, kdfParams: null, keyVerifier: null })
+                setRememberPassphrase(e2eeService.getRememberPassphrase())
+                setUnlocked(e2eeService.isUnlocked)
+            })()
     }, [])
 
     const refreshSettings = async () => {
@@ -373,6 +378,27 @@ export function SettingsPage() {
                     <button className="btn btn-danger btn-block" onClick={handleLogout} disabled={isLoggingOut}>
                         {isLoggingOut ? 'Logging out…' : 'Log Out'}
                     </button>
+                </div>
+
+                {/* ── About ── */}
+                <div className="settings-section settings-about">
+                    <div className="settings-about-header">
+                        <h5>About Briefcase</h5>
+                        <span className="text-muted">Version {APP_VERSION}</span>
+                    </div>
+                    <p>
+                        Briefcase is a secure place for your notes, links, and files. Add something once, then find it on every
+                        device with end-to-end encryption.
+                    </p>
+                    <ul className="settings-about-features">
+                        <li>End-to-end encrypted content storage</li>
+                        <li>Cross-device sync and transfer</li>
+                        <li>Support for notes, links, and files</li>
+                        <li>Favorites and trash management</li>
+                    </ul>
+                    <a href="https://github.com/MrPix/Briefcase" target="_blank" rel="noopener noreferrer">
+                        GitHub Repository
+                    </a>
                 </div>
             </div>
         </div>

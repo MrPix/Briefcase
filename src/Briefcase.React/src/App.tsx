@@ -10,7 +10,6 @@ import { DevicesPage } from './pages/DevicesPage'
 import { TransferPage } from './pages/TransferPage'
 import { TrashPage } from './pages/TrashPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { AboutPage } from './pages/AboutPage'
 import { ShareViewPage } from './pages/ShareViewPage'
 
 function App() {
@@ -36,7 +35,7 @@ function App() {
                             <Route path="/devices" element={<DevicesPage />} />
                             <Route path="/trash" element={<TrashPage />} />
                             <Route path="/settings" element={<SettingsPage />} />
-                            <Route path="/about" element={<AboutPage />} />
+                            <Route path="/about" element={<Navigate to="/settings" replace />} />
                         </Route>
 
                         <Route path="*" element={<Navigate to="/" replace />} />
