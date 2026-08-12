@@ -1178,6 +1178,20 @@
     border-radius: var(--radius-md);
     padding: 1.35rem 1.3rem;
     background: color-mix(in srgb, var(--surface) 76%, var(--page-bg));
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+@media (hover: hover) {
+    .landing-feature-card:hover {
+        background: color-mix(in srgb, var(--surface) 88%, var(--page-bg));
+        transform: translateY(-2px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-feature-card {
+        transition: none;
+    }
 }
 
 .landing-feature-icon {
