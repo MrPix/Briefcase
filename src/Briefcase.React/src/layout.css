@@ -308,6 +308,15 @@
     background: var(--accent-bg);
 }
 
+.msg-card:hover {
+    background: var(--surface-hover);
+    border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+}
+
+.msg-card.pinned:hover {
+    background: var(--accent-bg-hover);
+}
+
 .msg-icon {
     flex-shrink: 0;
     width: 34px;
