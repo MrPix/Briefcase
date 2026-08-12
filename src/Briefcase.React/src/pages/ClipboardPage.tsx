@@ -5,9 +5,10 @@ import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
 import { messageStream } from '../realtime/messageStream'
 import { MessageCard } from '../components/MessageCard'
+import { CapturePreview } from '../components/CapturePreview'
 import { downloadFile } from '../utils/download'
-import { getDateLabel, formatFileSize } from '../utils/format'
-import { PaperclipIcon, PasteIcon, SendIcon, CloseIcon, PlusIcon, ClipboardIcon } from '../components/icons'
+import { getDateLabel } from '../utils/format'
+import { PaperclipIcon, PasteIcon, SendIcon, ClipboardIcon } from '../components/icons'
 
 type Filter = 'all' | 'pinned' | 'file' | 'url' | 'text'
 const MAX_PINNED_IN_CLIPBOARD = 3
@@ -348,6 +349,13 @@ export function ClipboardPage() {
         setError(null)
     }
 
+    const handleComposerKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            event.preventDefault()
+            void sendMessage()
+        }
+    }
+
     return (
         <div
             className={`clipboard-drop-zone${isDragOver ? ' drag-over' : ''}`}
@@ -449,49 +457,40 @@ export function ClipboardPage() {
                     )}
 
                     <div className="compose-area">
-                        {stagedFiles.length > 0 && (
-                            <div className="staged-files">
-                                {stagedFiles.map((staged) => (
-                                    <div className="staged-file" key={staged.id}>
-                                        <span className="staged-file-name">{staged.file.name}</span>
-                                        <span className="staged-file-size">{formatFileSize(staged.file.size)}</span>
-                                        <button
-                                            className="staged-file-remove"
-                                            title="Remove"
-                                            onClick={() => setStagedFiles((prev) => prev.filter((f) => f.id !== staged.id))}
-                                        >
-                                            <CloseIcon size={12} />
-                                        </button>
-                                    </div>
-                                ))}
-                                <label className="staged-file-add" title="Add more files">
-                                    <PlusIcon size={14} /> Add files
-                                    <input type="file" multiple style={{ display: 'none' }} onChange={(e) => stageFiles(e.target.files)} />
-                                </label>
-                            </div>
-                        )}
-
+                        <div className="compose-heading">
+                            <span>Capture anything</span>
+                            <span className="compose-hint">Ctrl/Cmd + Enter to save</span>
+                        </div>
                         <textarea
                             className="compose-input"
-                            rows={3}
+                            rows={4}
                             value={newContent}
                             onChange={(e) => setNewContent(e.target.value)}
                             onPaste={handleNativePaste}
-                            placeholder={stagedFiles.length > 0 ? 'Add a comment (optional)…' : 'Type or paste a message…'}
+                            onKeyDown={handleComposerKeyDown}
+                            placeholder={stagedFiles.length > 0 ? 'Add a comment (optional)…' : 'Paste or type anything…'}
                         />
 
+                        {(newContent.trim() || stagedFiles.length > 0) && (
+                            <CapturePreview
+                                content={newContent}
+                                files={stagedFiles}
+                                onRemoveFile={(id) => setStagedFiles((prev) => prev.filter((file) => file.id !== id))}
+                            />
+                        )}
+
                         <div className="compose-actions">
-                            {stagedFiles.length === 0 && (
+                            <div className="compose-tools">
                                 <label className="toolbar-btn" title="Attach file">
-                                    <PaperclipIcon size={14} />
+                                    <PaperclipIcon size={14} /> Attach
                                     <input type="file" multiple style={{ display: 'none' }} onChange={(e) => stageFiles(e.target.files)} />
                                 </label>
-                            )}
-                            <button className="toolbar-btn" title="Paste from clipboard" onClick={handlePaste}>
-                                <PasteIcon size={14} />
-                            </button>
+                                <button className="toolbar-btn" title="Paste from clipboard" onClick={handlePaste}>
+                                    <PasteIcon size={14} /> Paste
+                                </button>
+                            </div>
                             <button className="toolbar-btn primary" onClick={sendMessage} disabled={!canSend}>
-                                <SendIcon size={14} /> Send
+                                <SendIcon size={14} /> Save
                             </button>
                         </div>
                     </div>
