@@ -47,8 +47,9 @@ export function LandingPage() {
 
                     <div className="landing-cta-secondary">
                         <Link className="landing-link-secondary" to="/transfer">
-                            <TransferIcon size={16} /> Receive File
+                            <TransferIcon size={16} /> Receive a file
                         </Link>
+                        <p className="landing-cta-hint">Receive a file without an account</p>
                     </div>
                 </div>
             </section>
