@@ -4,7 +4,10 @@ import type { Message } from '../types'
 import { trashApi } from '../services/trash'
 import { e2eeService } from '../crypto/e2ee'
 import { MessageCard } from '../components/MessageCard'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { TrashIcon } from '../components/icons'
+
+type DeletionTarget = { type: 'message'; message: Message } | { type: 'trash' } | null
 
 async function decryptInPlace(message: Message): Promise<Message> {
     if (e2eeService.isUnlocked && message.isEncrypted && message.content && message.encryptionIV) {
@@ -21,6 +24,8 @@ export function TrashPage() {
     const { t } = useTranslation()
     const [messages, setMessages] = useState<Message[] | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deletionTarget, setDeletionTarget] = useState<DeletionTarget>(null)
     const didLoadMessages = useRef(false)
 
     const loadMessages = useCallback(async () => {
@@ -66,6 +71,27 @@ export function TrashPage() {
         }
     }
 
+    const confirmDeletion = async () => {
+        if (!deletionTarget || isDeleting) return
+        try {
+            setIsDeleting(true)
+            if (deletionTarget.type === 'message') {
+                await trashApi.deleteForever(deletionTarget.message.id)
+            } else {
+                await trashApi.empty()
+            }
+            await loadMessages()
+            setDeletionTarget(null)
+        } catch (err) {
+            const errorKey = deletionTarget.type === 'message' ? 'trash.deleteForeverFailed' : 'trash.emptyFailed'
+            setError(t(errorKey, { error: err instanceof Error ? err.message : String(err) }))
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const dialogIsForMessage = deletionTarget?.type === 'message'
+
     return (
         <div className="clipboard-layout">
             <div className="clipboard-list">
@@ -87,16 +113,38 @@ export function TrashPage() {
                         <span>{t('trash.emptyHint')}</span>
                     </div>
                 ) : (
-                    <div className="message-list">
-                        <div className="list-section-header">{t('trash.section')}</div>
-                        {messages.map((m) => (
-                            <div className="message-item" key={m.id}>
-                                <MessageCard message={m} onRestore={handleRestore} onCopy={handleCopy} />
-                            </div>
-                        ))}
-                    </div>
+                    <>
+                        <div className="trash-toolbar">
+                            <div className="list-section-header">{t('trash.section')}</div>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeletionTarget({ type: 'trash' })} disabled={isDeleting}>
+                                {t('trash.emptyAction')}
+                            </button>
+                        </div>
+                        <div className="message-list">
+                            {messages.map((m) => (
+                                <div className="message-item" key={m.id}>
+                                    <MessageCard
+                                        message={m}
+                                        onRestore={handleRestore}
+                                        onCopy={handleCopy}
+                                        onDeleteForever={(message) => setDeletionTarget({ type: 'message', message })}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
+            <ConfirmDialog
+                open={deletionTarget !== null}
+                title={t(dialogIsForMessage ? 'trash.deleteForeverTitle' : 'trash.emptyTitle')}
+                description={t(dialogIsForMessage ? 'trash.deleteForeverConfirm' : 'trash.emptyConfirm')}
+                confirmLabel={t(dialogIsForMessage ? 'messageCard.deleteForever' : 'trash.emptyAction')}
+                cancelLabel={t('common.cancel')}
+                isConfirming={isDeleting}
+                onConfirm={confirmDeletion}
+                onCancel={() => setDeletionTarget(null)}
+            />
         </div>
     )
 }

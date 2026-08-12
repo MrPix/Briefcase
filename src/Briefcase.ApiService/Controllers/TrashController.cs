@@ -38,7 +38,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
         page = Math.Max(page, 1);
 
         var query = db.Messages
-            .Where(m => m.UserId == userId && m.IsDeleted)
+            .Where(m => m.UserId == userId && m.IsDeleted && !m.IsPermanentlyDeleted)
             .OrderByDescending(m => m.DeletedAt);
 
         var totalCount = await query.CountAsync();
@@ -69,7 +69,7 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
     {
         var userId = GetUserId();
         var message = await db.Messages
-            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && m.IsDeleted);
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && m.IsDeleted && !m.IsPermanentlyDeleted);
 
         if (message is null)
             return NotFound();
@@ -84,5 +84,56 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
             .SendAsync(MessageHub.MessageRestored, response);
 
         return Ok(response);
+    }
+
+    // DELETE /api/trash/{id}  →  permanently hide a trashed message without deleting its record
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteForever(Guid id)
+    {
+        var userId = GetUserId();
+        var message = await db.Messages
+            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId && m.IsDeleted && !m.IsPermanentlyDeleted);
+
+        if (message is null)
+            return NotFound();
+
+        var now = DateTime.UtcNow;
+        message.IsPermanentlyDeleted = true;
+        message.PermanentlyDeletedAt = now;
+        message.UpdatedAt = now;
+        await db.SaveChangesAsync();
+
+        await hub.Clients.Group(userId.ToString())
+            .SendAsync(MessageHub.MessageDeleted, new { id });
+
+        return NoContent();
+    }
+
+    // DELETE /api/trash  →  permanently hide all trashed messages without deleting their records
+    [HttpDelete]
+    public async Task<IActionResult> EmptyTrash()
+    {
+        var userId = GetUserId();
+        var messages = await db.Messages
+            .Where(m => m.UserId == userId && m.IsDeleted && !m.IsPermanentlyDeleted)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        foreach (var message in messages)
+        {
+            message.IsPermanentlyDeleted = true;
+            message.PermanentlyDeletedAt = now;
+            message.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync();
+
+        foreach (var message in messages)
+        {
+            await hub.Clients.Group(userId.ToString())
+                .SendAsync(MessageHub.MessageDeleted, new { id = message.Id });
+        }
+
+        return NoContent();
     }
 }

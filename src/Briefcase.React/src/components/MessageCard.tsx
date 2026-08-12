@@ -26,6 +26,7 @@ export interface MessageCardProps {
     onEdit?: (m: Message, newContent: string) => void
     onSendTo?: (m: Message) => void
     onRestore?: (m: Message) => void
+    onDeleteForever?: (m: Message) => void
 }
 
 export function MessageCard({
@@ -37,6 +38,7 @@ export function MessageCard({
     onEdit,
     onSendTo,
     onRestore,
+    onDeleteForever,
 }: MessageCardProps) {
     const { t } = useTranslation()
     const [isEditing, setIsEditing] = useState(false)
@@ -147,6 +149,15 @@ export function MessageCard({
                 )}
                 {onDelete && (
                     <button className="msg-action-btn delete" title={t('messageCard.delete')} onClick={() => onDelete(message)}>
+                        <TrashIcon size={16} />
+                    </button>
+                )}
+                {onDeleteForever && (
+                    <button
+                        className="msg-action-btn delete"
+                        title={t('messageCard.deleteForever')}
+                        onClick={() => onDeleteForever(message)}
+                    >
                         <TrashIcon size={16} />
                     </button>
                 )}

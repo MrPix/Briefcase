@@ -179,7 +179,14 @@
         "empty": "Trash is empty",
         "emptyHint": "Deleted messages will appear here",
         "section": "Deleted Messages",
-        "restoreFailed": "Failed to restore message: {{error}}"
+        "restoreFailed": "Failed to restore message: {{error}}",
+        "emptyAction": "Empty trash",
+        "emptyTitle": "Empty trash?",
+        "emptyConfirm": "Delete every message in the trash forever?",
+        "emptyFailed": "Failed to empty trash: {{error}}",
+        "deleteForeverTitle": "Delete forever?",
+        "deleteForeverConfirm": "Delete this message forever?",
+        "deleteForeverFailed": "Failed to delete message forever: {{error}}"
     },
     "share": {
         "loading": "Loading shared message…",
@@ -260,6 +267,7 @@
         "share": "Share",
         "restore": "Restore",
         "delete": "Delete",
+        "deleteForever": "Delete forever",
         "attachedFile": "Attached file"
     },
     "capturePreview": {
