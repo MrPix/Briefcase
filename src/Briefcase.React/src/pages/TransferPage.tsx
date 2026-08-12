@@ -247,7 +247,7 @@ export function TransferPage() {
                 <div className="transfer-icon receive">
                     <DevicesIcon size={40} />
                 </div>
-                <h2 className="transfer-title">Receive Message</h2>
+                <h2 className="transfer-title">Receive from another device</h2>
                 <p className="transfer-subtitle">Share this code with the sender. It expires in 10 minutes.</p>
 
                 {code === null ? (
