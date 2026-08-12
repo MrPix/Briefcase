@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Device> Devices => Set<Device>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<UserE2eeSettings> UserE2eeSettings => Set<UserE2eeSettings>();
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<FileAttachment> FileAttachments => Set<FileAttachment>();
     public DbSet<TransferSession> TransferSessions => Set<TransferSession>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
@@ -93,6 +94,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(s => s.User)
                 .WithOne(u => u.E2eeSettings)
                 .HasForeignKey<UserE2eeSettings>(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── UserSettings ─────────────────────────────────────────────────────
+        modelBuilder.Entity<UserSettings>(e =>
+        {
+            e.HasKey(s => s.UserId);
+            e.Property(s => s.Language).HasMaxLength(10);
+
+            e.HasOne(s => s.User)
+                .WithOne(u => u.Settings)
+                .HasForeignKey<UserSettings>(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

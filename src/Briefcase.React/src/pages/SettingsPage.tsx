@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AuthException, useAuth } from '../auth/AuthContext'
 import { devicesApi } from '../services/devices'
 import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
 import { platformLabel, type Device, type E2eeSettings } from '../types'
+import { LanguageSwitcher } from '../components/LanguageSwitcher'
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0'
 
 export function SettingsPage() {
+    const { t } = useTranslation()
     const { changePassword, logout } = useAuth()
     const navigate = useNavigate()
 
     const [devices, setDevices] = useState<Device[] | null>(null)
+
+    // Language
+    const [languageMessage, setLanguageMessage] = useState<string | null>(null)
 
     // Change password
     const [currentPassword, setCurrentPassword] = useState('')
@@ -67,23 +73,23 @@ export function SettingsPage() {
         setPasswordMessage(null)
         setPasswordSuccess(false)
         if (newPassword !== confirmPassword) {
-            setPasswordMessage('Passwords do not match.')
+            setPasswordMessage(t('settings.passwordMismatch'))
             return
         }
         if (newPassword.length < 8) {
-            setPasswordMessage('Password must be at least 8 characters.')
+            setPasswordMessage(t('settings.passwordTooShort'))
             return
         }
         setIsChangingPassword(true)
         try {
             await changePassword(currentPassword, newPassword)
-            setPasswordMessage('Password changed successfully.')
+            setPasswordMessage(t('settings.passwordChanged'))
             setPasswordSuccess(true)
             setCurrentPassword('')
             setNewPassword('')
             setConfirmPassword('')
         } catch (err) {
-            setPasswordMessage(err instanceof AuthException ? err.message : `An error occurred: ${String(err)}`)
+            setPasswordMessage(err instanceof AuthException ? err.message : t('settings.passwordChangeGenericError', { error: String(err) }))
         } finally {
             setIsChangingPassword(false)
         }
@@ -93,12 +99,12 @@ export function SettingsPage() {
         e.preventDefault()
         setE2eeMessage(null)
         if (enablePass !== enablePassConfirm) {
-            setE2eeMessage('Passphrases do not match.')
+            setE2eeMessage(t('settings.passphraseMismatch'))
             setE2eeSuccess(false)
             return
         }
         if (enablePass.length < 8) {
-            setE2eeMessage('Passphrase must be at least 8 characters.')
+            setE2eeMessage(t('settings.passphraseTooShort'))
             setE2eeSuccess(false)
             return
         }
@@ -109,10 +115,10 @@ export function SettingsPage() {
             setShowEnableForm(false)
             setEnablePass('')
             setEnablePassConfirm('')
-            setE2eeMessage('E2EE enabled. Your messages will now be encrypted.')
+            setE2eeMessage(t('settings.e2eeEnabled'))
             setE2eeSuccess(true)
         } catch (err) {
-            setE2eeMessage(`Failed to enable E2EE: ${err instanceof Error ? err.message : String(err)}`)
+            setE2eeMessage(t('settings.e2eeEnableFailed', { error: err instanceof Error ? err.message : String(err) }))
             setE2eeSuccess(false)
         } finally {
             setIsE2eeWorking(false)
@@ -125,10 +131,10 @@ export function SettingsPage() {
         try {
             await e2eeService.disable()
             await refreshSettings()
-            setE2eeMessage('E2EE disabled.')
+            setE2eeMessage(t('settings.e2eeDisabled'))
             setE2eeSuccess(true)
         } catch (err) {
-            setE2eeMessage(`Failed to disable E2EE: ${err instanceof Error ? err.message : String(err)}`)
+            setE2eeMessage(t('settings.e2eeDisableFailed', { error: err instanceof Error ? err.message : String(err) }))
             setE2eeSuccess(false)
         } finally {
             setIsE2eeWorking(false)
@@ -145,14 +151,14 @@ export function SettingsPage() {
                 setShowUnlockForm(false)
                 setUnlockPass('')
                 setUnlocked(true)
-                setE2eeMessage('Vault unlocked. Messages will be decrypted.')
+                setE2eeMessage(t('settings.vaultUnlocked'))
                 setE2eeSuccess(true)
             } else {
-                setE2eeMessage('Incorrect passphrase.')
+                setE2eeMessage(t('settings.incorrectPassphrase'))
                 setE2eeSuccess(false)
             }
         } catch (err) {
-            setE2eeMessage(`Unlock failed: ${err instanceof Error ? err.message : String(err)}`)
+            setE2eeMessage(t('settings.unlockFailed', { error: err instanceof Error ? err.message : String(err) }))
             setE2eeSuccess(false)
         } finally {
             setIsE2eeWorking(false)
@@ -163,12 +169,12 @@ export function SettingsPage() {
         e.preventDefault()
         setE2eeMessage(null)
         if (newPass !== newPassConfirm) {
-            setE2eeMessage('Passphrases do not match.')
+            setE2eeMessage(t('settings.passphraseMismatch'))
             setE2eeSuccess(false)
             return
         }
         if (newPass.length < 8) {
-            setE2eeMessage('Passphrase must be at least 8 characters.')
+            setE2eeMessage(t('settings.passphraseTooShort'))
             setE2eeSuccess(false)
             return
         }
@@ -182,10 +188,10 @@ export function SettingsPage() {
             setShowChangePassphraseForm(false)
             setNewPass('')
             setNewPassConfirm('')
-            setE2eeMessage('Passphrase changed.')
+            setE2eeMessage(t('settings.passphraseChanged'))
             setE2eeSuccess(true)
         } catch (err) {
-            setE2eeMessage(`Failed to change passphrase: ${err instanceof Error ? err.message : String(err)}`)
+            setE2eeMessage(t('settings.passphraseChangeFailed', { error: err instanceof Error ? err.message : String(err) }))
             setE2eeSuccess(false)
         } finally {
             setIsE2eeWorking(false)
@@ -197,7 +203,7 @@ export function SettingsPage() {
         try {
             e2eeService.setRememberPassphrase(remember)
         } catch (err) {
-            setE2eeMessage(`Failed to update remember-passphrase setting: ${err instanceof Error ? err.message : String(err)}`)
+            setE2eeMessage(t('settings.rememberChangeFailed', { error: err instanceof Error ? err.message : String(err) }))
             setE2eeSuccess(false)
         }
     }
@@ -212,17 +218,17 @@ export function SettingsPage() {
     return (
         <div className="settings-container">
             <div className="settings-card">
-                <h2 className="settings-title">Settings</h2>
+                <h2 className="settings-title">{t('settings.title')}</h2>
 
                 {/* ── Devices ── */}
                 <div className="settings-section">
-                    <h5>Device</h5>
+                    <h5>{t('settings.deviceSection')}</h5>
                     {devices === null ? (
                         <p className="text-muted">
-                            <em>Loading devices…</em>
+                            <em>{t('settings.loadingDevices')}</em>
                         </p>
                     ) : devices.length === 0 ? (
-                        <p className="text-muted">No registered devices.</p>
+                        <p className="text-muted">{t('settings.noDevices')}</p>
                     ) : (
                         <ul className="settings-device-list">
                             {devices.map((d) => (
@@ -231,141 +237,149 @@ export function SettingsPage() {
                                         <strong>{d.name}</strong>
                                         <span className="badge-type badge-text device-platform">{platformLabel(d.platform)}</span>
                                     </div>
-                                    <small className="text-muted">Last seen: {new Date(d.lastSeenAt).toLocaleString()}</small>
+                                    <small className="text-muted">{t('settings.lastSeen', { date: new Date(d.lastSeenAt).toLocaleString() })}</small>
                                 </li>
                             ))}
                         </ul>
                     )}
                 </div>
 
+                {/* ── Language ── */}
+                <div className="settings-section">
+                    <h5>{t('settings.languageSection')}</h5>
+                    <p className="text-muted">{t('settings.languageHint')}</p>
+                    {languageMessage && <div className="alert alert-danger">{languageMessage}</div>}
+                    <LanguageSwitcher
+                        onChange={() => setLanguageMessage(null)}
+                        onError={(err) => setLanguageMessage(t('settings.languageUpdateFailed', { error: err instanceof Error ? err.message : String(err) }))}
+                    />
+                </div>
+
                 {/* ── Change Password ── */}
                 <div className="settings-section">
-                    <h5>Change Password</h5>
+                    <h5>{t('settings.changePasswordSection')}</h5>
                     {passwordMessage && (
                         <div className={`alert ${passwordSuccess ? 'alert-success' : 'alert-danger'}`}>{passwordMessage}</div>
                     )}
                     <form onSubmit={handleChangePassword}>
                         <div className="mb-3">
-                            <label className="form-label">Current Password</label>
+                            <label className="form-label">{t('settings.currentPassword')}</label>
                             <input type="password" className="form-control" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
                         </div>
                         <div className="mb-3">
-                            <label className="form-label">New Password</label>
+                            <label className="form-label">{t('settings.newPassword')}</label>
                             <input type="password" className="form-control" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                         </div>
                         <div className="mb-3">
-                            <label className="form-label">Confirm New Password</label>
+                            <label className="form-label">{t('settings.confirmNewPassword')}</label>
                             <input type="password" className="form-control" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                         </div>
                         <button type="submit" className="btn btn-primary" disabled={isChangingPassword}>
-                            {isChangingPassword ? 'Changing…' : 'Change Password'}
+                            {isChangingPassword ? t('settings.changingPassword') : t('settings.changePassword')}
                         </button>
                     </form>
                 </div>
 
                 {/* ── E2EE ── */}
                 <div className="settings-section">
-                    <h5>End-to-End Encryption</h5>
-                    <p className="text-muted">
-                        When enabled, messages are encrypted in your browser before being sent to the server. Your passphrase never
-                        leaves your device.
-                    </p>
+                    <h5>{t('settings.e2eeSection')}</h5>
+                    <p className="text-muted">{t('settings.e2eeDescription')}</p>
                     {e2eeMessage && <div className={`alert ${e2eeSuccess ? 'alert-success' : 'alert-danger'}`}>{e2eeMessage}</div>}
 
                     {e2eeSettings === null ? (
                         <p className="text-muted">
-                            <em>Loading…</em>
+                            <em>{t('settings.loading')}</em>
                         </p>
                     ) : !e2eeSettings.isEnabled ? (
                         showEnableForm ? (
                             <form onSubmit={handleEnableE2ee}>
                                 <div className="mb-3">
-                                    <label className="form-label">Passphrase</label>
+                                    <label className="form-label">{t('settings.passphrase')}</label>
                                     <input type="password" className="form-control" value={enablePass} onChange={(e) => setEnablePass(e.target.value)} required />
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Confirm Passphrase</label>
+                                    <label className="form-label">{t('settings.confirmPassphrase')}</label>
                                     <input type="password" className="form-control" value={enablePassConfirm} onChange={(e) => setEnablePassConfirm(e.target.value)} required />
                                 </div>
                                 <div className="settings-btn-row">
                                     <button type="submit" className="btn btn-primary" disabled={isE2eeWorking}>
-                                        Enable
+                                        {t('settings.enable')}
                                     </button>
                                     <button type="button" className="btn btn-outline" onClick={() => setShowEnableForm(false)}>
-                                        Cancel
+                                        {t('common.cancel')}
                                     </button>
                                 </div>
                             </form>
                         ) : (
                             <button className="btn btn-outline" onClick={() => setShowEnableForm(true)}>
-                                Enable E2EE
+                                {t('settings.enableE2ee')}
                             </button>
                         )
                     ) : (
                         <>
                             <div className="settings-e2ee-status">
-                                <span className="badge-type badge-file">Enabled</span>
+                                <span className="badge-type badge-file">{t('settings.enabled')}</span>
                                 {unlocked ? (
-                                    <span className="badge-type badge-text">Unlocked</span>
+                                    <span className="badge-type badge-text">{t('settings.unlocked')}</span>
                                 ) : (
-                                    <span className="badge-type badge-link">Locked</span>
+                                    <span className="badge-type badge-link">{t('settings.locked')}</span>
                                 )}
                             </div>
 
                             <label className="settings-remember">
                                 <input type="checkbox" checked={rememberPassphrase} onChange={(e) => onRememberChanged(e.target.checked)} />
-                                <span>Remember passphrase on this browser</span>
+                                <span>{t('settings.rememberPassphrase')}</span>
                             </label>
-                            <div className="text-muted settings-remember-hint">When off, passphrase is kept only for this tab/session.</div>
+                            <div className="text-muted settings-remember-hint">{t('settings.rememberPassphraseHint')}</div>
 
                             {!unlocked &&
                                 (showUnlockForm ? (
                                     <form onSubmit={handleUnlockE2ee}>
                                         <div className="mb-3">
-                                            <label className="form-label">Passphrase</label>
+                                            <label className="form-label">{t('settings.passphrase')}</label>
                                             <input type="password" className="form-control" value={unlockPass} onChange={(e) => setUnlockPass(e.target.value)} required />
                                         </div>
                                         <div className="settings-btn-row">
                                             <button type="submit" className="btn btn-primary" disabled={isE2eeWorking}>
-                                                Unlock
+                                                {t('settings.unlock')}
                                             </button>
                                             <button type="button" className="btn btn-outline" onClick={() => setShowUnlockForm(false)}>
-                                                Cancel
+                                                {t('common.cancel')}
                                             </button>
                                         </div>
                                     </form>
                                 ) : (
                                     <button className="btn btn-outline" onClick={() => setShowUnlockForm(true)}>
-                                        Unlock
+                                        {t('settings.unlock')}
                                     </button>
                                 ))}
 
                             {showChangePassphraseForm ? (
                                 <form onSubmit={handleChangePassphrase}>
                                     <div className="mb-3">
-                                        <label className="form-label">New Passphrase</label>
+                                        <label className="form-label">{t('settings.newPassphrase')}</label>
                                         <input type="password" className="form-control" value={newPass} onChange={(e) => setNewPass(e.target.value)} required />
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label">Confirm New Passphrase</label>
+                                        <label className="form-label">{t('settings.confirmNewPassphrase')}</label>
                                         <input type="password" className="form-control" value={newPassConfirm} onChange={(e) => setNewPassConfirm(e.target.value)} required />
                                     </div>
                                     <div className="settings-btn-row">
                                         <button type="submit" className="btn btn-primary" disabled={isE2eeWorking}>
-                                            Change Passphrase
+                                            {t('settings.changePassphrase')}
                                         </button>
                                         <button type="button" className="btn btn-outline" onClick={() => setShowChangePassphraseForm(false)}>
-                                            Cancel
+                                            {t('common.cancel')}
                                         </button>
                                     </div>
                                 </form>
                             ) : (
                                 <div className="settings-btn-row">
                                     <button className="btn btn-outline btn-sm" disabled={!unlocked} onClick={() => setShowChangePassphraseForm(true)}>
-                                        Change Passphrase
+                                        {t('settings.changePassphrase')}
                                     </button>
                                     <button className="btn btn-danger btn-sm" onClick={handleDisableE2ee} disabled={isE2eeWorking}>
-                                        Disable E2EE
+                                        {t('settings.disableE2ee')}
                                     </button>
                                 </div>
                             )}
@@ -376,28 +390,25 @@ export function SettingsPage() {
                 {/* ── Logout ── */}
                 <div className="settings-section">
                     <button className="btn btn-danger btn-block" onClick={handleLogout} disabled={isLoggingOut}>
-                        {isLoggingOut ? 'Logging out…' : 'Log Out'}
+                        {isLoggingOut ? t('settings.loggingOut') : t('settings.logOut')}
                     </button>
                 </div>
 
                 {/* ── About ── */}
                 <div className="settings-section settings-about">
                     <div className="settings-about-header">
-                        <h5>About Briefcase</h5>
-                        <span className="text-muted">Version {APP_VERSION}</span>
+                        <h5>{t('settings.aboutTitle')}</h5>
+                        <span className="text-muted">{t('settings.version', { version: APP_VERSION })}</span>
                     </div>
-                    <p>
-                        Briefcase is a secure place for your notes, links, and files. Add something once, then find it on every
-                        device with end-to-end encryption.
-                    </p>
+                    <p>{t('settings.aboutDescription')}</p>
                     <ul className="settings-about-features">
-                        <li>End-to-end encrypted content storage</li>
-                        <li>Cross-device sync and transfer</li>
-                        <li>Support for notes, links, and files</li>
-                        <li>Favorites and trash management</li>
+                        <li>{t('settings.feature1')}</li>
+                        <li>{t('settings.feature2')}</li>
+                        <li>{t('settings.feature3')}</li>
+                        <li>{t('settings.feature4')}</li>
                     </ul>
                     <a href="https://github.com/MrPix/Briefcase" target="_blank" rel="noopener noreferrer">
-                        GitHub Repository
+                        {t('settings.githubRepo')}
                     </a>
                 </div>
             </div>

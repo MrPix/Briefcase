@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { MessageKind, type Message } from '../types'
 import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
@@ -46,6 +47,7 @@ interface StagedFile {
 }
 
 export function ClipboardPage() {
+    const { t } = useTranslation()
     const location = useLocation()
     const navigate = useNavigate()
     const filter = filterFromPath(location.pathname)
@@ -69,7 +71,7 @@ export function ClipboardPage() {
             setMessages(decrypted)
         } catch (err) {
             setMessages([])
-            setError(`Failed to load messages: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('clipboard.loadFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }, [])
 
@@ -225,7 +227,7 @@ export function ClipboardPage() {
             setStagedFiles([])
             await loadMessages(true)
         } catch (err) {
-            setError(`Failed to send message: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('clipboard.sendFailed', { error: err instanceof Error ? err.message : String(err) }))
         } finally {
             setIsUploading(false)
         }
@@ -253,7 +255,7 @@ export function ClipboardPage() {
         try {
             await downloadFile(m.fileId)
         } catch (err) {
-            setError(`Failed to download file: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('clipboard.downloadFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }
     const handleEdit = async (m: Message, newText: string) => {
@@ -271,7 +273,7 @@ export function ClipboardPage() {
             await messagesApi.edit(m.id, content, isEncrypted, encryptionIV)
             await loadMessages()
         } catch (err) {
-            setError(`Failed to edit message: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('clipboard.editFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }
     const handleSendTo = (m: Message) => navigate(`/transfer?messageId=${m.id}`)
@@ -329,7 +331,7 @@ export function ClipboardPage() {
             {isDragOver && (
                 <div className="drop-overlay">
                     <div className="drop-overlay-content">
-                        <p>Drop files here to upload</p>
+                        <p>{t('clipboard.dropHint')}</p>
                     </div>
                 </div>
             )}
@@ -338,7 +340,7 @@ export function ClipboardPage() {
                 <div className="clipboard-list">
                     {isUploading && (
                         <div className="upload-progress">
-                            <span>Uploading…</span>
+                            <span>{t('clipboard.uploading')}</span>
                         </div>
                     )}
 
@@ -346,24 +348,24 @@ export function ClipboardPage() {
                         <div className="alert alert-danger mx-3">
                             {error}
                             <button className="btn btn-outline btn-sm" onClick={() => loadMessages()} style={{ marginLeft: '0.5rem' }}>
-                                Retry
+                                {t('common.retry')}
                             </button>
                         </div>
                     ) : messages === null ? (
                         <div className="loading-state">
-                            <p>Loading messages…</p>
+                            <p>{t('clipboard.loading')}</p>
                         </div>
                     ) : visiblePinned.length === 0 && recentGroups.length === 0 ? (
                         <div className="empty-state">
                             <ClipboardIcon size={48} style={{ stroke: 'var(--text-muted)', strokeWidth: 1 }} />
-                            <p>No messages yet</p>
-                            <span>Send your first message to get started</span>
+                            <p>{t('clipboard.empty')}</p>
+                            <span>{t('clipboard.emptyHint')}</span>
                         </div>
                     ) : (
                         <div className="message-list" ref={listRef}>
                             {pinnedMessages.length > 0 && (filter === 'all' || filter === 'pinned') && (
                                 <>
-                                    <div className="list-section-header">Pinned</div>
+                                    <div className="list-section-header">{t('clipboard.pinnedSection')}</div>
                                     {visiblePinned.map((m) => (
                                         <div className="message-item" key={m.id}>
                                             <MessageCard
@@ -379,7 +381,7 @@ export function ClipboardPage() {
                                     ))}
                                     {filter === 'all' && pinnedMessages.length > MAX_PINNED_IN_CLIPBOARD && (
                                         <button className="see-all-link" onClick={() => navigate('/favorites')}>
-                                            See all {pinnedMessages.length} pinned
+                                            {t('clipboard.seeAllPinned', { count: pinnedMessages.length })}
                                         </button>
                                     )}
                                 </>
@@ -409,8 +411,8 @@ export function ClipboardPage() {
 
                     <div className="compose-area">
                         <div className="compose-heading">
-                            <span>Capture anything</span>
-                            <span className="compose-hint">Ctrl/Cmd + Enter to save</span>
+                            <span>{t('clipboard.composeHeading')}</span>
+                            <span className="compose-hint">{t('clipboard.composeHint')}</span>
                         </div>
                         <textarea
                             className="compose-input"
@@ -419,7 +421,7 @@ export function ClipboardPage() {
                             onChange={(e) => setNewContent(e.target.value)}
                             onPaste={handleNativePaste}
                             onKeyDown={handleComposerKeyDown}
-                            placeholder={stagedFiles.length > 0 ? 'Add a comment (optional)…' : 'Paste or type anything…'}
+                            placeholder={stagedFiles.length > 0 ? t('clipboard.composePlaceholderWithFile') : t('clipboard.composePlaceholder')}
                         />
 
                         {(newContent.trim() || stagedFiles.length > 0) && (
@@ -432,13 +434,13 @@ export function ClipboardPage() {
 
                         <div className="compose-actions">
                             <div className="compose-tools">
-                                <label className="toolbar-btn" title="Attach file">
-                                    <PaperclipIcon size={14} /> Attach
+                                <label className="toolbar-btn" title={t('clipboard.attach')}>
+                                    <PaperclipIcon size={14} /> {t('clipboard.attach')}
                                     <input type="file" multiple style={{ display: 'none' }} onChange={(e) => stageFiles(e.target.files)} />
                                 </label>
                             </div>
                             <button className="toolbar-btn primary" onClick={sendMessage} disabled={!canSend}>
-                                <SendIcon size={14} /> Save
+                                <SendIcon size={14} /> {t('clipboard.save')}
                             </button>
                         </div>
                     </div>

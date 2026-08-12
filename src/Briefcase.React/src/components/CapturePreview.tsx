@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { FileIcon, LinkIcon, CloseIcon } from './icons'
 import { compactUrl, detectCapture } from '../utils/capture'
 import { formatFileSize } from '../utils/format'
@@ -14,6 +15,7 @@ interface CapturePreviewProps {
 }
 
 export function CapturePreview({ content, files, onRemoveFile }: CapturePreviewProps) {
+    const { t } = useTranslation()
     const capture = detectCapture(content)
 
     return (
@@ -23,9 +25,9 @@ export function CapturePreview({ content, files, onRemoveFile }: CapturePreviewP
                     <FileIcon size={20} />
                     <div className="capture-preview-copy">
                         <strong>{file.name}</strong>
-                        <span>{file.type || 'File'} · {formatFileSize(file.size)}</span>
+                        <span>{file.type || t('capturePreview.file')} · {formatFileSize(file.size)}</span>
                     </div>
-                    <button className="capture-remove" title={`Remove ${file.name}`} onClick={() => onRemoveFile(id)}>
+                    <button className="capture-remove" title={t('capturePreview.remove', { name: file.name })} onClick={() => onRemoveFile(id)}>
                         <CloseIcon size={15} />
                     </button>
                 </div>

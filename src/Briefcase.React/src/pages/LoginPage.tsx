@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { AuthException, useAuth } from '../auth/AuthContext'
 import { deviceInfo } from '../auth/deviceInfo'
 import { devicesApi } from '../services/devices'
 import { TransferIcon } from '../components/icons'
 
 export function LoginPage() {
+    const { t } = useTranslation()
     const { login, externalProviders, buildExternalLoginUrl, completeExternalLogin } = useAuth()
     const navigate = useNavigate()
 
@@ -49,7 +51,7 @@ export function LoginPage() {
             await login(email, password)
             navigate('/clipboard')
         } catch (err) {
-            setError(err instanceof AuthException ? err.message : 'Unable to connect to the server. Please try again later.')
+            setError(err instanceof AuthException ? err.message : t('login.connectionError'))
         } finally {
             setLoading(false)
         }
@@ -72,7 +74,7 @@ export function LoginPage() {
             abortRef.current = new AbortController()
             waitForApproval(info.code, abortRef.current.signal)
         } catch (err) {
-            setLoginCodeError(`Couldn't start device sign-in: ${err instanceof Error ? err.message : String(err)}`)
+            setLoginCodeError(t('login.deviceSignInStartFailed', { error: err instanceof Error ? err.message : String(err) }))
         } finally {
             setGeneratingCode(false)
         }
@@ -86,13 +88,13 @@ export function LoginPage() {
                 completeExternalLogin(result.accessToken, result.refreshToken, result.accessTokenExpiresAt)
                 navigate('/clipboard', { replace: true })
             } else {
-                setLoginCodeError('This code expired. Please generate a new one.')
+                setLoginCodeError(t('login.codeExpired'))
                 setShowLoginCode(false)
                 setLoginCode(null)
             }
         } catch (err) {
             if ((err as DOMException)?.name === 'AbortError') return
-            setLoginCodeError(`Device sign-in failed: ${err instanceof Error ? err.message : String(err)}`)
+            setLoginCodeError(t('login.deviceSignInFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }
 
@@ -106,21 +108,21 @@ export function LoginPage() {
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <h2 className="auth-title">Sign In</h2>
-                <p className="auth-subtitle">Welcome back! Sign in to your account.</p>
+                <h2 className="auth-title">{t('login.title')}</h2>
+                <p className="auth-subtitle">{t('login.subtitle')}</p>
 
                 {error && <div className="alert alert-danger">{error}</div>}
 
                 <form onSubmit={handleLogin}>
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label">
-                            Email
+                            {t('login.emailLabel')}
                         </label>
                         <input
                             id="email"
                             type="email"
                             className="form-control"
-                            placeholder="you@example.com"
+                            placeholder={t('login.emailPlaceholder')}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -129,13 +131,13 @@ export function LoginPage() {
 
                     <div className="mb-3">
                         <label htmlFor="password" className="form-label">
-                            Password
+                            {t('login.passwordLabel')}
                         </label>
                         <input
                             id="password"
                             type="password"
                             className="form-control"
-                            placeholder="Enter your password"
+                            placeholder={t('login.passwordPlaceholder')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -144,12 +146,12 @@ export function LoginPage() {
 
                     <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                         {loading ? <span className="spinner" /> : null}
-                        {loading ? ' Signing in…' : 'Sign In'}
+                        {loading ? ` ${t('login.signingIn')}` : t('login.signIn')}
                     </button>
                 </form>
 
                 <div className="auth-divider">
-                    <span>or</span>
+                    <span>{t('login.or')}</span>
                 </div>
 
                 {externalProviders.map((provider) => (
@@ -160,24 +162,24 @@ export function LoginPage() {
                         onClick={() => startExternalLogin(provider.key)}
                         disabled={loading}
                     >
-                        Continue with {provider.displayName}
+                        {t('login.continueWith', { provider: provider.displayName })}
                     </button>
                 ))}
 
                 <div className="auth-footer">
-                    <span>Don't have an account?</span>
-                    <Link to="/signup">Sign Up</Link>
+                    <span>{t('login.noAccount')}</span>
+                    <Link to="/signup">{t('login.signUp')}</Link>
                 </div>
 
                 <div className="auth-footer auth-receive-row">
-                    <span>Receiving a file from another device?</span>
+                    <span>{t('login.receivingFile')}</span>
                     <Link to="/transfer" className="auth-receive-link">
-                        <TransferIcon size={14} /> Receive File
+                        <TransferIcon size={14} /> {t('login.receiveFile')}
                     </Link>
                 </div>
 
                 <div className="auth-divider">
-                    <span>or</span>
+                    <span>{t('login.or')}</span>
                 </div>
 
                 {!showLoginCode ? (
@@ -187,23 +189,25 @@ export function LoginPage() {
                         onClick={startLoginByCode}
                         disabled={loading || generatingCode}
                     >
-                        {generatingCode ? 'Preparing…' : 'Add this device with a code'}
+                        {generatingCode ? t('login.preparing') : t('login.addDeviceCode')}
                     </button>
                 ) : (
                     <div className="login-code-panel">
                         <p>
-                            On a device you're already signed in on, open <strong>Devices</strong>, choose{' '}
-                            <strong>Add device</strong>, and enter this code:
+                            <Trans i18nKey="login.addDeviceInstructions">
+                                On a device you're already signed in on, open <strong>Devices</strong>, choose{' '}
+                                <strong>Add device</strong>, and enter this code:
+                            </Trans>
                         </p>
                         <div className="code-display-group login-code" aria-label="Login code">
                             <span className="code-half">{loginCode?.slice(0, 4)}</span>
                             <span className="code-separator" aria-hidden="true">–</span>
                             <span className="code-half">{loginCode?.slice(4)}</span>
                         </div>
-                        <p className="text-muted">Waiting for approval…</p>
+                        <p className="text-muted">{t('login.waitingApproval')}</p>
                         {loginCodeError && <div className="alert alert-danger">{loginCodeError}</div>}
                         <button type="button" className="btn btn-outline" onClick={cancelLoginByCode}>
-                            Cancel
+                            {t('common.cancel')}
                         </button>
                     </div>
                 )}

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AuthException, useAuth } from '../auth/AuthContext'
 
 export function SignupPage() {
+    const { t } = useTranslation()
     const { register, externalProviders, buildExternalLoginUrl, completeExternalLogin } = useAuth()
     const navigate = useNavigate()
 
@@ -36,11 +38,11 @@ export function SignupPage() {
         setError(null)
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match.')
+            setError(t('signup.passwordMismatch'))
             return
         }
         if (password.length < 6) {
-            setError('Password must be at least 6 characters.')
+            setError(t('signup.passwordTooShort'))
             return
         }
 
@@ -50,7 +52,7 @@ export function SignupPage() {
             navigate('/clipboard')
         } catch (err) {
             setError(
-                err instanceof AuthException ? err.message : 'Registration failed. The email may already be in use.',
+                err instanceof AuthException ? err.message : t('signup.registrationFailed'),
             )
         } finally {
             setLoading(false)
@@ -65,20 +67,20 @@ export function SignupPage() {
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <h2 className="auth-title">Create Account</h2>
-                <p className="auth-subtitle">Sign up to get started.</p>
+                <h2 className="auth-title">{t('signup.title')}</h2>
+                <p className="auth-subtitle">{t('signup.subtitle')}</p>
 
                 {error && <div className="alert alert-danger">{error}</div>}
 
                 <form onSubmit={handleSignup}>
                     <div className="mb-3">
                         <label htmlFor="displayName" className="form-label">
-                            Display Name
+                            {t('signup.displayNameLabel')}
                         </label>
                         <input
                             id="displayName"
                             className="form-control"
-                            placeholder="Your name"
+                            placeholder={t('signup.displayNamePlaceholder')}
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
                             required
@@ -87,13 +89,13 @@ export function SignupPage() {
 
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label">
-                            Email
+                            {t('signup.emailLabel')}
                         </label>
                         <input
                             id="email"
                             type="email"
                             className="form-control"
-                            placeholder="you@example.com"
+                            placeholder={t('signup.emailPlaceholder')}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -102,13 +104,13 @@ export function SignupPage() {
 
                     <div className="mb-3">
                         <label htmlFor="password" className="form-label">
-                            Password
+                            {t('signup.passwordLabel')}
                         </label>
                         <input
                             id="password"
                             type="password"
                             className="form-control"
-                            placeholder="Create a password"
+                            placeholder={t('signup.passwordPlaceholder')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -117,13 +119,13 @@ export function SignupPage() {
 
                     <div className="mb-3">
                         <label htmlFor="confirmPassword" className="form-label">
-                            Confirm Password
+                            {t('signup.confirmPasswordLabel')}
                         </label>
                         <input
                             id="confirmPassword"
                             type="password"
                             className="form-control"
-                            placeholder="Confirm your password"
+                            placeholder={t('signup.confirmPasswordPlaceholder')}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
@@ -132,12 +134,12 @@ export function SignupPage() {
 
                     <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                         {loading ? <span className="spinner" /> : null}
-                        {loading ? ' Creating account…' : 'Sign Up'}
+                        {loading ? ` ${t('signup.creatingAccount')}` : t('signup.signUp')}
                     </button>
                 </form>
 
                 <div className="auth-divider">
-                    <span>or</span>
+                    <span>{t('signup.or')}</span>
                 </div>
 
                 {externalProviders.map((provider) => (
@@ -148,13 +150,13 @@ export function SignupPage() {
                         onClick={() => startExternalLogin(provider.key)}
                         disabled={loading}
                     >
-                        Continue with {provider.displayName}
+                        {t('signup.continueWith', { provider: provider.displayName })}
                     </button>
                 ))}
 
                 <div className="auth-footer">
-                    <span>Already have an account?</span>
-                    <Link to="/login">Sign In</Link>
+                    <span>{t('signup.haveAccount')}</span>
+                    <Link to="/login">{t('signup.signIn')}</Link>
                 </div>
             </div>
         </div>
