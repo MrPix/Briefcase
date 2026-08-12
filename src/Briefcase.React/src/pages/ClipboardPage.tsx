@@ -11,6 +11,23 @@ import { PaperclipIcon, PasteIcon, SendIcon, CloseIcon, PlusIcon, ClipboardIcon 
 
 type Filter = 'all' | 'pinned' | 'file' | 'url' | 'text'
 const MAX_PINNED_IN_CLIPBOARD = 3
+const MAX_FILES_PER_ACTION = 10
+
+const MIME_EXTENSIONS: Record<string, string> = {
+    'image/avif': 'avif',
+    'image/bmp': 'bmp',
+    'image/gif': 'gif',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/svg+xml': 'svg',
+    'image/webp': 'webp',
+    'application/pdf': 'pdf',
+}
+
+function clipboardFileName(contentType: string, index: number): string {
+    const extension = MIME_EXTENSIONS[contentType] ?? contentType.split('/')[1]?.split('+')[0]
+    return `clipboard-${index + 1}${extension ? `.${extension}` : ''}`
+}
 
 function filterFromPath(pathname: string): Filter {
     switch (pathname.replace(/^\//, '').toLowerCase()) {
@@ -212,15 +229,6 @@ export function ClipboardPage() {
         }
     }
 
-    const handlePaste = async () => {
-        try {
-            const text = await navigator.clipboard.readText()
-            if (text) setNewContent(text)
-        } catch {
-            /* clipboard read may be blocked */
-        }
-    }
-
     const handlePin = async (m: Message) => {
         await messagesApi.togglePin(m.id)
         await loadMessages()
@@ -266,13 +274,78 @@ export function ClipboardPage() {
     }
     const handleSendTo = (m: Message) => navigate(`/transfer?messageId=${m.id}`)
 
-    const stageFiles = (files: FileList | null) => {
+    const stageFiles = (files: ArrayLike<File> | null) => {
         if (!files) return
         const additions: StagedFile[] = []
-        for (let i = 0; i < Math.min(files.length, 10); i++) {
+        for (let i = 0; i < Math.min(files.length, MAX_FILES_PER_ACTION); i++) {
             additions.push({ id: crypto.randomUUID(), file: files[i] })
         }
         setStagedFiles((prev) => [...prev, ...additions])
+    }
+
+    const handlePaste = async () => {
+        try {
+            if (navigator.clipboard.read) {
+                const clipboardItems = await navigator.clipboard.read()
+                const files: File[] = []
+
+                for (const item of clipboardItems) {
+                    const contentType = item.types.find((type) => type !== 'text/plain' && type !== 'text/html')
+                    if (!contentType) continue
+
+                    const blob = await item.getType(contentType)
+                    files.push(new File([blob], clipboardFileName(blob.type || contentType, files.length), {
+                        type: blob.type || contentType,
+                    }))
+                }
+
+                if (files.length > 0) {
+                    stageFiles(files)
+                    setError(null)
+                    return
+                }
+
+                const textItem = clipboardItems.find((item) => item.types.includes('text/plain'))
+                if (textItem) {
+                    const text = await (await textItem.getType('text/plain')).text()
+                    if (text) setNewContent(text)
+                    setError(null)
+                    return
+                }
+            }
+
+            const text = await navigator.clipboard.readText()
+            if (text) setNewContent(text)
+            setError(null)
+        } catch {
+            try {
+                const text = await navigator.clipboard.readText()
+                if (text) {
+                    setNewContent(text)
+                    setError(null)
+                    return
+                }
+            } catch {
+                /* show the native paste fallback below */
+            }
+            setError('Clipboard access was blocked. Focus the message box and press Ctrl+V to paste files.')
+        }
+    }
+
+    const handleNativePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const files = Array.from(event.clipboardData.files)
+        if (files.length === 0) {
+            for (const item of event.clipboardData.items) {
+                if (item.kind !== 'file') continue
+                const file = item.getAsFile()
+                if (file) files.push(file)
+            }
+        }
+        if (files.length === 0) return
+
+        event.preventDefault()
+        stageFiles(files)
+        setError(null)
     }
 
     return (
@@ -403,6 +476,7 @@ export function ClipboardPage() {
                             rows={3}
                             value={newContent}
                             onChange={(e) => setNewContent(e.target.value)}
+                            onPaste={handleNativePaste}
                             placeholder={stagedFiles.length > 0 ? 'Add a comment (optional)…' : 'Type or paste a message…'}
                         />
 
