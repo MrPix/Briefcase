@@ -195,8 +195,10 @@ export function LoginPage() {
                             On a device you're already signed in on, open <strong>Devices</strong>, choose{' '}
                             <strong>Add device</strong>, and enter this code:
                         </p>
-                        <div className="login-code" aria-label="Login code">
-                            {loginCode}
+                        <div className="code-display-group login-code" aria-label="Login code">
+                            <span className="code-half">{loginCode?.slice(0, 4)}</span>
+                            <span className="code-separator" aria-hidden="true">–</span>
+                            <span className="code-half">{loginCode?.slice(4)}</span>
                         </div>
                         <p className="text-muted">Waiting for approval…</p>
                         {loginCodeError && <div className="alert alert-danger">{loginCodeError}</div>}
