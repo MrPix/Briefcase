@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
+import { Trans, useTranslation } from 'react-i18next'
 import { Platform, platformLabel, type Device } from '../types'
 import { devicesApi } from '../services/devices'
 import { QrScanner } from '../components/QrScanner'
 import { TrashIcon } from '../components/icons'
 
 export function DevicesPage() {
+    const { t } = useTranslation()
     const [devices, setDevices] = useState<Device[] | null>(null)
     const [pairQr, setPairQr] = useState<string | null>(null)
     const [pairToken, setPairToken] = useState<string | null>(null)
@@ -59,7 +61,7 @@ export function DevicesPage() {
         setAddDeviceSuccess(null)
         try {
             const result = await devicesApi.approveLoginCode(addDeviceCode.trim())
-            setAddDeviceSuccess(`"${result.deviceName}" has been signed in.`)
+            setAddDeviceSuccess(t('devices.signedIn', { name: result.deviceName }))
             setAddDeviceCode('')
             await loadDevices()
         } catch (err) {
@@ -71,14 +73,14 @@ export function DevicesPage() {
 
     return (
         <div className="devices-page">
-            <h1>Devices</h1>
+            <h1>{t('devices.title')}</h1>
 
             <div className="devices-toolbar">
                 <button className="btn btn-primary" onClick={generatePairCode}>
-                    Generate Pair Code
+                    {t('devices.generatePairCode')}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowScanner((v) => !v)}>
-                    Scan Pair Code
+                    {t('devices.scanPairCode')}
                 </button>
                 <button
                     className="btn btn-outline"
@@ -88,21 +90,23 @@ export function DevicesPage() {
                         setAddDeviceSuccess(null)
                     }}
                 >
-                    Add device
+                    {t('devices.addDevice')}
                 </button>
             </div>
 
             {showAddDevice && (
                 <div className="card devices-card">
-                    <h5>Add a device with a code</h5>
+                    <h5>{t('devices.addDeviceCardTitle')}</h5>
                     <p className="text-muted">
-                        On the new device, choose <strong>Add this device</strong> to get an 8-character code, then enter it below.
+                        <Trans i18nKey="devices.addDeviceInstructions">
+                            On the new device, choose <strong>Add this device</strong> to get an 8-character code, then enter it below.
+                        </Trans>
                     </p>
                     <div className="devices-code-row">
                         <input
                             className="form-control"
                             maxLength={8}
-                            placeholder="Enter code"
+                            placeholder={t('devices.enterCodePlaceholder')}
                             value={addDeviceCode}
                             onChange={(e) => setAddDeviceCode(e.target.value.toUpperCase())}
                             onKeyDown={(e) => {
@@ -112,7 +116,7 @@ export function DevicesPage() {
                             style={{ textTransform: 'uppercase', maxWidth: '16rem' }}
                         />
                         <button className="btn btn-primary" onClick={approveLoginCode} disabled={isApproving || !addDeviceCode.trim()}>
-                            {isApproving ? <span className="spinner" /> : 'Add'}
+                            {isApproving ? <span className="spinner" /> : t('devices.add')}
                         </button>
                     </div>
                     {addDeviceError && <div className="alert alert-danger mt-2">{addDeviceError}</div>}
@@ -122,10 +126,10 @@ export function DevicesPage() {
 
             {pairQr && (
                 <div className="alert alert-info devices-pair">
-                    <p>Scan this code with the new device to pair it:</p>
+                    <p>{t('devices.scanHint')}</p>
                     <img src={pairQr} alt="Pairing QR code" className="devices-pair-qr" />
                     <details>
-                        <summary>Show pairing token</summary>
+                        <summary>{t('devices.showPairingToken')}</summary>
                         <code className="devices-pair-token">{pairToken}</code>
                     </details>
                 </div>
@@ -139,10 +143,10 @@ export function DevicesPage() {
 
             {devices === null ? (
                 <p>
-                    <em>Loading devices…</em>
+                    <em>{t('devices.loading')}</em>
                 </p>
             ) : devices.length === 0 ? (
-                <p className="text-muted">No registered devices.</p>
+                <p className="text-muted">{t('devices.none')}</p>
             ) : (
                 <div className="device-list">
                     {devices.map((device) => (
@@ -151,10 +155,10 @@ export function DevicesPage() {
                                 <strong>{device.name}</strong>
                                 <span className="badge-type badge-text device-platform">{platformLabel(device.platform)}</span>
                                 <br />
-                                <small className="text-muted">Last seen: {new Date(device.lastSeenAt).toLocaleString()}</small>
+                                <small className="text-muted">{t('devices.lastSeen', { date: new Date(device.lastSeenAt).toLocaleString() })}</small>
                             </div>
                             <button className="btn btn-outline btn-sm" onClick={() => removeDevice(device.id)}>
-                                <TrashIcon size={16} /> Remove
+                                <TrashIcon size={16} /> {t('devices.remove')}
                             </button>
                         </div>
                     ))}

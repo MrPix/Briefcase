@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Message } from '../types'
 import { trashApi } from '../services/trash'
 import { e2eeService } from '../crypto/e2ee'
@@ -17,6 +18,7 @@ async function decryptInPlace(message: Message): Promise<Message> {
 }
 
 export function TrashPage() {
+    const { t } = useTranslation()
     const [messages, setMessages] = useState<Message[] | null>(null)
     const [error, setError] = useState<string | null>(null)
     const didLoadMessages = useRef(false)
@@ -35,7 +37,7 @@ export function TrashPage() {
             setMessages(decrypted)
         } catch (err) {
             setMessages([])
-            setError(`Failed to load trashed messages: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('trash.loadFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }, [])
 
@@ -50,7 +52,7 @@ export function TrashPage() {
             await trashApi.restore(m.id)
             await loadMessages()
         } catch (err) {
-            setError(`Failed to restore message: ${err instanceof Error ? err.message : String(err)}`)
+            setError(t('trash.restoreFailed', { error: err instanceof Error ? err.message : String(err) }))
         }
     }
 
@@ -71,22 +73,22 @@ export function TrashPage() {
                     <div className="alert alert-danger mx-3">
                         {error}
                         <button className="btn btn-outline btn-sm" onClick={loadMessages} style={{ marginLeft: '0.5rem' }}>
-                            Retry
+                            {t('common.retry')}
                         </button>
                     </div>
                 ) : messages === null ? (
                     <div className="loading-state">
-                        <p>Loading trashed messages…</p>
+                        <p>{t('trash.loading')}</p>
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="empty-state">
                         <TrashIcon size={48} style={{ stroke: 'var(--text-muted)', strokeWidth: 1 }} />
-                        <p>Trash is empty</p>
-                        <span>Deleted messages will appear here</span>
+                        <p>{t('trash.empty')}</p>
+                        <span>{t('trash.emptyHint')}</span>
                     </div>
                 ) : (
                     <div className="message-list">
-                        <div className="list-section-header">Deleted Messages</div>
+                        <div className="list-section-header">{t('trash.section')}</div>
                         {messages.map((m) => (
                             <div className="message-item" key={m.id}>
                                 <MessageCard message={m} onRestore={handleRestore} onCopy={handleCopy} />

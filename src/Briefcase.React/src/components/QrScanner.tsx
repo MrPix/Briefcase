@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser'
+import { useTranslation } from 'react-i18next'
 import { CloseIcon } from './icons'
 
 export interface QrScannerProps {
@@ -7,6 +8,7 @@ export interface QrScannerProps {
 }
 
 export function QrScanner({ onScanned }: QrScannerProps) {
+    const { t } = useTranslation()
     const [scanning, setScanning] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -31,7 +33,7 @@ export function QrScanner({ onScanned }: QrScannerProps) {
             })
             .catch((e) => {
                 if (!cancelled) {
-                    setError(e instanceof Error ? e.message : 'Unable to start the camera.')
+                    setError(e instanceof Error ? e.message : t('qrScanner.startFailed'))
                     setScanning(false)
                 }
             })
@@ -44,7 +46,7 @@ export function QrScanner({ onScanned }: QrScannerProps) {
     }, [scanning, onScanned])
 
     if (!supported) {
-        return <div className="alert alert-info">QR scanning is not supported on this device.</div>
+        return <div className="alert alert-info">{t('qrScanner.notSupported')}</div>
     }
 
     return (
@@ -52,14 +54,14 @@ export function QrScanner({ onScanned }: QrScannerProps) {
             {scanning ? (
                 <div className="qr-scanner-active">
                     <video ref={videoRef} className="qr-video" muted playsInline />
-                    <p className="text-muted">Point your camera at a QR code</p>
+                    <p className="text-muted">{t('qrScanner.pointCamera')}</p>
                     <button className="btn btn-outline" onClick={() => setScanning(false)}>
-                        <CloseIcon size={16} /> Cancel
+                        <CloseIcon size={16} /> {t('qrScanner.cancel')}
                     </button>
                 </div>
             ) : (
                 <button className="btn btn-primary" onClick={() => setScanning(true)}>
-                    Scan QR Code
+                    {t('qrScanner.scan')}
                 </button>
             )}
             {error && <div className="alert alert-danger mt-2">{error}</div>}

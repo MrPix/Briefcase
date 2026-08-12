@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { BrandLogo } from './BrandLogo'
 import { NavMenu } from './NavMenu'
@@ -7,6 +8,7 @@ import { MenuIcon } from './icons'
 
 /** Protected shell: sidebar + routed content. Redirects to /login when signed out. */
 export function AppLayout() {
+    const { t } = useTranslation()
     const { isAuthenticated, restoring } = useAuth()
     const location = useLocation()
     const [navOpen, setNavOpen] = useState(false)
@@ -19,7 +21,7 @@ export function AppLayout() {
     if (restoring) {
         return (
             <div className="app-loading">
-                <span className="spinner" /> Loading…
+                <span className="spinner" /> {t('appLayout.loading')}
             </div>
         )
     }
@@ -34,7 +36,7 @@ export function AppLayout() {
                 <button
                     type="button"
                     className="mobile-nav-toggle"
-                    aria-label="Open navigation menu"
+                    aria-label={t('appLayout.openMenu')}
                     aria-expanded={navOpen}
                     onClick={() => setNavOpen(true)}
                 >

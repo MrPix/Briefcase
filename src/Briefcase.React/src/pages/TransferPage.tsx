@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { transferApi } from '../services/transfer'
 import { messagesApi } from '../services/messages'
 import type { ShareLinkResult } from '../types'
@@ -8,6 +9,7 @@ import { SendIcon, LinkIcon, DevicesIcon, CheckIcon, CopyIcon } from '../compone
 type ShareMethod = 'device' | 'link'
 
 export function TransferPage() {
+    const { t } = useTranslation()
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const messageId = searchParams.get('messageId')
@@ -70,7 +72,7 @@ export function TransferPage() {
             setSent(true)
         } catch (err) {
             const status = (err as { status?: number })?.status
-            setError(status === 404 ? 'Code not found or expired. Please check and try again.' : 'Something went wrong. Please try again.')
+            setError(status === 404 ? t('transfer.codeNotFound') : t('transfer.genericError'))
         } finally {
             setSending(false)
         }
@@ -86,7 +88,7 @@ export function TransferPage() {
             setLinkResult(result)
             setGeneratedUrl(`${window.location.origin}${result.url}`)
         } catch {
-            setError('Could not create the link. Please try again.')
+            setError(t('transfer.linkErrorGeneric'))
         } finally {
             setGenerating(false)
         }
@@ -110,10 +112,10 @@ export function TransferPage() {
     }
 
     const linkHint = linkResult?.oneTime
-        ? 'This link self-destructs after it is opened once.'
+        ? t('transfer.linkHintOneTime')
         : linkResult?.expiresAt
-            ? `This link expires on ${new Date(linkResult.expiresAt).toLocaleString()}.`
-            : 'This link never expires. Anyone with it can view the content.'
+            ? t('transfer.linkHintExpires', { date: new Date(linkResult.expiresAt).toLocaleString() })
+            : t('transfer.linkHintNever')
 
     if (isSendMode) {
         return (
@@ -127,7 +129,7 @@ export function TransferPage() {
                                 setError(null)
                             }}
                         >
-                            <DevicesIcon size={16} /> To device
+                            <DevicesIcon size={16} /> {t('transfer.toDevice')}
                         </button>
                         <button
                             className={`transfer-tab${shareMethod === 'link' ? ' active' : ''}`}
@@ -136,7 +138,7 @@ export function TransferPage() {
                                 setError(null)
                             }}
                         >
-                            <LinkIcon size={16} /> By link
+                            <LinkIcon size={16} /> {t('transfer.byLink')}
                         </button>
                     </div>
 
@@ -145,8 +147,8 @@ export function TransferPage() {
                             <div className="transfer-icon send">
                                 <SendIcon size={40} />
                             </div>
-                            <h2 className="transfer-title">Send Message</h2>
-                            <p className="transfer-subtitle">Enter the 8-character code shown on the receiving device.</p>
+                            <h2 className="transfer-title">{t('transfer.sendTitle')}</h2>
+                            <p className="transfer-subtitle">{t('transfer.sendSubtitle')}</p>
 
                             {!sent ? (
                                 <>
@@ -165,17 +167,17 @@ export function TransferPage() {
                                     {error && <div className="transfer-error">{error}</div>}
                                     <button className="btn btn-primary transfer-btn" onClick={handleSend} disabled={sending || enteredCode.trim().length !== 8}>
                                         {sending ? <span className="spinner" /> : <SendIcon size={16} />}
-                                        <span>{sending ? 'Sending…' : 'Send'}</span>
+                                        <span>{sending ? t('transfer.sending') : t('transfer.send')}</span>
                                     </button>
                                 </>
                             ) : (
                                 <>
                                     <div className="transfer-success">
                                         <CheckIcon size={32} style={{ stroke: '#22c55e' }} />
-                                        <p>Message sent! The recipient can now open the link on their device.</p>
+                                        <p>{t('transfer.sentSuccess')}</p>
                                     </div>
                                     <button className="btn btn-outline transfer-btn" onClick={() => navigate('/clipboard')}>
-                                        Back to Clipboard
+                                        {t('transfer.backToClipboard')}
                                     </button>
                                 </>
                             )}
@@ -185,14 +187,14 @@ export function TransferPage() {
                             <div className="transfer-icon send">
                                 <LinkIcon size={40} />
                             </div>
-                            <h2 className="transfer-title">Share by Link</h2>
-                            <p className="transfer-subtitle">Generate a public link anyone can open — no account required.</p>
+                            <h2 className="transfer-title">{t('transfer.shareByLinkTitle')}</h2>
+                            <p className="transfer-subtitle">{t('transfer.shareByLinkSubtitle')}</p>
 
                             {!generatedUrl ? (
                                 <>
                                     <div className="link-options">
                                         <label className="link-option-label" htmlFor="expiry-select">
-                                            Link expires
+                                            {t('transfer.linkExpires')}
                                         </label>
                                         <select
                                             id="expiry-select"
@@ -200,21 +202,21 @@ export function TransferPage() {
                                             value={expiryChoice}
                                             onChange={(e) => setExpiryChoice(e.target.value)}
                                         >
-                                            <option value="60">After 1 hour</option>
-                                            <option value="1440">After 24 hours</option>
-                                            <option value="10080">After 7 days</option>
-                                            <option value="0">Never</option>
+                                            <option value="60">{t('transfer.expiry1h')}</option>
+                                            <option value="1440">{t('transfer.expiry24h')}</option>
+                                            <option value="10080">{t('transfer.expiry7d')}</option>
+                                            <option value="0">{t('transfer.expiryNever')}</option>
                                         </select>
 
                                         <label className="link-toggle">
                                             <input type="checkbox" checked={oneTime} onChange={(e) => setOneTime(e.target.checked)} />
-                                            <span>Self-destruct after one view</span>
+                                            <span>{t('transfer.selfDestruct')}</span>
                                         </label>
                                     </div>
                                     {error && <div className="transfer-error">{error}</div>}
                                     <button className="btn btn-primary transfer-btn" onClick={handleGenerateLink} disabled={generating}>
                                         {generating ? <span className="spinner" /> : <LinkIcon size={16} />}
-                                        <span>{generating ? 'Generating…' : 'Generate link'}</span>
+                                        <span>{generating ? t('transfer.generating') : t('transfer.generateLink')}</span>
                                     </button>
                                 </>
                             ) : (
@@ -222,14 +224,14 @@ export function TransferPage() {
                                     <div className="link-result">
                                         <div className="link-url-box">
                                             <input className="link-url-input form-control" type="text" readOnly value={generatedUrl} />
-                                            <button className="link-copy-btn" onClick={copyLink} title="Copy link">
+                                            <button className="link-copy-btn" onClick={copyLink} title={t('transfer.copyLink')}>
                                                 {copied ? <CheckIcon size={16} style={{ stroke: '#22c55e' }} /> : <CopyIcon size={16} />}
                                             </button>
                                         </div>
                                         <p className="link-hint">{linkHint}</p>
                                     </div>
                                     <button className="btn btn-outline transfer-btn" onClick={resetLink}>
-                                        Create another link
+                                        {t('transfer.createAnotherLink')}
                                     </button>
                                 </>
                             )}
@@ -247,18 +249,18 @@ export function TransferPage() {
                 <div className="transfer-icon receive">
                     <DevicesIcon size={40} />
                 </div>
-                <h2 className="transfer-title">Receive from another device</h2>
-                <p className="transfer-subtitle">Share this code with the sender. It expires in 10 minutes.</p>
+                <h2 className="transfer-title">{t('transfer.receiveTitle')}</h2>
+                <p className="transfer-subtitle">{t('transfer.receiveSubtitle')}</p>
 
                 {code === null ? (
                     <div className="transfer-loading">
                         <span className="spinner" />
-                        <span>Generating code…</span>
+                        <span>{t('transfer.generatingCode')}</span>
                     </div>
                 ) : received ? (
                     <div className="transfer-success">
                         <CheckIcon size={32} style={{ stroke: '#22c55e' }} />
-                        <p>Message received! Opening…</p>
+                        <p>{t('transfer.received')}</p>
                     </div>
                 ) : (
                     <>
@@ -269,12 +271,12 @@ export function TransferPage() {
                         </div>
                         <div className="transfer-waiting">
                             <span className="pulse-dot" />
-                            <span>Waiting for sender…</span>
+                            <span>{t('transfer.waitingForSender')}</span>
                         </div>
                     </>
                 )}
                 <button className="btn btn-outline transfer-btn" onClick={() => navigate('/')}>
-                    Back
+                    {t('transfer.back')}
                 </button>
             </div>
         </div>

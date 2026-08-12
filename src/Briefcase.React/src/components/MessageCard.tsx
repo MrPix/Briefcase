@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MessageKind, type Message } from '../types'
 import { previewImageUrl } from '../lib/media'
 import { linkify } from '../utils/linkify'
@@ -37,6 +38,7 @@ export function MessageCard({
     onSendTo,
     onRestore,
 }: MessageCardProps) {
+    const { t } = useTranslation()
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState('')
 
@@ -45,7 +47,7 @@ export function MessageCard({
         ? message.fileName!
         : message.content?.trim()
             ? message.content!
-            : 'Attached file'
+            : t('messageCard.attachedFile')
     const fileComment =
         hasExplicitFileName && message.content?.trim() && message.content !== message.fileName
             ? message.content
@@ -88,10 +90,10 @@ export function MessageCard({
                         />
                         <div className="msg-edit-actions">
                             <button className="msg-edit-btn save" onClick={saveEdit}>
-                                Save
+                                {t('messageCard.save')}
                             </button>
                             <button className="msg-edit-btn cancel" onClick={() => setIsEditing(false)}>
-                                Cancel
+                                {t('messageCard.cancel')}
                             </button>
                         </div>
                     </div>
@@ -110,41 +112,41 @@ export function MessageCard({
 
             <div className="msg-actions">
                 {message.kind === MessageKind.File && message.fileId && onDownload && (
-                    <button className="msg-action-btn" title="Download" onClick={() => onDownload(message)}>
+                    <button className="msg-action-btn" title={t('messageCard.download')} onClick={() => onDownload(message)}>
                         <DownloadIcon size={16} />
                     </button>
                 )}
                 {onCopy && (
-                    <button className="msg-action-btn" title="Copy" onClick={() => onCopy(message)}>
+                    <button className="msg-action-btn" title={t('messageCard.copy')} onClick={() => onCopy(message)}>
                         <CopyIcon size={16} />
                     </button>
                 )}
                 {onPin && (
                     <button
                         className="msg-action-btn"
-                        title={message.isPinned ? 'Unpin' : 'Pin'}
+                        title={message.isPinned ? t('messageCard.unpin') : t('messageCard.pin')}
                         onClick={() => onPin(message)}
                     >
                         <PinIcon size={16} style={message.isPinned ? { fill: 'var(--accent)' } : undefined} />
                     </button>
                 )}
                 {onEdit && (
-                    <button className="msg-action-btn" title="Edit" onClick={startEdit}>
+                    <button className="msg-action-btn" title={t('messageCard.edit')} onClick={startEdit}>
                         <EditIcon size={16} />
                     </button>
                 )}
                 {onSendTo && (
-                    <button className="msg-action-btn" title="Share" onClick={() => onSendTo(message)}>
+                    <button className="msg-action-btn" title={t('messageCard.share')} onClick={() => onSendTo(message)}>
                         <SendIcon size={16} />
                     </button>
                 )}
                 {onRestore && (
-                    <button className="msg-action-btn" title="Restore" onClick={() => onRestore(message)}>
+                    <button className="msg-action-btn" title={t('messageCard.restore')} onClick={() => onRestore(message)}>
                         <RestoreIcon size={16} />
                     </button>
                 )}
                 {onDelete && (
-                    <button className="msg-action-btn delete" title="Delete" onClick={() => onDelete(message)}>
+                    <button className="msg-action-btn delete" title={t('messageCard.delete')} onClick={() => onDelete(message)}>
                         <TrashIcon size={16} />
                     </button>
                 )}

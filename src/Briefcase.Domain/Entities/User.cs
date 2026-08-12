@@ -15,4 +15,5 @@ public class User
     public ICollection<ExternalLogin> ExternalLogins { get; set; } = [];
     public ICollection<ShareLink> ShareLinks { get; set; } = [];
     public UserE2eeSettings? E2eeSettings { get; set; }
+    public UserSettings? Settings { get; set; }
 }

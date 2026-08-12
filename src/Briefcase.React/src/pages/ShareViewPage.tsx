@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { MessageKind, type SharedMessage } from '../types'
 import { shareApi } from '../services/share'
 import { LinkIcon, FileIcon, DownloadIcon, BackIcon, WarningIcon } from '../components/icons'
 import { formatTimestamp } from '../utils/format'
 
 export function ShareViewPage() {
+    const { t } = useTranslation()
     const { slug = '' } = useParams()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
@@ -37,7 +39,7 @@ export function ShareViewPage() {
                 <div className="share-card">
                     <div className="share-loading">
                         <span className="spinner" />
-                        <span>Loading shared message…</span>
+                        <span>{t('share.loading')}</span>
                     </div>
                 </div>
             ) : notFound || !message ? (
@@ -45,16 +47,16 @@ export function ShareViewPage() {
                     <div className="share-error-icon">
                         <WarningIcon size={48} style={{ stroke: '#f87171' }} />
                     </div>
-                    <h2 className="share-title">Link Unavailable</h2>
-                    <p className="share-subtitle">This link has already been used, expired, or does not exist.</p>
+                    <h2 className="share-title">{t('share.unavailableTitle')}</h2>
+                    <p className="share-subtitle">{t('share.unavailableSubtitle')}</p>
                     <button className="share-back-btn" onClick={() => navigate('/')}>
-                        <BackIcon size={14} /> Back
+                        <BackIcon size={14} /> {t('common.back')}
                     </button>
                 </div>
             ) : (
                 <div className="share-card">
                     <div className="share-badge">
-                        <LinkIcon size={14} /> Shared message
+                        <LinkIcon size={14} /> {t('share.badge')}
                     </div>
 
                     <div className="share-content">
@@ -62,14 +64,14 @@ export function ShareViewPage() {
                             <>
                                 <div className="share-file">
                                     <FileIcon size={40} style={{ stroke: '#dc2626' }} />
-                                    <span className="share-file-name">{message.fileName ?? message.content ?? 'Attached file'}</span>
+                                    <span className="share-file-name">{message.fileName ?? message.content ?? t('share.attachedFile')}</span>
                                 </div>
                                 {message.previewUrl && (
                                     <img className="share-preview" src={message.previewUrl} alt="Preview" loading="lazy" />
                                 )}
                                 {message.downloadUrl && (
                                     <a className="btn btn-primary share-download-btn" href={message.downloadUrl} download>
-                                        <DownloadIcon size={16} /> Download
+                                        <DownloadIcon size={16} /> {t('share.download')}
                                     </a>
                                 )}
                             </>
@@ -78,10 +80,10 @@ export function ShareViewPage() {
                         )}
                     </div>
 
-                    <div className="share-meta">Shared on {formatTimestamp(message.createdAt)}</div>
+                    <div className="share-meta">{t('share.sharedOn', { date: formatTimestamp(message.createdAt) })}</div>
 
                     <button className="share-back-btn" onClick={() => navigate('/')}>
-                        <BackIcon size={14} /> Back
+                        <BackIcon size={14} /> {t('common.back')}
                     </button>
                 </div>
             )}
