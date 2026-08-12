@@ -181,8 +181,10 @@
         "section": "Видалені повідомлення",
         "restoreFailed": "Не вдалося відновити повідомлення: {{error}}",
         "emptyAction": "Очистити кошик",
+        "emptyTitle": "Очистити кошик?",
         "emptyConfirm": "Видалити назавжди всі повідомлення з кошика?",
         "emptyFailed": "Не вдалося очистити кошик: {{error}}",
+        "deleteForeverTitle": "Видалити назавжди?",
         "deleteForeverConfirm": "Видалити це повідомлення назавжди?",
         "deleteForeverFailed": "Не вдалося видалити повідомлення назавжди: {{error}}"
     },

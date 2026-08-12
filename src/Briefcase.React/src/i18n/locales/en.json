@@ -181,8 +181,10 @@
         "section": "Deleted Messages",
         "restoreFailed": "Failed to restore message: {{error}}",
         "emptyAction": "Empty trash",
+        "emptyTitle": "Empty trash?",
         "emptyConfirm": "Delete every message in the trash forever?",
         "emptyFailed": "Failed to empty trash: {{error}}",
+        "deleteForeverTitle": "Delete forever?",
         "deleteForeverConfirm": "Delete this message forever?",
         "deleteForeverFailed": "Failed to delete message forever: {{error}}"
     },
