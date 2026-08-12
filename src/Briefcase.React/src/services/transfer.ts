@@ -7,10 +7,20 @@ interface SessionResponse {
     code: string
 }
 
+let pendingSessionRequest: Promise<string> | null = null
+
 export const transferApi = {
     async createSession(): Promise<string> {
-        const res = await api.post<SessionResponse>('api/transfer/session', undefined, { skipAuth: true })
-        return res.code
+        if (pendingSessionRequest) return pendingSessionRequest
+
+        pendingSessionRequest = api
+            .post<SessionResponse>('api/transfer/session', undefined, { skipAuth: true })
+            .then((res) => res.code)
+            .finally(() => {
+                pendingSessionRequest = null
+            })
+
+        return pendingSessionRequest
     },
 
     pushContent(sessionId: string, content: string): Promise<void> {

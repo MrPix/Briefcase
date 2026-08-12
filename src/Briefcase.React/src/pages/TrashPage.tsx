@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Message } from '../types'
 import { trashApi } from '../services/trash'
 import { e2eeService } from '../crypto/e2ee'
@@ -19,6 +19,7 @@ async function decryptInPlace(message: Message): Promise<Message> {
 export function TrashPage() {
     const [messages, setMessages] = useState<Message[] | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const didLoadMessages = useRef(false)
 
     const loadMessages = useCallback(async () => {
         try {
@@ -39,6 +40,8 @@ export function TrashPage() {
     }, [])
 
     useEffect(() => {
+        if (didLoadMessages.current) return
+        didLoadMessages.current = true
         loadMessages()
     }, [loadMessages])
 

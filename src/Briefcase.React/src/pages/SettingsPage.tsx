@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthException, useAuth } from '../auth/AuthContext'
 import { devicesApi } from '../services/devices'
@@ -40,18 +40,21 @@ export function SettingsPage() {
     const [newPassConfirm, setNewPassConfirm] = useState('')
 
     const [isLoggingOut, setIsLoggingOut] = useState(false)
+    const didLoadSettings = useRef(false)
 
     useEffect(() => {
-        ; (async () => {
-            try {
-                setDevices(await devicesApi.list())
-            } catch {
-                setDevices([])
-            }
-            setE2eeSettings((await e2eeService.getSettings()) ?? { isEnabled: false, kdfAlgorithm: null, kdfSalt: null, kdfParams: null, keyVerifier: null })
-            setRememberPassphrase(e2eeService.getRememberPassphrase())
-            setUnlocked(e2eeService.isUnlocked)
-        })()
+        if (didLoadSettings.current) return
+        didLoadSettings.current = true
+            ; (async () => {
+                try {
+                    setDevices(await devicesApi.list())
+                } catch {
+                    setDevices([])
+                }
+                setE2eeSettings((await e2eeService.getSettings()) ?? { isEnabled: false, kdfAlgorithm: null, kdfSalt: null, kdfParams: null, keyVerifier: null })
+                setRememberPassphrase(e2eeService.getRememberPassphrase())
+                setUnlocked(e2eeService.isUnlocked)
+            })()
     }, [])
 
     const refreshSettings = async () => {
