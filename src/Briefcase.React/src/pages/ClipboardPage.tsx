@@ -56,11 +56,11 @@ export function ClipboardPage() {
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
     const [isUploading, setIsUploading] = useState(false)
     const [isDragOver, setIsDragOver] = useState(false)
-    const listEndRef = useRef<HTMLDivElement>(null)
     const listRef = useRef<HTMLDivElement>(null)
-    const didInitialScrollRef = useRef(false)
+    const shouldScrollToBottomRef = useRef(false)
 
-    const loadMessages = useCallback(async () => {
+    const loadMessages = useCallback(async (scrollToBottom = false) => {
+        if (scrollToBottom) shouldScrollToBottomRef.current = true
         try {
             setError(null)
             await e2eeService.tryAutoUnlock()
@@ -74,44 +74,59 @@ export function ClipboardPage() {
     }, [])
 
     useEffect(() => {
-        loadMessages()
+        loadMessages(true)
     }, [loadMessages])
 
-    // Land at the newest message on first load/reload. Keep pinning to the bottom
-    // for a short window so late reflow (lazy image previews, decrypt, real-time
-    // upserts) can't drift the view, and bail out as soon as the user scrolls.
     useEffect(() => {
-        if (didInitialScrollRef.current) return
-        if (!messages || messages.length === 0) return
-        didInitialScrollRef.current = true
+        shouldScrollToBottomRef.current = true
+    }, [filter])
 
+    // Scroll after the message DOM is committed, and keep the pending scroll alive
+    // until any image previews have finished changing the list's height.
+    useEffect(() => {
+        if (!shouldScrollToBottomRef.current || !messages || messages.length === 0) return
         const el = listRef.current
         if (!el) return
 
         let cancelled = false
-        const start = performance.now()
-        const DURATION_MS = 800
+        const images = Array.from(el.querySelectorAll('img'))
+        const observer = new ResizeObserver(() => {
+            if (!cancelled) el.scrollTop = el.scrollHeight
+        })
+        observer.observe(el)
 
-        const stop = () => {
+        const cleanup = () => {
             cancelled = true
-            el.removeEventListener('wheel', stop)
-            el.removeEventListener('touchmove', stop)
-            window.removeEventListener('keydown', stop)
+            observer.disconnect()
+            images.forEach((image) => image.removeEventListener('load', finish))
+            images.forEach((image) => image.removeEventListener('error', finish))
+            el.removeEventListener('wheel', cancel)
+            el.removeEventListener('touchmove', cancel)
+            window.removeEventListener('keydown', cancel)
         }
-        el.addEventListener('wheel', stop, { passive: true })
-        el.addEventListener('touchmove', stop, { passive: true })
-        window.addEventListener('keydown', stop)
-
-        const tick = () => {
+        const finish = () => {
             if (cancelled) return
             el.scrollTop = el.scrollHeight
-            if (performance.now() - start < DURATION_MS) requestAnimationFrame(tick)
-            else stop()
+            if (images.every((image) => image.complete)) {
+                shouldScrollToBottomRef.current = false
+                cleanup()
+            }
         }
-        requestAnimationFrame(tick)
+        const cancel = () => {
+            shouldScrollToBottomRef.current = false
+            cleanup()
+        }
+        images.forEach((image) => {
+            image.addEventListener('load', finish)
+            image.addEventListener('error', finish)
+        })
+        el.addEventListener('wheel', cancel, { passive: true })
+        el.addEventListener('touchmove', cancel, { passive: true })
+        window.addEventListener('keydown', cancel)
+        requestAnimationFrame(finish)
 
-        return stop
-    }, [messages])
+        return cleanup
+    }, [messages, filter])
 
     // Real-time updates from other devices.
     useEffect(() => {
@@ -121,7 +136,10 @@ export function ClipboardPage() {
                     const list = prev ? [...prev] : []
                     const idx = list.findIndex((x) => x.id === m.id)
                     if (idx >= 0) list[idx] = m
-                    else list.push(m)
+                    else {
+                        list.push(m)
+                        shouldScrollToBottomRef.current = true
+                    }
                     return list
                 })
             })
@@ -205,8 +223,7 @@ export function ClipboardPage() {
             }
             setNewContent('')
             setStagedFiles([])
-            await loadMessages()
-            requestAnimationFrame(() => listEndRef.current?.scrollIntoView({ behavior: 'smooth' }))
+            await loadMessages(true)
         } catch (err) {
             setError(`Failed to send message: ${err instanceof Error ? err.message : String(err)}`)
         } finally {
@@ -328,7 +345,7 @@ export function ClipboardPage() {
                     {error ? (
                         <div className="alert alert-danger mx-3">
                             {error}
-                            <button className="btn btn-outline btn-sm" onClick={loadMessages} style={{ marginLeft: '0.5rem' }}>
+                            <button className="btn btn-outline btn-sm" onClick={() => loadMessages()} style={{ marginLeft: '0.5rem' }}>
                                 Retry
                             </button>
                         </div>
@@ -387,7 +404,6 @@ export function ClipboardPage() {
                                         ))}
                                     </div>
                                 ))}
-                            <div ref={listEndRef} />
                         </div>
                     )}
 
