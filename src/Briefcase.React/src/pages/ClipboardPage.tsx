@@ -8,27 +8,11 @@ import { MessageCard } from '../components/MessageCard'
 import { CapturePreview } from '../components/CapturePreview'
 import { downloadFile } from '../utils/download'
 import { getDateLabel } from '../utils/format'
-import { PaperclipIcon, PasteIcon, SendIcon, ClipboardIcon } from '../components/icons'
+import { PaperclipIcon, SendIcon, ClipboardIcon } from '../components/icons'
 
 type Filter = 'all' | 'pinned' | 'file' | 'url' | 'text'
 const MAX_PINNED_IN_CLIPBOARD = 3
 const MAX_FILES_PER_ACTION = 10
-
-const MIME_EXTENSIONS: Record<string, string> = {
-    'image/avif': 'avif',
-    'image/bmp': 'bmp',
-    'image/gif': 'gif',
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/svg+xml': 'svg',
-    'image/webp': 'webp',
-    'application/pdf': 'pdf',
-}
-
-function clipboardFileName(contentType: string, index: number): string {
-    const extension = MIME_EXTENSIONS[contentType] ?? contentType.split('/')[1]?.split('+')[0]
-    return `clipboard-${index + 1}${extension ? `.${extension}` : ''}`
-}
 
 function filterFromPath(pathname: string): Filter {
     switch (pathname.replace(/^\//, '').toLowerCase()) {
@@ -284,55 +268,6 @@ export function ClipboardPage() {
         setStagedFiles((prev) => [...prev, ...additions])
     }
 
-    const handlePaste = async () => {
-        try {
-            if (navigator.clipboard.read) {
-                const clipboardItems = await navigator.clipboard.read()
-                const files: File[] = []
-
-                for (const item of clipboardItems) {
-                    const contentType = item.types.find((type) => type !== 'text/plain' && type !== 'text/html')
-                    if (!contentType) continue
-
-                    const blob = await item.getType(contentType)
-                    files.push(new File([blob], clipboardFileName(blob.type || contentType, files.length), {
-                        type: blob.type || contentType,
-                    }))
-                }
-
-                if (files.length > 0) {
-                    stageFiles(files)
-                    setError(null)
-                    return
-                }
-
-                const textItem = clipboardItems.find((item) => item.types.includes('text/plain'))
-                if (textItem) {
-                    const text = await (await textItem.getType('text/plain')).text()
-                    if (text) setNewContent(text)
-                    setError(null)
-                    return
-                }
-            }
-
-            const text = await navigator.clipboard.readText()
-            if (text) setNewContent(text)
-            setError(null)
-        } catch {
-            try {
-                const text = await navigator.clipboard.readText()
-                if (text) {
-                    setNewContent(text)
-                    setError(null)
-                    return
-                }
-            } catch {
-                /* show the native paste fallback below */
-            }
-            setError('Clipboard access was blocked. Focus the message box and press Ctrl+V to paste files.')
-        }
-    }
-
     const handleNativePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
         const files = Array.from(event.clipboardData.files)
         if (files.length === 0) {
@@ -463,7 +398,7 @@ export function ClipboardPage() {
                         </div>
                         <textarea
                             className="compose-input"
-                            rows={4}
+                            rows={3}
                             value={newContent}
                             onChange={(e) => setNewContent(e.target.value)}
                             onPaste={handleNativePaste}
@@ -485,9 +420,6 @@ export function ClipboardPage() {
                                     <PaperclipIcon size={14} /> Attach
                                     <input type="file" multiple style={{ display: 'none' }} onChange={(e) => stageFiles(e.target.files)} />
                                 </label>
-                                <button className="toolbar-btn" title="Paste from clipboard" onClick={handlePaste}>
-                                    <PasteIcon size={14} /> Paste
-                                </button>
                             </div>
                             <button className="toolbar-btn primary" onClick={sendMessage} disabled={!canSend}>
                                 <SendIcon size={14} /> Save

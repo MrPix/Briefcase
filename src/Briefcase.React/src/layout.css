@@ -193,7 +193,7 @@
     flex-direction: column;
     height: 100%;
     min-height: 0;
-    max-width: 760px;
+    max-width: 1100px;
     width: 100%;
     margin: 0 auto;
 }
@@ -434,16 +434,16 @@
 .compose-area {
     flex-shrink: 0;
     border-top: 1px solid var(--border);
-    padding: 0.8rem 0.9rem 0.9rem;
-    background: var(--surface);
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+    padding: 0.55rem 0.75rem 0.65rem;
+    background: color-mix(in srgb, var(--surface) 94%, var(--page-bg));
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.025);
 }
 
 .compose-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.3rem;
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 600;
@@ -461,10 +461,10 @@
 
 .compose-input {
     width: 100%;
-    min-height: 7rem;
+    min-height: 4.5rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.8rem 0.85rem;
+    border-radius: var(--radius-lg);
+    padding: 0.6rem 0.7rem;
     font-size: 0.9rem;
     resize: none;
     background: var(--page-bg);
@@ -481,7 +481,7 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
     justify-content: space-between;
 }
 
@@ -498,8 +498,8 @@
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    padding: 0.45rem 0.6rem;
+    border-radius: var(--radius-md);
+    padding: 0.35rem 0.55rem;
     cursor: pointer;
     font-size: 0.85rem;
 }
