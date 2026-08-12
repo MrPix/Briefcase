@@ -6,6 +6,8 @@ import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
 import { platformLabel, type Device, type E2eeSettings } from '../types'
 
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0'
+
 export function SettingsPage() {
     const { changePassword, logout } = useAuth()
     const navigate = useNavigate()
@@ -373,6 +375,27 @@ export function SettingsPage() {
                     <button className="btn btn-danger btn-block" onClick={handleLogout} disabled={isLoggingOut}>
                         {isLoggingOut ? 'Logging out…' : 'Log Out'}
                     </button>
+                </div>
+
+                {/* ── About ── */}
+                <div className="settings-section settings-about">
+                    <div className="settings-about-header">
+                        <h5>About Briefcase</h5>
+                        <span className="text-muted">Version {APP_VERSION}</span>
+                    </div>
+                    <p>
+                        Briefcase is a secure place for your notes, links, and files. Add something once, then find it on every
+                        device with end-to-end encryption.
+                    </p>
+                    <ul className="settings-about-features">
+                        <li>End-to-end encrypted content storage</li>
+                        <li>Cross-device sync and transfer</li>
+                        <li>Support for notes, links, and files</li>
+                        <li>Favorites and trash management</li>
+                    </ul>
+                    <a href="https://github.com/MrPix/Briefcase" target="_blank" rel="noopener noreferrer">
+                        GitHub Repository
+                    </a>
                 </div>
             </div>
         </div>
