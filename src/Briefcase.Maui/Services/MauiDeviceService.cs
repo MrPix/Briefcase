@@ -6,7 +6,7 @@ using Device = Briefcase.Domain.Entities.Device;
 
 namespace Briefcase.Maui.Services;
 
-public class MauiDeviceService(IHttpClientFactory httpClientFactory) : IDeviceService
+public class MauiDeviceService(IHttpClientFactory httpClientFactory, IDeviceInfoProvider deviceInfo) : IDeviceService
 {
     private HttpClient CreateClient() => httpClientFactory.CreateClient("ApiClient");
 
@@ -23,6 +23,15 @@ public class MauiDeviceService(IHttpClientFactory httpClientFactory) : IDeviceSe
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<int> SignOutOtherDevicesAsync()
+    {
+        var client = CreateClient();
+        var response = await client.PostAsync("api/devices/sign-out-others", null);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<SignOutOthersResponse>();
+        return result?.RemovedCount ?? 0;
+    }
+
     public async Task<string> GeneratePairCodeAsync()
     {
         var client = CreateClient();
@@ -35,14 +44,27 @@ public class MauiDeviceService(IHttpClientFactory httpClientFactory) : IDeviceSe
     public async Task ClaimDeviceAsync(string token)
     {
         var client = CreateClient();
-        var response = await client.PostAsJsonAsync("api/devices/claim", new { token });
+        var response = await client.PostAsJsonAsync("api/devices/claim", new
+        {
+            token,
+            deviceName = deviceInfo.DeviceName,
+            platform = Enum.TryParse<Briefcase.Domain.Entities.Platform>(deviceInfo.Platform, true, out var platform)
+                ? platform
+                : Briefcase.Domain.Entities.Platform.Web,
+            installationId = deviceInfo.InstallationId,
+        });
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<LoginCodeInfo> GenerateLoginCodeAsync(string deviceName, string platform)
     {
         var client = CreateClient();
-        var response = await client.PostAsJsonAsync("api/devices/login-code", new { deviceName, platform });
+        var response = await client.PostAsJsonAsync("api/devices/login-code", new
+        {
+            deviceName,
+            platform,
+            installationId = deviceInfo.InstallationId,
+        });
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<LoginCodeResponse>();
         return result is null
@@ -114,6 +136,8 @@ public class MauiDeviceService(IHttpClientFactory httpClientFactory) : IDeviceSe
     }
 
     private record PairCodeResponse(string Token);
+
+    private record SignOutOthersResponse(int RemovedCount);
 
     private record LoginCodeResponse(string Code, DateTime ExpiresAt);
 

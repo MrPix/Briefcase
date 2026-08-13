@@ -8,8 +8,9 @@ import {
     useState,
     type ReactNode,
 } from 'react'
-import { apiFetch } from '../lib/apiClient'
+import { apiFetch, onUnauthorized } from '../lib/apiClient'
 import { API_BASE_URL } from '../lib/config'
+import { messageStream } from '../realtime/messageStream'
 import type { AuthResponse, ExternalAuthProvider } from '../types'
 import { tokenStorage } from './tokenStorage'
 import { deviceInfo } from './deviceInfo'
@@ -96,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     password,
                     deviceName: deviceInfo.deviceName,
                     devicePlatform: deviceInfo.platform,
+                    installationId: deviceInfo.installationId,
                 },
             })
             if (!res.ok) throw new AuthException(await readProblemTitle(res, 'Login failed.'))
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     displayName,
                     deviceName: deviceInfo.deviceName,
                     devicePlatform: deviceInfo.platform,
+                    installationId: deviceInfo.installationId,
                 },
             })
             if (!res.ok) throw new AuthException(await readProblemTitle(res, 'Registration failed.'))
@@ -158,7 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             `redirect_uri=${encodeURIComponent(callbackUri)}` +
             `&client_redirect_uri=${encodeURIComponent(clientRedirectUri)}` +
             `&device_name=${encodeURIComponent(deviceInfo.deviceName)}` +
-            `&device_platform=${encodeURIComponent(deviceInfo.platform)}`
+            `&device_platform=${encodeURIComponent(deviceInfo.platform)}` +
+            `&installation_id=${encodeURIComponent(deviceInfo.installationId)}`
         return `${base}/api/auth/oauth/${encodedProvider}?${query}`
     }, [])
 
@@ -183,6 +187,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             cancelled = true
         }
     }, [refresh, clearAuth])
+
+    // Another device removed this one from the devices list.
+    useEffect(() => {
+        return messageStream.onSessionRevoked(() => {
+            messageStream.stop().catch(() => { })
+            clearAuth()
+        })
+    }, [clearAuth])
+
+    // The session is no longer usable (revoked device, expired refresh token, …).
+    useEffect(() => {
+        return onUnauthorized(() => {
+            messageStream.stop().catch(() => { })
+            clearAuth()
+        })
+    }, [clearAuth])
 
     const value = useMemo<AuthContextValue>(
         () => ({

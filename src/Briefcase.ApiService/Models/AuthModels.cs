@@ -7,13 +7,15 @@ public record RegisterRequest(
     [Required, MinLength(8), MaxLength(128)] string Password,
     [Required, MaxLength(100)] string DisplayName,
     [MaxLength(200)] string? DeviceName = null,
-    string? DevicePlatform = null);
+    string? DevicePlatform = null,
+    [MaxLength(64)] string? InstallationId = null);
 
 public record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password,
     [MaxLength(200)] string? DeviceName = null,
-    string? DevicePlatform = null);
+    string? DevicePlatform = null,
+    [MaxLength(64)] string? InstallationId = null);
 
 public record RefreshRequest(
     [Required] string RefreshToken);

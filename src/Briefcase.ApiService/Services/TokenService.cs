@@ -8,7 +8,10 @@ namespace Briefcase.ApiService.Services;
 
 public class TokenService(IConfiguration configuration)
 {
-    public (string Token, DateTime ExpiresAt) GenerateAccessToken(Guid userId, string email)
+    /// <summary>Claim carrying the id of the <c>Device</c> row this session belongs to.</summary>
+    public const string DeviceIdClaimType = "did";
+
+    public (string Token, DateTime ExpiresAt) GenerateAccessToken(Guid userId, string email, Guid? deviceId = null)
     {
         var secret = configuration["Jwt:Secret"]!;
         var issuer = configuration["Jwt:Issuer"];
@@ -19,12 +22,15 @@ public class TokenService(IConfiguration configuration)
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresAt = DateTime.UtcNow.AddMinutes(minutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(JwtRegisteredClaimNames.Email, email),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
+
+        if (deviceId is not null)
+            claims.Add(new Claim(DeviceIdClaimType, deviceId.Value.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: issuer,

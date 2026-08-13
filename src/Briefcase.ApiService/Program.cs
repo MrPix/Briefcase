@@ -57,6 +57,7 @@ builder.Services.AddSingleton<QrCodeService>();
 builder.Services.AddSingleton<TransferSessionService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<OAuthService>();
+builder.Services.AddSingleton<DeviceSessionValidator>();
 builder.Services.AddHttpClient();
 
 // ── File Storage (MinIO / S3-compatible) ─────────────────────────────────────
@@ -138,6 +139,19 @@ builder.Services
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+
+            // Tokens minted before per-device sessions carry no device claim and stay valid
+            // until they expire; everything newer dies as soon as its device is removed.
+            OnTokenValidated = async context =>
+            {
+                var deviceIdClaim = context.Principal?.FindFirst(TokenService.DeviceIdClaimType)?.Value;
+                if (!Guid.TryParse(deviceIdClaim, out var deviceId))
+                    return;
+
+                var validator = context.HttpContext.RequestServices.GetRequiredService<DeviceSessionValidator>();
+                if (!await validator.IsActiveAsync(deviceId))
+                    context.Fail("Device session has been revoked.");
             }
         };
     });

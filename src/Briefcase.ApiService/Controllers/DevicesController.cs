@@ -16,29 +16,37 @@ namespace Briefcase.ApiService.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/devices")]
-public class DevicesController(AppDbContext db, TokenService tokenService, IHubContext<MessageHub> hub) : ControllerBase
+public class DevicesController(
+    AppDbContext db,
+    TokenService tokenService,
+    IHubContext<MessageHub> hub,
+    DeviceSessionValidator deviceSessions) : ControllerBase
 {
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
-    private static DeviceResponse ToResponse(Device d) => new(
-        d.Id, d.Name, d.Platform, d.LastSeenAt, d.CreatedAt);
+    private Guid? GetDeviceId() =>
+        Guid.TryParse(User.FindFirstValue(TokenService.DeviceIdClaimType), out var id) ? id : null;
+
+    private static DeviceResponse ToResponse(Device d, Guid? currentDeviceId) => new(
+        d.Id, d.Name, d.Platform, d.LastSeenAt, d.CreatedAt, d.Id == currentDeviceId);
 
     // GET /api/devices  →  list registered devices for the current user
     [HttpGet]
     public async Task<IActionResult> GetDevices()
     {
         var userId = GetUserId();
+        var currentDeviceId = GetDeviceId();
+
         var devices = await db.Devices
             .Where(d => d.UserId == userId)
             .OrderByDescending(d => d.LastSeenAt)
-            .Select(d => ToResponse(d))
             .ToListAsync();
 
-        return Ok(devices);
+        return Ok(devices.Select(d => ToResponse(d, currentDeviceId)));
     }
 
-    // DELETE /api/devices/{id}  →  remove a device
+    // DELETE /api/devices/{id}  →  remove a device and revoke its session
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> RemoveDevice(Guid id)
     {
@@ -49,9 +57,47 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
         if (device is null)
             return NotFound();
 
+        // Refresh tokens cascade with the device row.
         db.Devices.Remove(device);
         await db.SaveChangesAsync();
+
+        await RevokeDeviceSessionAsync(device.Id);
         return NoContent();
+    }
+
+    // POST /api/devices/sign-out-others  →  revoke every session except the caller's
+    [HttpPost("sign-out-others")]
+    public async Task<IActionResult> SignOutOtherDevices()
+    {
+        var userId = GetUserId();
+        var currentDeviceId = GetDeviceId();
+
+        var others = await db.Devices
+            .Where(d => d.UserId == userId && (currentDeviceId == null || d.Id != currentDeviceId))
+            .ToListAsync();
+
+        db.Devices.RemoveRange(others);
+
+        // Sessions that predate per-device binding have no device row to cascade from.
+        var orphanTokens = await db.RefreshTokens
+            .Where(r => r.UserId == userId && r.DeviceId == null && r.RevokedAt == null)
+            .ToListAsync();
+
+        foreach (var token in orphanTokens)
+            token.RevokedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        foreach (var device in others)
+            await RevokeDeviceSessionAsync(device.Id);
+
+        return Ok(new SignOutOthersResponse(others.Count));
+    }
+
+    private async Task RevokeDeviceSessionAsync(Guid deviceId)
+    {
+        deviceSessions.Invalidate(deviceId);
+        await hub.Clients.Group($"device:{deviceId}").SendAsync(MessageHub.SessionRevoked, new { deviceId });
     }
 
     // POST /api/devices/pair-code  →  generate a short-lived signed QR pairing token (JWT, 5 min TTL)
@@ -82,6 +128,7 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            InstallationId = request.InstallationId,
             Name = request.DeviceName,
             Platform = request.Platform,
             LastSeenAt = DateTime.UtcNow,
@@ -91,7 +138,7 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
         db.Devices.Add(device);
         await db.SaveChangesAsync();
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email, device.Id);
         return Ok(new AuthResponse(accessToken, string.Empty, expiresAt));
     }
 
@@ -118,6 +165,7 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
             Code = code,
             DeviceName = request.DeviceName,
             Platform = platform,
+            InstallationId = request.InstallationId,
             ExpiresAt = DateTime.UtcNow.AddMinutes(LoginCodeTtlMinutes),
             CreatedAt = DateTime.UtcNow,
         };
@@ -153,18 +201,21 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
         // Redeem the approval: register the device, mint tokens, and consume the code.
         entry.IsConsumed = true;
 
-        db.Devices.Add(new Device
+        var device = new Device
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
+            InstallationId = entry.InstallationId,
             Name = entry.DeviceName,
             Platform = entry.Platform,
             LastSeenAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
-        });
+        };
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        db.Devices.Add(device);
+
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email, device.Id);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, device.Id);
         await db.SaveChangesAsync();
 
         return Ok(new LoginCodePollResponse("approved", accessToken, refreshToken, expiresAt));
@@ -197,12 +248,13 @@ public class DevicesController(AppDbContext db, TokenService tokenService, IHubC
         return Ok(new ApproveLoginCodeResponse(entry.DeviceName, entry.Platform));
     }
 
-    private async Task<string> CreateRefreshTokenAsync(Guid userId)
+    private async Task<string> CreateRefreshTokenAsync(Guid userId, Guid? deviceId)
     {
         var token = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            DeviceId = deviceId,
             Token = tokenService.GenerateRefreshToken(),
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(tokenService.RefreshTokenDays),

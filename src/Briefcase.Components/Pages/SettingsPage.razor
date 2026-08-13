@@ -29,11 +29,28 @@
                             <div>
                                 <strong>@device.Name</strong>
                                 <span class="badge bg-secondary ms-2">@device.Platform</span>
+                                @if (device.IsCurrent)
+                                {
+                                    <span class="badge bg-primary ms-2">This device</span>
+                                }
                             </div>
                             <small class="text-muted">Last seen: @device.LastSeenAt.ToString("g")</small>
                         </li>
                     }
                 </ul>
+
+                @if (_devices.Count > 1)
+                {
+                    <p class="text-muted">Other devices lose access immediately and must sign in again.</p>
+                    <button class="btn btn-outline-danger" disabled="@_isSigningOutOthers" @onclick="SignOutOtherDevices">
+                        Sign out all other devices
+                    </button>
+                }
+
+                @if (!string.IsNullOrEmpty(_devicesMessage))
+                {
+                    <div class="alert @(_devicesSuccess ? "alert-success" : "alert-danger") mt-2">@_devicesMessage</div>
+                }
             }
         </div>
 
@@ -257,6 +274,9 @@
 
 @code {
     private IReadOnlyList<Device>? _devices;
+    private bool _isSigningOutOthers;
+    private string? _devicesMessage;
+    private bool _devicesSuccess;
     private ChangePasswordModel _passwordModel = new();
     private string? _passwordMessage;
     private bool _passwordSuccess;
@@ -286,6 +306,29 @@
 
         try { _rememberPassphrase = await E2eeService.GetRememberPassphraseAsync(); }
         catch { _rememberPassphrase = false; }
+    }
+
+    private async Task SignOutOtherDevices()
+    {
+        _isSigningOutOthers = true;
+        _devicesMessage = null;
+
+        try
+        {
+            var removed = await DeviceService.SignOutOtherDevicesAsync();
+            _devices = await DeviceService.GetDevicesAsync();
+            _devicesMessage = $"Signed out {removed} other device(s).";
+            _devicesSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _devicesMessage = $"Failed to sign out other devices: {ex.Message}";
+            _devicesSuccess = false;
+        }
+        finally
+        {
+            _isSigningOutOthers = false;
+        }
     }
 
     private async Task HandleChangePassword()

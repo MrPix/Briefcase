@@ -6,6 +6,10 @@ public interface IDeviceService
 {
     Task<IReadOnlyList<Device>> GetDevicesAsync();
     Task RemoveDeviceAsync(Guid deviceId);
+
+    /// <summary>Removes every other device of this account and revokes their sessions.</summary>
+    Task<int> SignOutOtherDevicesAsync();
+
     Task<string> GeneratePairCodeAsync();
     Task ClaimDeviceAsync(string token);
 

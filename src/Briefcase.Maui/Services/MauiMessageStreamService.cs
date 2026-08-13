@@ -21,6 +21,7 @@ public class MauiMessageStreamService(IHttpClientFactory httpClientFactory, ITok
     public event Func<Message, Task>? MessageCreated;
     public event Func<Message, Task>? MessageUpdated;
     public event Func<Guid, Task>? MessageRemoved;
+    public event Func<Task>? SessionRevoked;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -68,6 +69,7 @@ public class MauiMessageStreamService(IHttpClientFactory httpClientFactory, ITok
         connection.On<JsonElement>("MessageUpdated", payload => RaiseUpsert(payload, apiBaseAddress, MessageUpdated));
         connection.On<JsonElement>("MessageTrashed", RaiseRemoved);
         connection.On<JsonElement>("MessageDeleted", RaiseRemoved);
+        connection.On<JsonElement>("SessionRevoked", _ => SessionRevoked?.Invoke() ?? Task.CompletedTask);
     }
 
     private async Task RaiseUpsert(JsonElement payload, Uri apiBaseAddress, Func<Message, Task>? handler)

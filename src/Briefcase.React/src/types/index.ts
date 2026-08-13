@@ -46,6 +46,7 @@ export interface Device {
     platform: Platform
     lastSeenAt: string
     createdAt: string
+    isCurrent: boolean
 }
 
 export interface AuthResponse {

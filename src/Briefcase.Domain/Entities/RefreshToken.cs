@@ -4,6 +4,10 @@ public class RefreshToken
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+
+    /// <summary>Device this session belongs to; removing the device revokes the token.</summary>
+    public Guid? DeviceId { get; set; }
+
     public string Token { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -13,4 +17,5 @@ public class RefreshToken
     public bool IsActive => !IsRevoked && !IsExpired;
 
     public User User { get; set; } = null!;
+    public Device? Device { get; set; }
 }

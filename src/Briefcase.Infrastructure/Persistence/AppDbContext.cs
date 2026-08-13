@@ -50,10 +50,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasKey(d => d.Id);
             e.Property(d => d.Name).IsRequired().HasMaxLength(100);
+            e.Property(d => d.InstallationId).HasMaxLength(64);
+            e.HasIndex(d => new { d.UserId, d.InstallationId })
+                .IsUnique()
+                .HasFilter("\"InstallationId\" IS NOT NULL");
             e.Property(d => d.Platform)
                 .HasConversion<string>()
                 .HasMaxLength(20);
             e.Property(d => d.PushToken).HasMaxLength(512);
+            e.Ignore(d => d.IsCurrent);
 
             e.HasOne(d => d.User)
                 .WithMany(u => u.Devices)
@@ -142,6 +147,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            e.HasOne(r => r.Device)
+                .WithMany()
+                .HasForeignKey(r => r.DeviceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             e.Ignore(r => r.IsRevoked);
             e.Ignore(r => r.IsExpired);
             e.Ignore(r => r.IsActive);
@@ -154,6 +164,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(c => c.Code).IsUnique();
             e.Property(c => c.Code).IsRequired().HasMaxLength(16);
             e.Property(c => c.DeviceName).IsRequired().HasMaxLength(100);
+            e.Property(c => c.InstallationId).HasMaxLength(64);
             e.Property(c => c.Platform)
                 .HasConversion<string>()
                 .HasMaxLength(20);
