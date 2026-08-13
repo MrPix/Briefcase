@@ -19,6 +19,9 @@ public interface IMessageStreamService
     /// <summary>Raised when a message is trashed or permanently deleted on any device.</summary>
     event Func<Guid, Task>? MessageRemoved;
 
+    /// <summary>Raised when this device was removed from the account and its session revoked.</summary>
+    event Func<Task>? SessionRevoked;
+
     /// <summary>
     /// Opens the authenticated SignalR connection and begins receiving events.
     /// Idempotent — calling it while already connected is a no-op.

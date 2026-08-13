@@ -38,10 +38,10 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform);
+        var device = await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform, request.InstallationId);
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email, device?.Id);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, device?.Id);
 
         SetRefreshTokenCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
@@ -60,10 +60,10 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
             return Unauthorized(new ProblemDetails { Title = "Invalid email or password." });
         }
 
-        await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform);
+        var device = await UpsertDeviceAsync(user.Id, request.DeviceName, request.DevicePlatform, request.InstallationId);
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email, device?.Id);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, device?.Id);
 
         SetRefreshTokenCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
@@ -82,6 +82,7 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
 
         var stored = await db.RefreshTokens
             .Include(r => r.User)
+            .Include(r => r.Device)
             .FirstOrDefaultAsync(r => r.Token == refreshTokenValue);
 
         if (stored is null || !stored.IsActive)
@@ -90,8 +91,11 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         // Revoke the used token (rotation)
         stored.RevokedAt = DateTime.UtcNow;
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(stored.UserId, stored.User.Email);
-        var newRefreshToken = await CreateRefreshTokenAsync(stored.UserId);
+        if (stored.Device is not null)
+            stored.Device.LastSeenAt = DateTime.UtcNow;
+
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(stored.UserId, stored.User.Email, stored.DeviceId);
+        var newRefreshToken = await CreateRefreshTokenAsync(stored.UserId, stored.DeviceId);
 
         SetRefreshTokenCookie(newRefreshToken);
         return Ok(new AuthResponse(accessToken, newRefreshToken, expiresAt));
@@ -147,7 +151,8 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         [FromQuery] string redirect_uri,
         [FromQuery] string? client_redirect_uri,
         [FromQuery] string? device_name,
-        [FromQuery] string? device_platform)
+        [FromQuery] string? device_platform,
+        [FromQuery] string? installation_id)
     {
         if (!oAuthService.IsProviderSupported(provider))
             return BadRequest(new ProblemDetails { Title = $"Unsupported OAuth provider: {provider}" });
@@ -163,7 +168,8 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
             redirect_uri,
             client_redirect_uri,
             device_name,
-            device_platform);
+            device_platform,
+            installation_id);
         return Redirect(authorizationUrl);
     }
 
@@ -255,10 +261,10 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
             await db.SaveChangesAsync();
         }
 
-        await UpsertDeviceAsync(user.Id, pendingState.DeviceName, pendingState.DevicePlatform);
+        var device = await UpsertDeviceAsync(user.Id, pendingState.DeviceName, pendingState.DevicePlatform, pendingState.InstallationId);
 
-        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email);
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user.Id, user.Email, device?.Id);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id, device?.Id);
 
         SetRefreshTokenCookie(refreshToken);
 
@@ -276,42 +282,58 @@ public class AuthController(AppDbContext db, TokenService tokenService, OAuthSer
         return Ok(new AuthResponse(accessToken, refreshToken, expiresAt));
     }
 
-    private async Task UpsertDeviceAsync(Guid userId, string? deviceName, string? devicePlatform)
+    private async Task<Device?> UpsertDeviceAsync(Guid userId, string? deviceName, string? devicePlatform, string? installationId)
     {
-        if (string.IsNullOrWhiteSpace(deviceName))
-            return;
+        if (string.IsNullOrWhiteSpace(deviceName) && string.IsNullOrWhiteSpace(installationId))
+            return null;
 
         var platform = Enum.TryParse<Platform>(devicePlatform, true, out var p) ? p : Platform.Web;
+        var name = string.IsNullOrWhiteSpace(deviceName) ? platform.ToString() : deviceName;
 
-        var device = await db.Devices
-            .FirstOrDefaultAsync(d => d.UserId == userId && d.Name == deviceName && d.Platform == platform);
+        Device? device = null;
 
-        if (device is not null)
+        if (!string.IsNullOrWhiteSpace(installationId))
         {
-            device.LastSeenAt = DateTime.UtcNow;
+            device = await db.Devices
+                .FirstOrDefaultAsync(d => d.UserId == userId && d.InstallationId == installationId);
         }
-        else
+
+        // Rows created before installation ids existed are adopted by name + platform.
+        device ??= await db.Devices
+            .FirstOrDefaultAsync(d => d.UserId == userId && d.InstallationId == null && d.Name == name && d.Platform == platform);
+
+        if (device is null)
         {
-            db.Devices.Add(new Device
+            device = new Device
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                Name = deviceName,
+                InstallationId = installationId,
+                Name = name,
                 Platform = platform,
                 CreatedAt = DateTime.UtcNow,
-                LastSeenAt = DateTime.UtcNow,
-            });
+            };
+            db.Devices.Add(device);
+        }
+        else
+        {
+            device.InstallationId ??= installationId;
+            device.Name = name;
+            device.Platform = platform;
         }
 
+        device.LastSeenAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        return device;
     }
 
-    private async Task<string> CreateRefreshTokenAsync(Guid userId)
+    private async Task<string> CreateRefreshTokenAsync(Guid userId, Guid? deviceId)
     {
         var token = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            DeviceId = deviceId,
             Token = tokenService.GenerateRefreshToken(),
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(tokenService.RefreshTokenDays),

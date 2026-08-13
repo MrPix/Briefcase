@@ -64,7 +64,7 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
 
     public async Task<AuthResult> LoginAsync(string email, string password)
     {
-        var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform });
+        var response = await httpClient.PostAsJsonAsync("api/auth/login", new { email, password, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform, installationId = deviceInfoProvider.InstallationId });
 
         if (!response.IsSuccessStatusCode)
         {
@@ -81,7 +81,7 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
 
     public async Task<AuthResult> RegisterAsync(string email, string password, string displayName)
     {
-        var response = await httpClient.PostAsJsonAsync("api/auth/register", new { email, password, displayName, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform });
+        var response = await httpClient.PostAsJsonAsync("api/auth/register", new { email, password, displayName, deviceName = deviceInfoProvider.DeviceName, devicePlatform = deviceInfoProvider.Platform, installationId = deviceInfoProvider.InstallationId });
 
         if (!response.IsSuccessStatusCode)
         {
@@ -111,7 +111,8 @@ public class AuthService(HttpClient httpClient, ITokenStorageService tokenStorag
             $"redirect_uri={Uri.EscapeDataString(callbackUri)}" +
             $"&client_redirect_uri={Uri.EscapeDataString(clientRedirectUri)}" +
             $"&device_name={Uri.EscapeDataString(deviceInfoProvider.DeviceName)}" +
-            $"&device_platform={Uri.EscapeDataString(deviceInfoProvider.Platform)}";
+            $"&device_platform={Uri.EscapeDataString(deviceInfoProvider.Platform)}" +
+            $"&installation_id={Uri.EscapeDataString(deviceInfoProvider.InstallationId ?? string.Empty)}";
 
         return new Uri(httpClient.BaseAddress, $"api/auth/oauth/{encodedProvider}?{query}").ToString();
     }

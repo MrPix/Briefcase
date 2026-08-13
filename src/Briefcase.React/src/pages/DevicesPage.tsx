@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { Trans, useTranslation } from 'react-i18next'
 import { Platform, platformLabel, type Device } from '../types'
+import { deviceInfo } from '../auth/deviceInfo'
 import { devicesApi } from '../services/devices'
 import { QrScanner } from '../components/QrScanner'
 import { TrashIcon } from '../components/icons'
@@ -42,7 +43,7 @@ export function DevicesPage() {
 
     const handlePairCodeScanned = async (token: string) => {
         try {
-            await devicesApi.claim(token, 'Paired device', Platform.Web)
+            await devicesApi.claim(token, deviceInfo.deviceName, Platform.Web)
         } finally {
             setShowScanner(false)
             await loadDevices()
@@ -154,10 +155,16 @@ export function DevicesPage() {
                             <div>
                                 <strong>{device.name}</strong>
                                 <span className="badge-type badge-text device-platform">{platformLabel(device.platform)}</span>
+                                {device.isCurrent && <span className="badge-type badge-text device-platform">{t('devices.thisDevice')}</span>}
                                 <br />
                                 <small className="text-muted">{t('devices.lastSeen', { date: new Date(device.lastSeenAt).toLocaleString() })}</small>
                             </div>
-                            <button className="btn btn-outline btn-sm" onClick={() => removeDevice(device.id)}>
+                            <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => removeDevice(device.id)}
+                                disabled={device.isCurrent}
+                                title={device.isCurrent ? t('devices.thisDevice') : undefined}
+                            >
                                 <TrashIcon size={16} /> {t('devices.remove')}
                             </button>
                         </div>

@@ -23,12 +23,17 @@ public class MessageHub(TransferSessionService sessions) : Hub
     public const string ShareLinkRevoked = nameof(ShareLinkRevoked);
     public const string E2eeSettingsChanged = nameof(E2eeSettingsChanged);
     public const string LoginCodeApproved = nameof(LoginCodeApproved);
+    public const string SessionRevoked = nameof(SessionRevoked);
 
     public override async Task OnConnectedAsync()
     {
         var userId = GetUserId();
         if (userId is not null)
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+
+        var deviceId = GetDeviceId();
+        if (deviceId is not null)
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"device:{deviceId}");
 
         await base.OnConnectedAsync();
     }
@@ -38,6 +43,10 @@ public class MessageHub(TransferSessionService sessions) : Hub
         var userId = GetUserId();
         if (userId is not null)
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId);
+
+        var deviceId = GetDeviceId();
+        if (deviceId is not null)
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"device:{deviceId}");
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -85,4 +94,7 @@ public class MessageHub(TransferSessionService sessions) : Hub
 
     private string? GetUserId() =>
         Context.User?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+    private string? GetDeviceId() =>
+        Context.User?.FindFirst(TokenService.DeviceIdClaimType)?.Value;
 }

@@ -15,6 +15,14 @@ export class ApiError extends Error {
 // A single in-flight refresh shared across concurrent 401s.
 let refreshPromise: Promise<boolean> | null = null
 
+const unauthorizedHandlers = new Set<() => void>()
+
+/** Notified when a request stays 401 after a refresh attempt, i.e. the session is gone. */
+export function onUnauthorized(handler: () => void): () => void {
+    unauthorizedHandlers.add(handler)
+    return () => unauthorizedHandlers.delete(handler)
+}
+
 async function tryRefresh(): Promise<boolean> {
     const refreshToken = tokenStorage.getRefreshToken()
     if (!refreshToken) return false
@@ -82,6 +90,11 @@ export async function apiFetch(path: string, options: RequestOptions = {}): Prom
         const refreshed = await tryRefresh()
         if (refreshed) {
             res = await doFetch(path, options)
+        }
+
+        if (res.status === 401) {
+            tokenStorage.clear()
+            unauthorizedHandlers.forEach((handler) => handler())
         }
     }
 

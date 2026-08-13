@@ -23,7 +23,8 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
         string redirectUri,
         string? clientRedirectUri = null,
         string? deviceName = null,
-        string? devicePlatform = null)
+        string? devicePlatform = null,
+        string? installationId = null)
     {
         provider = NormalizeProvider(provider);
         var config = GetProviderConfig(provider);
@@ -39,6 +40,7 @@ public class OAuthService(IConfiguration configuration, IHttpClientFactory httpC
             clientRedirectUri,
             deviceName,
             devicePlatform,
+            installationId,
             DateTime.UtcNow);
 
         var callbackUrl = redirectUri.TrimEnd('/');
@@ -213,6 +215,7 @@ public record OAuthPendingState(
     string? ClientRedirectUri,
     string? DeviceName,
     string? DevicePlatform,
+    string? InstallationId,
     DateTime CreatedAt);
 public record OAuthTokenResponse(string AccessToken, string? IdToken);
 public record OAuthUserInfo(string ProviderKey, string Email, string Name, string? AvatarUrl);

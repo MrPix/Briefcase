@@ -85,10 +85,14 @@ else
                 <div>
                     <strong>@device.Name</strong>
                     <span class="badge bg-secondary ms-2">@device.Platform</span>
+                    @if (device.IsCurrent)
+                    {
+                        <span class="badge bg-primary ms-2">This device</span>
+                    }
                     <br />
                     <small class="text-muted">Last seen: @device.LastSeenAt.ToString("g")</small>
                 </div>
-                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveDevice(device.Id)">
+                <button class="btn btn-outline-danger btn-sm" disabled="@device.IsCurrent" @onclick="() => RemoveDevice(device.Id)">
                     <span class="bi bi-trash"></span> Remove
                 </button>
             </div>

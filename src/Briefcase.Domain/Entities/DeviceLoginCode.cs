@@ -12,6 +12,9 @@ public class DeviceLoginCode
     public string DeviceName { get; set; } = string.Empty;
     public Platform Platform { get; set; }
 
+    /// <summary>Installation id of the device that requested the code.</summary>
+    public string? InstallationId { get; set; }
+
     /// <summary>Set when an authenticated device approves the code.</summary>
     public Guid? UserId { get; set; }
     public bool IsApproved { get; set; }

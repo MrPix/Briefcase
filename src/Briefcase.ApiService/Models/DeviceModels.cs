@@ -8,18 +8,21 @@ public record DeviceResponse(
     string Name,
     Platform Platform,
     DateTime LastSeenAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    bool IsCurrent = false);
 
 public record ClaimDeviceRequest(
     [Required] string Token,
     [Required, MaxLength(100)] string DeviceName,
-    [Required] Platform Platform);
+    [Required] Platform Platform,
+    [MaxLength(64)] string? InstallationId = null);
 
 public record PairCodeResponse(string Token, DateTime ExpiresAt);
 
 public record CreateLoginCodeRequest(
     [Required, MaxLength(100)] string DeviceName,
-    [MaxLength(20)] string? Platform = null);
+    [MaxLength(20)] string? Platform = null,
+    [MaxLength(64)] string? InstallationId = null);
 
 public record LoginCodeResponse(string Code, DateTime ExpiresAt);
 
@@ -33,3 +36,5 @@ public record LoginCodePollResponse(
     string? AccessToken = null,
     string? RefreshToken = null,
     DateTime? AccessTokenExpiresAt = null);
+
+public record SignOutOthersResponse(int RemovedCount);

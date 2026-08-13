@@ -16,6 +16,9 @@ export function SettingsPage() {
     const navigate = useNavigate()
 
     const [devices, setDevices] = useState<Device[] | null>(null)
+    const [isSigningOutOthers, setIsSigningOutOthers] = useState(false)
+    const [devicesMessage, setDevicesMessage] = useState<string | null>(null)
+    const [devicesSuccess, setDevicesSuccess] = useState(false)
 
     // Language
     const [languageMessage, setLanguageMessage] = useState<string | null>(null)
@@ -66,6 +69,22 @@ export function SettingsPage() {
     const refreshSettings = async () => {
         setE2eeSettings(await e2eeService.getSettings())
         setUnlocked(e2eeService.isUnlocked)
+    }
+
+    const handleSignOutOthers = async () => {
+        setIsSigningOutOthers(true)
+        setDevicesMessage(null)
+        try {
+            const result = await devicesApi.signOutOthers()
+            setDevices(await devicesApi.list())
+            setDevicesMessage(t('settings.signOutOthersDone', { count: result.removedCount }))
+            setDevicesSuccess(true)
+        } catch (err) {
+            setDevicesMessage(t('settings.signOutOthersFailed', { error: err instanceof Error ? err.message : String(err) }))
+            setDevicesSuccess(false)
+        } finally {
+            setIsSigningOutOthers(false)
+        }
     }
 
     const handleChangePassword = async (e: React.FormEvent) => {
@@ -236,12 +255,22 @@ export function SettingsPage() {
                                     <div>
                                         <strong>{d.name}</strong>
                                         <span className="badge-type badge-text device-platform">{platformLabel(d.platform)}</span>
+                                        {d.isCurrent && <span className="badge-type badge-text device-platform">{t('settings.thisDevice')}</span>}
                                     </div>
                                     <small className="text-muted">{t('settings.lastSeen', { date: new Date(d.lastSeenAt).toLocaleString() })}</small>
                                 </li>
                             ))}
                         </ul>
                     )}
+                    {devices !== null && devices.length > 1 && (
+                        <>
+                            <p className="text-muted">{t('settings.signOutOthersHint')}</p>
+                            <button className="btn btn-outline" onClick={handleSignOutOthers} disabled={isSigningOutOthers}>
+                                {isSigningOutOthers ? <span className="spinner" /> : t('settings.signOutOthers')}
+                            </button>
+                        </>
+                    )}
+                    {devicesMessage && <div className={`alert ${devicesSuccess ? 'alert-success' : 'alert-danger'} mt-2`}>{devicesMessage}</div>}
                 </div>
 
                 {/* ── Language ── */}

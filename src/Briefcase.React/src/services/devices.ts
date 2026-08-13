@@ -1,6 +1,7 @@
 import { HubConnectionBuilder } from '@microsoft/signalr'
 import { api } from '../lib/apiClient'
 import { apiUrl } from '../lib/config'
+import { deviceInfo } from '../auth/deviceInfo'
 import {
     type Device,
     type LoginCodeResponse,
@@ -21,16 +22,29 @@ export const devicesApi = {
         return api.del<void>(`api/devices/${id}`)
     },
 
+    signOutOthers(): Promise<{ removedCount: number }> {
+        return api.post<{ removedCount: number }>('api/devices/sign-out-others')
+    },
+
     async generatePairCode(): Promise<PairCodeResponse> {
         return api.post<PairCodeResponse>('api/devices/pair-code')
     },
 
     claim(token: string, deviceName: string, platform: number): Promise<void> {
-        return api.post<void>('api/devices/claim', { token, deviceName, platform })
+        return api.post<void>('api/devices/claim', {
+            token,
+            deviceName,
+            platform,
+            installationId: deviceInfo.installationId,
+        })
     },
 
     generateLoginCode(deviceName: string, platform: string): Promise<LoginCodeResponse> {
-        return api.post<LoginCodeResponse>('api/devices/login-code', { deviceName, platform })
+        return api.post<LoginCodeResponse>('api/devices/login-code', {
+            deviceName,
+            platform,
+            installationId: deviceInfo.installationId,
+        })
     },
 
     pollLoginCode(code: string): Promise<LoginCodePollResponse> {

@@ -4,6 +4,7 @@ import type { Message } from '../types'
 
 type MessageHandler = (message: Message) => void
 type RemovedHandler = (id: string) => void
+type VoidHandler = () => void
 
 /**
  * Single authenticated SignalR connection to /hubs/messages that fans out
@@ -16,6 +17,7 @@ class MessageStreamService {
     private readonly created = new Set<MessageHandler>()
     private readonly updated = new Set<MessageHandler>()
     private readonly removed = new Set<RemovedHandler>()
+    private readonly sessionRevoked = new Set<VoidHandler>()
 
     onCreated(handler: MessageHandler): () => void {
         this.created.add(handler)
@@ -29,6 +31,10 @@ class MessageStreamService {
         this.removed.add(handler)
         return () => this.removed.delete(handler)
     }
+    onSessionRevoked(handler: VoidHandler): () => void {
+        this.sessionRevoked.add(handler)
+        return () => this.sessionRevoked.delete(handler)
+    }
 
     async start(): Promise<void> {
         if (this.connection) return
@@ -40,6 +46,7 @@ class MessageStreamService {
         connection.on('MessageRestored', (m: Message) => this.created.forEach((h) => h(m)))
         connection.on('MessageTrashed', (p: { id: string }) => this.removed.forEach((h) => h(p.id)))
         connection.on('MessageDeleted', (p: { id: string }) => this.removed.forEach((h) => h(p.id)))
+        connection.on('SessionRevoked', () => this.sessionRevoked.forEach((h) => h()))
 
         this.starting = connection
             .start()
