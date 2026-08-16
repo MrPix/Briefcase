@@ -42,6 +42,9 @@ public partial class GoogleMapsResolver(HttpClient httpClient) : IGoogleMapsReso
     [GeneratedRegex(@"href=""(?<path>/maps/preview/place\?[^""]+)""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex PlacePreviewLinkRegex();
 
+    [GeneratedRegex(@"/maps/(?:search|place)/(?<lat>-?\d{1,2}(?:\.\d+)?)[,+\s]+(?<lon>-?\d{1,3}(?:\.\d+)?)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex PathCoordinatesRegex();
+
     public bool IsSupportedUrl(string? value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri)
         && uri.Scheme is "http" or "https"
@@ -139,6 +142,10 @@ public partial class GoogleMapsResolver(HttpClient httpClient) : IGoogleMapsReso
 
         if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
         {
+            var pathMatch = PathCoordinatesRegex().Match(Uri.UnescapeDataString(uri.AbsolutePath));
+            if (TryReadCoordinates(pathMatch, out latitude, out longitude))
+                return true;
+
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             foreach (var key in new[] { "q", "query", "destination", "center", "ll" })
             {
@@ -152,6 +159,22 @@ public partial class GoogleMapsResolver(HttpClient httpClient) : IGoogleMapsReso
                     return true;
                 }
             }
+        }
+
+        latitude = default;
+        longitude = default;
+        return false;
+    }
+
+    private static bool TryReadCoordinates(Match match, out double latitude, out double longitude)
+    {
+        if (match.Success
+            && double.TryParse(match.Groups["lat"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out latitude)
+            && double.TryParse(match.Groups["lon"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out longitude)
+            && latitude is >= -90 and <= 90
+            && longitude is >= -180 and <= 180)
+        {
+            return true;
         }
 
         latitude = default;

@@ -57,6 +57,28 @@ public sealed class NavigationServicesTests
     }
 
     [TestMethod]
+    public async Task Resolver_ReadsCoordinatesFromGoogleMapsSearchPath()
+    {
+        var handler = new StubHandler(request => request.RequestUri!.Host == "maps.app.goo.gl"
+            ? new HttpResponseMessage(HttpStatusCode.Redirect)
+            {
+                Headers =
+                {
+                    Location = new Uri(
+                        "https://www.google.com/maps/search/50.380632,+30.539128?entry=tts")
+                }
+            }
+            : throw new AssertFailedException("Google page should not be requested when the redirect URL has coordinates."));
+        var resolver = new GoogleMapsResolver(new HttpClient(handler));
+
+        var result = await resolver.ResolveAsync("https://maps.app.goo.gl/VqsHpeLDQzCZHEv18");
+
+        Assert.AreEqual(MapResolutionOutcome.Success, result.Outcome);
+        Assert.AreEqual(50.380632, result.Latitude);
+        Assert.AreEqual(30.539128, result.Longitude);
+    }
+
+    [TestMethod]
     public async Task Resolver_ReadsDestinationFromPlacePreviewInsteadOfInitializationStateCamera()
     {
         var handler = new StubHandler(request => request.RequestUri!.AbsolutePath == "/maps/preview/place"
