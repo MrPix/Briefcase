@@ -211,6 +211,14 @@
         "signOutOthersFailed": "Не вдалося вийти на інших пристроях: {{error}}",
         "languageSection": "Мова",
         "languageHint": "Оберіть мову інтерфейсу. Вона застосовується до вашого акаунта на всіх пристроях.",
+        "navigationSection": "Навігація картою",
+        "navigationHint": "Обробляти посилання Google Maps у фоновому режимі та пропонувати вибрані навігаційні застосунки.",
+        "navigationEnabled": "Обробляти посилання Google Maps",
+        "navigationSave": "Зберегти налаштування навігації",
+        "navigationSaving": "Збереження…",
+        "navigationSaved": "Налаштування навігації збережено.",
+        "navigationLoadFailed": "Не вдалося завантажити налаштування навігації.",
+        "navigationSaveFailed": "Не вдалося зберегти налаштування навігації: {{error}}",
         "changePasswordSection": "Змінити пароль",
         "currentPassword": "Поточний пароль",
         "newPassword": "Новий пароль",
@@ -274,7 +282,9 @@
         "restore": "Відновити",
         "delete": "Видалити",
         "deleteForever": "Видалити назавжди",
-        "attachedFile": "Прикріплений файл"
+        "attachedFile": "Прикріплений файл",
+        "navigateWith": "Навігаційні застосунки",
+        "navigateUsing": "Навігація через {{application}}"
     },
     "capturePreview": {
         "file": "Файл",

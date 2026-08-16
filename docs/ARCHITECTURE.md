@@ -238,11 +238,29 @@ Every authenticated client connects to the hub. When a message is created or a q
    → No account required on the target device for this flow (session is the auth)
 ```
 
-### 3.5 Shared Razor Component Library
+### 3.5 Google Maps Navigation Processing
+
+Plaintext URL messages on supported Google Maps hosts are queued in the database when the user's
+navigation setting is enabled. `GoogleMapsProcessingWorker` atomically claims pending rows, follows
+only allowlisted Google redirect hosts, and extracts coordinates from bounded URL/page metadata
+without a Google API key. Processing claims older than five minutes are returned to the queue after
+a service restart. Successful coordinates are persisted and emitted through the existing
+`MessageUpdated` SignalR event, so React navigation buttons appear without polling or reloading.
+
+Resolution is best-effort because Google share-page metadata is not a public API. Failed extraction
+does not affect the original link. Encrypted messages are never inspected: E2EE Google Maps links
+remain encrypted and receive no server-derived navigation targets.
+
+Navigation providers are defined by a server-side catalog and selected per user. Google Maps and
+Waze use HTTPS universal links. Locus Map uses an Android intent URL and MAPS.ME uses its native map
+URI, so those buttons require a compatible Android browser and installed application. Disabling the
+feature clears derived coordinates; enabling it again queues the user's existing eligible links.
+
+### 3.6 Shared Razor Component Library
 
 Contains all pages and UI components as Razor components. `Briefcase.Maui` (Blazor Hybrid) references this library for the native apps; the web frontend is now the standalone `Briefcase.React` SPA. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
 
-### 3.6 .NET MAUI Blazor Hybrid
+### 3.7 .NET MAUI Blazor Hybrid
 
 `MainPage.xaml` hosts a `BlazorWebView` that renders the shared Razor components. MAUI provides native platform APIs (camera, share sheet, background notifications, local secure storage for tokens). One project builds for Windows, Android, iOS, and macOS.
 
@@ -252,7 +270,7 @@ Windows-specific features (compiled with `#if WINDOWS`):
 - **Taskbar jump list** (`WindowsJumpListService`) — quick actions from the taskbar
 - **File drag-and-drop** (`WindowsFileDropService`) — drop files directly onto the window
 
-### 3.7 Blazor WebAssembly PWA
+### 3.8 Blazor WebAssembly PWA
 
 A standard Blazor WASM project that references the shared component library. Configured as a PWA so it can be installed from the browser on any platform. Used on devices where installing a native app is impractical (work laptops, car head units, tablets).
 
@@ -296,7 +314,21 @@ Message
   DeletedAt       datetime?   set when moved to Trash, null when active or restored
   IsEncrypted     bool        true when Content is E2EE ciphertext; default false
   EncryptionIV    string?     base64-encoded 96-bit AES-GCM nonce, unique per message
+  NavigationStatus enum      None | Pending | Processing | Completed | Failed
+  NavigationLatitude double? resolved destination latitude for supported Google Maps links
+  NavigationLongitude double? resolved destination longitude for supported Google Maps links
+  NavigationProcessingStartedAt datetime? used to recover stale worker claims
+  NavigationProcessedAt datetime? last completed processing time
+  NavigationProcessingAttempts int number of resolver attempts
+  NavigationProcessingError string? bounded diagnostic for failed extraction
   CreatedAt       datetime
+  UpdatedAt       datetime
+
+UserSettings
+  UserId          Guid        PK, FK → User
+  Language        string?     preferred UI language
+  GoogleMapsNavigationEnabled bool default true
+  NavigationApplicationIds string JSON array of selected provider IDs
   UpdatedAt       datetime
 
 UserE2eeSettings

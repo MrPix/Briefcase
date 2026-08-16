@@ -211,6 +211,14 @@
         "signOutOthersFailed": "Failed to sign out other devices: {{error}}",
         "languageSection": "Language",
         "languageHint": "Choose the language used across the app. This applies to your account on every device.",
+        "navigationSection": "Map navigation",
+        "navigationHint": "Resolve Google Maps links in the background and offer your selected navigation apps.",
+        "navigationEnabled": "Process Google Maps links",
+        "navigationSave": "Save navigation settings",
+        "navigationSaving": "Saving…",
+        "navigationSaved": "Navigation settings saved.",
+        "navigationLoadFailed": "Failed to load navigation settings.",
+        "navigationSaveFailed": "Failed to save navigation settings: {{error}}",
         "changePasswordSection": "Change Password",
         "currentPassword": "Current Password",
         "newPassword": "New Password",
@@ -274,7 +282,9 @@
         "restore": "Restore",
         "delete": "Delete",
         "deleteForever": "Delete forever",
-        "attachedFile": "Attached file"
+        "attachedFile": "Attached file",
+        "navigateWith": "Navigation applications",
+        "navigateUsing": "Navigate with {{application}}"
     },
     "capturePreview": {
         "file": "File",

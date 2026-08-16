@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Briefcase.ApiService.Hubs;
 using Briefcase.ApiService.Models;
+using Briefcase.ApiService.Services;
 using Briefcase.Domain.Entities;
 using Briefcase.Infrastructure.Persistence;
 
@@ -14,20 +15,15 @@ namespace Briefcase.ApiService.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/trash")]
-public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : ControllerBase
+public class TrashController(
+    AppDbContext db,
+    IHubContext<MessageHub> hub,
+    IGoogleMapsResolver mapsResolver,
+    NavigationSettingsService navigationSettings,
+    MessageResponseMapper responseMapper) : ControllerBase
 {
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
-
-    private static string? BuildPreviewUrl(FileAttachment? attachment) =>
-        attachment?.PreviewBlobPath is not null ? $"/api/files/{attachment.Id}/preview" : null;
-
-    private static MessageResponse ToResponse(Message m) => new(
-        m.Id, m.Kind, m.Content, m.FileId,
-        m.FileName,
-        BuildPreviewUrl(m.FileAttachment),
-        m.IsPinned, m.PinnedAt, m.IsEncrypted, m.EncryptionIV,
-        m.CreatedAt, m.UpdatedAt);
 
     // GET /api/trash  →  list trashed messages (paged, IsDeleted = true)
     [HttpGet]
@@ -42,23 +38,13 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
             .OrderByDescending(m => m.DeletedAt);
 
         var totalCount = await query.CountAsync();
-        var items = await query
+        var messages = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(m => new MessageResponse(
-                m.Id,
-                m.Kind,
-                m.Content,
-                m.FileId,
-                m.FileAttachment != null ? m.FileAttachment.OriginalName : null,
-                m.FileAttachment != null && m.FileAttachment.PreviewBlobPath != null ? $"/api/files/{m.FileAttachment.Id}/preview" : null,
-                m.IsPinned,
-                m.PinnedAt,
-                m.IsEncrypted,
-                m.EncryptionIV,
-                m.CreatedAt,
-                m.UpdatedAt))
+            .Include(m => m.FileAttachment)
             .ToListAsync();
+        var preferences = await navigationSettings.GetAsync(userId);
+        var items = messages.Select(message => responseMapper.Map(message, preferences)).ToList();
 
         return Ok(new PagedResponse<MessageResponse>(items, page, pageSize, totalCount));
     }
@@ -77,9 +63,19 @@ public class TrashController(AppDbContext db, IHubContext<MessageHub> hub) : Con
         message.IsDeleted = false;
         message.DeletedAt = null;
         message.UpdatedAt = DateTime.UtcNow;
+        var preferences = await navigationSettings.GetAsync(userId);
+        if (preferences.Enabled
+            && message.NavigationStatus == NavigationProcessingStatus.None
+            && message.Kind == MessageKind.Url
+            && !message.IsEncrypted
+            && mapsResolver.IsSupportedUrl(message.Content))
+        {
+            message.NavigationStatus = NavigationProcessingStatus.Pending;
+        }
+
         await db.SaveChangesAsync();
 
-        var response = ToResponse(message);
+        var response = responseMapper.Map(message, preferences);
         await hub.Clients.Group(userId.ToString())
             .SendAsync(MessageHub.MessageRestored, response);
 

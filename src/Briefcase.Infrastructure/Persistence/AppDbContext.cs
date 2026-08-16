@@ -74,7 +74,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasConversion<string>()
                 .HasMaxLength(10);
             e.Property(m => m.EncryptionIV).HasMaxLength(24);
+            e.Property(m => m.NavigationStatus)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasDefaultValue(NavigationProcessingStatus.None);
+            e.Property(m => m.NavigationProcessingError).HasMaxLength(500);
             e.HasIndex(m => new { m.UserId, m.IsDeleted, m.IsPermanentlyDeleted, m.CreatedAt });
+            e.HasIndex(m => new { m.NavigationStatus, m.NavigationProcessingStartedAt });
 
             e.HasOne(m => m.User)
                 .WithMany(u => u.Messages)
@@ -107,6 +113,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasKey(s => s.UserId);
             e.Property(s => s.Language).HasMaxLength(10);
+            e.Property(s => s.GoogleMapsNavigationEnabled).HasDefaultValue(true);
+            e.Property(s => s.NavigationApplicationIds)
+                .IsRequired()
+                .HasDefaultValue(Briefcase.Domain.Entities.UserSettings.DefaultNavigationApplicationIds);
 
             e.HasOne(s => s.User)
                 .WithOne(u => u.Settings)

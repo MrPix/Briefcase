@@ -7,6 +7,7 @@ import { messagesApi } from '../services/messages'
 import { e2eeService } from '../crypto/e2ee'
 import { platformLabel, type Device, type E2eeSettings } from '../types'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { settingsApi, type UserSettings } from '../services/settings'
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0'
 
@@ -22,6 +23,14 @@ export function SettingsPage() {
 
     // Language
     const [languageMessage, setLanguageMessage] = useState<string | null>(null)
+
+    // Google Maps navigation
+    const [navigationSettings, setNavigationSettings] = useState<UserSettings | null>(null)
+    const [navigationEnabled, setNavigationEnabled] = useState(true)
+    const [navigationApplicationIds, setNavigationApplicationIds] = useState<string[]>([])
+    const [navigationMessage, setNavigationMessage] = useState<string | null>(null)
+    const [navigationSuccess, setNavigationSuccess] = useState(false)
+    const [isSavingNavigation, setIsSavingNavigation] = useState(false)
 
     // Change password
     const [currentPassword, setCurrentPassword] = useState('')
@@ -60,11 +69,19 @@ export function SettingsPage() {
                 } catch {
                     setDevices([])
                 }
+                try {
+                    const settings = await settingsApi.get()
+                    setNavigationSettings(settings)
+                    setNavigationEnabled(settings.googleMapsNavigationEnabled)
+                    setNavigationApplicationIds(settings.navigationApplicationIds)
+                } catch {
+                    setNavigationMessage(t('settings.navigationLoadFailed'))
+                }
                 setE2eeSettings((await e2eeService.getSettings()) ?? { isEnabled: false, kdfAlgorithm: null, kdfSalt: null, kdfParams: null, keyVerifier: null })
                 setRememberPassphrase(e2eeService.getRememberPassphrase())
                 setUnlocked(e2eeService.isUnlocked)
             })()
-    }, [])
+    }, [t])
 
     const refreshSettings = async () => {
         setE2eeSettings(await e2eeService.getSettings())
@@ -111,6 +128,30 @@ export function SettingsPage() {
             setPasswordMessage(err instanceof AuthException ? err.message : t('settings.passwordChangeGenericError', { error: String(err) }))
         } finally {
             setIsChangingPassword(false)
+        }
+    }
+
+    const toggleNavigationApplication = (id: string) => {
+        setNavigationApplicationIds((current) =>
+            current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+        )
+    }
+
+    const handleSaveNavigation = async () => {
+        setIsSavingNavigation(true)
+        setNavigationMessage(null)
+        try {
+            const settings = await settingsApi.updateNavigation(navigationEnabled, navigationApplicationIds)
+            setNavigationSettings(settings)
+            setNavigationEnabled(settings.googleMapsNavigationEnabled)
+            setNavigationApplicationIds(settings.navigationApplicationIds)
+            setNavigationMessage(t('settings.navigationSaved'))
+            setNavigationSuccess(true)
+        } catch (err) {
+            setNavigationMessage(t('settings.navigationSaveFailed', { error: err instanceof Error ? err.message : String(err) }))
+            setNavigationSuccess(false)
+        } finally {
+            setIsSavingNavigation(false)
         }
     }
 
@@ -282,6 +323,45 @@ export function SettingsPage() {
                         onChange={() => setLanguageMessage(null)}
                         onError={(err) => setLanguageMessage(t('settings.languageUpdateFailed', { error: err instanceof Error ? err.message : String(err) }))}
                     />
+                </div>
+
+                {/* ── Google Maps navigation ── */}
+                <div className="settings-section">
+                    <h5>{t('settings.navigationSection')}</h5>
+                    <p className="text-muted">{t('settings.navigationHint')}</p>
+                    {navigationMessage && (
+                        <div className={`alert ${navigationSuccess ? 'alert-success' : 'alert-danger'}`}>{navigationMessage}</div>
+                    )}
+                    {navigationSettings === null ? (
+                        <p className="text-muted"><em>{t('settings.loading')}</em></p>
+                    ) : (
+                        <>
+                            <label className="settings-navigation-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={navigationEnabled}
+                                    onChange={(event) => setNavigationEnabled(event.target.checked)}
+                                />
+                                <span>{t('settings.navigationEnabled')}</span>
+                            </label>
+                            <div className="settings-navigation-apps">
+                                {navigationSettings.navigationApplications.map((application) => (
+                                    <label key={application.id} className="settings-navigation-app">
+                                        <input
+                                            type="checkbox"
+                                            checked={navigationApplicationIds.includes(application.id)}
+                                            disabled={!navigationEnabled}
+                                            onChange={() => toggleNavigationApplication(application.id)}
+                                        />
+                                        <span>{application.displayName}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <button className="btn btn-primary" onClick={handleSaveNavigation} disabled={isSavingNavigation}>
+                                {isSavingNavigation ? t('settings.navigationSaving') : t('settings.navigationSave')}
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 {/* ── Change Password ── */}

@@ -58,7 +58,17 @@ builder.Services.AddSingleton<TransferSessionService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<OAuthService>();
 builder.Services.AddSingleton<DeviceSessionValidator>();
-builder.Services.AddHttpClient();
+builder.Services.AddSingleton<NavigationApplicationCatalog>();
+builder.Services.AddScoped<NavigationSettingsService>();
+builder.Services.AddSingleton<MessageResponseMapper>();
+builder.Services.AddHttpClient<IGoogleMapsResolver, GoogleMapsResolver>()
+    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(15))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        AutomaticDecompression = System.Net.DecompressionMethods.All,
+    });
+builder.Services.AddHostedService<GoogleMapsProcessingWorker>();
 
 // ── File Storage (MinIO / S3-compatible) ─────────────────────────────────────
 builder.Services.AddSingleton<IAmazonS3>(sp =>

@@ -9,6 +9,15 @@ public enum MessageKind
     File
 }
 
+public enum NavigationProcessingStatus
+{
+    None,
+    Pending,
+    Processing,
+    Completed,
+    Failed
+}
+
 public class Message
 {
     public Guid Id { get; set; }
@@ -24,6 +33,13 @@ public class Message
     public DateTime? PermanentlyDeletedAt { get; set; }
     public bool IsEncrypted { get; set; }
     public string? EncryptionIV { get; set; }
+    public NavigationProcessingStatus NavigationStatus { get; set; }
+    public double? NavigationLatitude { get; set; }
+    public double? NavigationLongitude { get; set; }
+    public DateTime? NavigationProcessingStartedAt { get; set; }
+    public DateTime? NavigationProcessedAt { get; set; }
+    public int NavigationProcessingAttempts { get; set; }
+    public string? NavigationProcessingError { get; set; }
     [NotMapped]
     public string? FileName { get; set; }
     [NotMapped]
