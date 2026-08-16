@@ -9,6 +9,21 @@ export const MessageKind = {
 } as const
 export type MessageKind = (typeof MessageKind)[keyof typeof MessageKind]
 
+export const NavigationProcessingStatus = {
+    None: 0,
+    Pending: 1,
+    Processing: 2,
+    Completed: 3,
+    Failed: 4,
+} as const
+export type NavigationProcessingStatus = (typeof NavigationProcessingStatus)[keyof typeof NavigationProcessingStatus]
+
+export interface NavigationTarget {
+    applicationId: string
+    displayName: string
+    uri: string
+}
+
 export const Platform = {
     Windows: 0,
     Android: 1,
@@ -29,6 +44,8 @@ export interface Message {
     pinnedAt: string | null
     isEncrypted: boolean
     encryptionIV: string | null
+    navigationStatus: NavigationProcessingStatus
+    navigationTargets: NavigationTarget[]
     createdAt: string
     updatedAt: string
 }

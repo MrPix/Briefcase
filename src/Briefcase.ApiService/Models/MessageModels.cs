@@ -21,8 +21,15 @@ public record MessageResponse(
     DateTime? PinnedAt,
     bool IsEncrypted,
     string? EncryptionIV,
+    NavigationProcessingStatus NavigationStatus,
+    IReadOnlyList<NavigationTargetResponse> NavigationTargets,
     DateTime CreatedAt,
     DateTime UpdatedAt);
+
+public record NavigationTargetResponse(
+    string ApplicationId,
+    string DisplayName,
+    string Uri);
 
 public record UpdateMessageRequest(
     [MaxLength(100_000)] string? Content,

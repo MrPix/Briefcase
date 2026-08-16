@@ -10,6 +10,7 @@ import {
     EditIcon,
     FileIcon,
     LinkIcon,
+    NavigationIcon,
     PinIcon,
     RestoreIcon,
     SendIcon,
@@ -109,6 +110,23 @@ export function MessageCard({
                     </>
                 ) : (
                     <div className="msg-preview">{linkify(message.content)}</div>
+                )}
+                {message.navigationTargets?.length > 0 && (
+                    <div className="msg-navigation" aria-label={t('messageCard.navigateWith')}>
+                        {message.navigationTargets.map((target) => (
+                            <a
+                                key={target.applicationId}
+                                className="msg-navigation-link"
+                                href={target.uri}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={t('messageCard.navigateUsing', { application: target.displayName })}
+                            >
+                                <NavigationIcon size={14} />
+                                <span>{target.displayName}</span>
+                            </a>
+                        ))}
+                    </div>
                 )}
             </div>
 

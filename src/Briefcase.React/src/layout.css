@@ -390,6 +390,33 @@
     word-break: break-all;
 }
 
+.msg-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+}
+
+.msg-navigation-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 30px;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.msg-navigation-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 .msg-actions {
     display: flex;
     gap: 0.15rem;
@@ -1287,6 +1314,37 @@
     margin: 0 0 0.5rem;
 }
 
+.settings-navigation-toggle,
+.settings-navigation-app {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.settings-navigation-toggle {
+    font-weight: 600;
+    margin: 0.75rem 0;
+}
+
+.settings-navigation-apps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 0.75rem 0 1rem;
+}
+
+.settings-navigation-app {
+    min-height: 40px;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.settings-navigation-app:has(input:disabled) {
+    color: var(--text-muted);
+    background: var(--surface-hover);
+}
+
 .settings-device-list {
     list-style: none;
     padding: 0;
@@ -1503,6 +1561,10 @@
     /* Actions can't be revealed by hover on touch — always show them. */
     .msg-actions {
         opacity: 1;
+    }
+
+    .settings-navigation-apps {
+        grid-template-columns: 1fr;
     }
 
     /* Roomier page containers on small screens. */

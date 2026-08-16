@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Briefcase.Domain.Interfaces;
+using Briefcase.ApiService.Services;
 using Briefcase.Infrastructure.Persistence;
 
 namespace Briefcase.IntegrationTests;
@@ -45,7 +46,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>, I
                 // Placeholder — the Aspire registration is fully replaced in
                 // ConfigureTestServices so this value is never actually used.
                 ["ConnectionStrings:Briefcasedb"] = "Host=localhost;Database=test_placeholder;Username=test;Password=test",
-                ["ConnectionStrings:s3"]              = "http://localhost:9000",
+                ["ConnectionStrings:s3"] = "http://localhost:9000",
             });
         });
 
@@ -71,6 +72,9 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>, I
             // ── Replace MinIO / S3 storage with a no-op stub ─────────────────
             services.RemoveAll<IFileStorageService>();
             services.AddSingleton<IFileStorageService, NullFileStorageService>();
+
+            services.RemoveAll<IGoogleMapsResolver>();
+            services.AddSingleton<IGoogleMapsResolver, TestGoogleMapsResolver>();
         });
     }
 
@@ -89,6 +93,16 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>, I
         await base.DisposeAsync();
         await _keepAliveConnection.DisposeAsync();
     }
+}
+
+file sealed class TestGoogleMapsResolver : IGoogleMapsResolver
+{
+    public bool IsSupportedUrl(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && uri.Host.Equals("maps.app.goo.gl", StringComparison.OrdinalIgnoreCase);
+
+    public Task<MapResolutionResult> ResolveAsync(string value, CancellationToken cancellationToken = default) =>
+        Task.FromResult(MapResolutionResult.Success(50.4501, 30.5234));
 }
 
 /// <summary>No-op implementation of IFileStorageService for use in tests.</summary>

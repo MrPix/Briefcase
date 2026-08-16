@@ -47,6 +47,12 @@ export const LinkIcon = (p: IconProps) =>
         ),
     })
 
+export const NavigationIcon = (p: IconProps) =>
+    base({
+        ...p,
+        children: <path d="M12 22l8-18-18 8 7 3 3 7zM9 15l4-4" />,
+    })
+
 export const TextIcon = (p: IconProps) => base({ ...p, children: <path d="M4 6h16M4 12h10M4 18h14" /> })
 
 export const DevicesIcon = (p: IconProps) =>

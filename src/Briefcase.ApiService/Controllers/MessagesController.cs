@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Briefcase.ApiService.Hubs;
 using Briefcase.ApiService.Models;
+using Briefcase.ApiService.Services;
 using Briefcase.Domain.Entities;
 using Briefcase.Infrastructure.Persistence;
 
@@ -15,20 +16,15 @@ namespace Briefcase.ApiService.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/messages")]
-public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : ControllerBase
+public class MessagesController(
+    AppDbContext db,
+    IHubContext<MessageHub> hub,
+    IGoogleMapsResolver mapsResolver,
+    NavigationSettingsService navigationSettings,
+    MessageResponseMapper responseMapper) : ControllerBase
 {
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
-
-    private static string? BuildPreviewUrl(FileAttachment? attachment) =>
-        attachment?.PreviewBlobPath is not null ? $"/api/files/{attachment.Id}/preview" : null;
-
-    private static MessageResponse ToResponse(Message m) => new(
-        m.Id, m.Kind, m.Content, m.FileId,
-        m.FileName,
-        BuildPreviewUrl(m.FileAttachment),
-        m.IsPinned, m.PinnedAt, m.IsEncrypted, m.EncryptionIV,
-        m.CreatedAt, m.UpdatedAt);
 
     // GET /api/messages  →  list active messages (paged, newest first)
     // Optional server-side filters keep mobile payloads small:
@@ -71,23 +67,13 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             .ThenByDescending(m => m.CreatedAt);
 
         var totalCount = await query.CountAsync();
-        var items = await query
+        var messages = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(m => new MessageResponse(
-                m.Id,
-                m.Kind,
-                m.Content,
-                m.FileId,
-                m.FileAttachment != null ? m.FileAttachment.OriginalName : null,
-                m.FileAttachment != null && m.FileAttachment.PreviewBlobPath != null ? $"/api/files/{m.FileAttachment.Id}/preview" : null,
-                m.IsPinned,
-                m.PinnedAt,
-                m.IsEncrypted,
-                m.EncryptionIV,
-                m.CreatedAt,
-                m.UpdatedAt))
+            .Include(m => m.FileAttachment)
             .ToListAsync();
+        var preferences = await navigationSettings.GetAsync(userId);
+        var items = messages.Select(message => responseMapper.Map(message, preferences)).ToList();
 
         return Ok(new PagedResponse<MessageResponse>(items, page, pageSize, totalCount));
     }
@@ -98,6 +84,7 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
     {
         var userId = GetUserId();
         var now = DateTime.UtcNow;
+        var preferences = await navigationSettings.GetAsync(userId);
 
         var message = new Message
         {
@@ -114,11 +101,12 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             CreatedAt = now,
             UpdatedAt = now,
         };
+        ResetNavigation(message, preferences.Enabled);
 
         db.Messages.Add(message);
         await db.SaveChangesAsync();
 
-        var response = ToResponse(message);
+        var response = responseMapper.Map(message, preferences);
         await hub.Clients.Group(userId.ToString())
             .SendAsync(MessageHub.MessageCreated, response);
 
@@ -163,7 +151,8 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         message.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        var response = ToResponse(message);
+        var preferences = await navigationSettings.GetAsync(userId);
+        var response = responseMapper.Map(message, preferences);
         await hub.Clients.Group(userId.ToString())
             .SendAsync(MessageHub.MessageUpdated, response);
 
@@ -185,9 +174,11 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
         message.IsEncrypted = request.IsEncrypted;
         message.EncryptionIV = request.IsEncrypted ? request.EncryptionIV : null;
         message.UpdatedAt = DateTime.UtcNow;
+        var preferences = await navigationSettings.GetAsync(userId);
+        ResetNavigation(message, preferences.Enabled);
         await db.SaveChangesAsync();
 
-        var response = ToResponse(message);
+        var response = responseMapper.Map(message, preferences);
         await hub.Clients.Group(userId.ToString())
             .SendAsync(MessageHub.MessageUpdated, response);
 
@@ -256,5 +247,21 @@ public class MessagesController(AppDbContext db, IHubContext<MessageHub> hub) : 
             .SendAsync(MessageHub.ShareLinkRevoked, new { messageId = id });
 
         return NoContent();
+    }
+
+    private void ResetNavigation(Message message, bool processingEnabled)
+    {
+        message.NavigationLatitude = null;
+        message.NavigationLongitude = null;
+        message.NavigationProcessingStartedAt = null;
+        message.NavigationProcessedAt = null;
+        message.NavigationProcessingAttempts = 0;
+        message.NavigationProcessingError = null;
+        message.NavigationStatus = processingEnabled
+            && message.Kind == MessageKind.Url
+            && !message.IsEncrypted
+            && mapsResolver.IsSupportedUrl(message.Content)
+                ? NavigationProcessingStatus.Pending
+                : NavigationProcessingStatus.None;
     }
 }
