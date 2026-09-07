@@ -93,7 +93,14 @@ export default function ClipboardScreen() {
 
     const sorted = (messages ?? [])
         .slice()
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .sort((a, b) => {
+            if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+            if (a.isPinned && b.isPinned) {
+                const pinnedOrder = new Date(b.pinnedAt ?? 0).getTime() - new Date(a.pinnedAt ?? 0).getTime()
+                if (pinnedOrder !== 0) return pinnedOrder
+            }
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
 
     return (
         <KeyboardAvoidingView
