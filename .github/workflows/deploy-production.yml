@@ -35,10 +35,10 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Ensure application directory exists
-        run: |
-          set -euo pipefail
-          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p '${APP_DIR}/deploy/pgadmin'"
+      # - name: Ensure application directory exists
+      #   run: |
+      #     set -euo pipefail
+      #     ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "mkdir -p '${APP_DIR}/deploy/pgadmin'"
 
       - name: Upload docker-compose.yml
         run: |
