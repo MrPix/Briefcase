@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MessageKind, type Message } from '../types'
@@ -58,11 +58,7 @@ export function ClipboardPage() {
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
     const [isUploading, setIsUploading] = useState(false)
     const [isDragOver, setIsDragOver] = useState(false)
-    const listRef = useRef<HTMLDivElement>(null)
-    const shouldScrollToBottomRef = useRef(false)
-
-    const loadMessages = useCallback(async (scrollToBottom = false) => {
-        if (scrollToBottom) shouldScrollToBottomRef.current = true
+    const loadMessages = useCallback(async () => {
         try {
             setError(null)
             await e2eeService.tryAutoUnlock()
@@ -76,59 +72,8 @@ export function ClipboardPage() {
     }, [])
 
     useEffect(() => {
-        loadMessages(true)
+        loadMessages()
     }, [loadMessages])
-
-    useEffect(() => {
-        shouldScrollToBottomRef.current = true
-    }, [filter])
-
-    // Scroll after the message DOM is committed, and keep the pending scroll alive
-    // until any image previews have finished changing the list's height.
-    useEffect(() => {
-        if (!shouldScrollToBottomRef.current || !messages || messages.length === 0) return
-        const el = listRef.current
-        if (!el) return
-
-        let cancelled = false
-        const images = Array.from(el.querySelectorAll('img'))
-        const observer = new ResizeObserver(() => {
-            if (!cancelled) el.scrollTop = el.scrollHeight
-        })
-        observer.observe(el)
-
-        const cleanup = () => {
-            cancelled = true
-            observer.disconnect()
-            images.forEach((image) => image.removeEventListener('load', finish))
-            images.forEach((image) => image.removeEventListener('error', finish))
-            el.removeEventListener('wheel', cancel)
-            el.removeEventListener('touchmove', cancel)
-            window.removeEventListener('keydown', cancel)
-        }
-        const finish = () => {
-            if (cancelled) return
-            el.scrollTop = el.scrollHeight
-            if (images.every((image) => image.complete)) {
-                shouldScrollToBottomRef.current = false
-                cleanup()
-            }
-        }
-        const cancel = () => {
-            shouldScrollToBottomRef.current = false
-            cleanup()
-        }
-        images.forEach((image) => {
-            image.addEventListener('load', finish)
-            image.addEventListener('error', finish)
-        })
-        el.addEventListener('wheel', cancel, { passive: true })
-        el.addEventListener('touchmove', cancel, { passive: true })
-        window.addEventListener('keydown', cancel)
-        requestAnimationFrame(finish)
-
-        return cleanup
-    }, [messages, filter])
 
     // Real-time updates from other devices.
     useEffect(() => {
@@ -140,7 +85,6 @@ export function ClipboardPage() {
                     if (idx >= 0) list[idx] = m
                     else {
                         list.push(m)
-                        shouldScrollToBottomRef.current = true
                     }
                     return list
                 })
@@ -183,12 +127,12 @@ export function ClipboardPage() {
         const groups = [...groupMap.entries()]
             .map(([label, items]) => ({
                 label,
-                items: items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+                items: items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
             }))
             .sort((a, b) => {
                 const aMax = Math.max(...a.items.map((m) => new Date(m.createdAt).getTime()))
                 const bMax = Math.max(...b.items.map((m) => new Date(m.createdAt).getTime()))
-                return aMax - bMax
+                return bMax - aMax
             })
 
         return { pinnedMessages: pinned, recentGroups: groups }
@@ -225,7 +169,7 @@ export function ClipboardPage() {
             }
             setNewContent('')
             setStagedFiles([])
-            await loadMessages(true)
+            await loadMessages()
         } catch (err) {
             setError(t('clipboard.sendFailed', { error: err instanceof Error ? err.message : String(err) }))
         } finally {
@@ -362,7 +306,7 @@ export function ClipboardPage() {
                             <span>{t('clipboard.emptyHint')}</span>
                         </div>
                     ) : (
-                        <div className="message-list" ref={listRef}>
+                        <div className="message-list">
                             {pinnedMessages.length > 0 && (filter === 'all' || filter === 'pinned') && (
                                 <>
                                     <div className="list-section-header">{t('clipboard.pinnedSection')}</div>
