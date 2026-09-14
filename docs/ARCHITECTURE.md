@@ -2,24 +2,20 @@
 
 ## 1. System Overview
 
-Briefcase is a multi-tier, real-time application. A single ASP.NET Core 10 backend serves all clients. Native apps (Windows, Android, iOS, macOS) are built with .NET MAUI + Blazor Hybrid. The web client is a Blazor WebAssembly PWA. Both frontends share a common Razor component library, so UI code is written once.
+Briefcase is a multi-tier, real-time application. A single ASP.NET Core 10 backend serves the web and mobile clients, with the browser app built as a React + Vite frontend and the mobile client built with React Native + Expo. The clients are implemented separately to match their platform conventions while sharing the same API and identity model.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Clients                             │
 │                                                             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────┐  │
-│  │  Windows │  │ Android  │  │   iOS    │  │  macOS    │  │
-│  │  (MAUI)  │  │  (MAUI)  │  │  (MAUI)  │  │  (MAUI)   │  │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └─────┬─────┘  │
-│       │             │              │               │        │
-│  ┌────┴─────────────┴──────────────┴───────────────┴─────┐  │
-│  │          Shared Razor Component Library               │  │
-│  └────────────────────────┬──────────────────────────────┘  │
-│                           │                                 │
-│  ┌────────────────────────┴──────────────────────────────┐  │
-│  │            Blazor WebAssembly PWA (Web)               │  │
-│  └───────────────────────────────────────────────────────┘  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
+│  │ Android  │  │   iOS    │  │  Web     │                 │
+│  │  (Expo)  │  │  (Expo)  │  │  (React) │                 │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                 │
+│       │             │              │                        │
+│  ┌────┴─────────────┴──────────────┴───────────────────────┐ │
+│  │              React + Vite web frontend                │ │
+│  └───────────────────────────────────────────────────────┘ │
 └────────────────────────┬────────────────────────────────────┘
                          │ HTTPS / WebSocket (SignalR)
 ┌────────────────────────▼────────────────────────────────────┐
@@ -89,79 +85,28 @@ Briefcase/
 │   │   │   └── UserE2eeSettings.cs
 │   │   └── Interfaces/
 │   │       └── IFileStorageService.cs
-│   ├── Briefcase.Infrastructure/   # EF Core, S3 integrations
+│   ├── Briefcase.Infrastructure/   # EF Core, storage, auth, and persistence services
 │   │   ├── Persistence/
 │   │   │   ├── AppDbContext.cs
 │   │   │   └── Migrations/
 │   │   └── Storage/
 │   │       └── MinioStorageService.cs
-│   ├── Briefcase.Components/       # Shared Razor component library
-│   │   ├── Pages/
-│   │   │   ├── LoginPage.razor
-│   │   │   ├── SignupPage.razor
-│   │   │   ├── ClipboardPage.razor    # multi-route: /clipboard /favorites /files /links /text
-│   │   │   ├── TransferPage.razor
-│   │   │   ├── DevicesPage.razor
-│   │   │   ├── TrashPage.razor
-│   │   │   ├── SettingsPage.razor
-│   │   │   └── AboutPage.razor
-│   │   ├── Components/
-│   │   │   ├── MessageCard.razor
-│   │   │   └── QrScanner.razor
-│   │   └── Services/
-│   │       ├── IAuthService.cs
-│   │       ├── IMessageService.cs
-│   │       ├── IDeviceService.cs
-│   │       ├── ITransferService.cs
-│   │       ├── ITrashService.cs
-│   │       ├── IClipboardService.cs
-│   │       ├── ITokenStorageService.cs
-│   │       ├── IThemeService.cs
-│   │       ├── IQrScannerService.cs
-│   │       ├── IDeviceInfoProvider.cs
-│   │       ├── IKeyboardShortcutService.cs
-│   │       ├── IJumpListService.cs
-│   │       ├── IFileDropService.cs
-│   │       ├── AuthService.cs         # shared token management + session restore
-│   │       └── AuthDelegatingHandler.cs  # HTTP handler with auto token refresh
-│   ├── Briefcase.React/            # React + Vite web PWA (lightweight SPA)
+│   ├── Briefcase.Mobile/           # React Native + Expo mobile app
+│   │   ├── app/
 │   │   ├── src/
-│   │   │   ├── auth/                   # AuthContext, token storage, device info
-│   │   │   ├── crypto/e2ee.ts          # zero-knowledge E2EE (PBKDF2 + AES-GCM)
-│   │   │   ├── lib/                    # api client (auto refresh), config, media
-│   │   │   ├── realtime/               # SignalR message stream
-│   │   │   ├── services/               # messages/devices/transfer/trash/share
-│   │   │   ├── components/             # NavMenu, MessageCard, QrScanner, layout
-│   │   │   └── pages/                  # Landing/Login/Clipboard/Devices/…
-│   │   ├── Dockerfile                  # node build → Caddy static
-│   │   └── vite.config.ts             # PWA manifest + service worker
-│   └── Briefcase.Maui/            # .NET MAUI Blazor Hybrid
-│       ├── MauiProgram.cs
-│       ├── Platforms/
-│       │   ├── Android/
-│       │   ├── iOS/
-│       │   ├── MacCatalyst/
-│       │   └── Windows/
-│       ├── Services/
-│       │   ├── MauiMessageService.cs
-│       │   ├── MauiDeviceService.cs
-│       │   ├── MauiTransferService.cs
-│       │   ├── MauiTrashService.cs
-│       │   ├── MauiClipboardService.cs
-│       │   ├── MauiTokenStorageService.cs  # secure credential storage
-│       │   ├── MauiDeviceInfoProvider.cs
-│       │   ├── WindowsThemeService.cs      # Windows only
-│       │   ├── WindowsKeyboardShortcutService.cs  # Windows only
-│       │   ├── WindowsJumpListService.cs   # Windows only
-│       │   ├── WindowsFileDropService.cs   # Windows only
-│       │   └── WindowsTrayService.cs       # Windows only
-│       └── MainPage.xaml              # Hosts BlazorWebView
+│   │   └── package.json
+│   ├── Briefcase.React/            # React + Vite web frontend
+│   │   ├── src/
+│   │   ├── Dockerfile
+│   │   └── vite.config.ts
+│   └── Briefcase.ServiceDefaults/  # Shared Aspire defaults
 ├── tests/
 │   ├── Briefcase.UnitTests/        # mstests — domain logic, services, E2EE
 │   ├── Briefcase.IntegrationTests/ # mstests + Aspire test host — full HTTP + DB + SignalR
 │   └── Briefcase.Tests/            # mstests + Aspire.Hosting.Testing — end-to-end smoke tests
 └── docs/
-    └── ARCHITECTURE.md
+    ├── ARCHITECTURE.md
+    └── GOOGLE-LOGIN-SETUP.md
 ```
 
 ---
@@ -256,23 +201,13 @@ Waze use HTTPS universal links. Locus Map uses an Android intent URL and MAPS.ME
 URI, so those buttons require a compatible Android browser and installed application. Disabling the
 feature clears derived coordinates; enabling it again queues the user's existing eligible links.
 
-### 3.6 Shared Razor Component Library
+### 3.6 Shared Web and Mobile Experience
 
-Contains all pages and UI components as Razor components. `Briefcase.Maui` (Blazor Hybrid) references this library for the native apps; the web frontend is now the standalone `Briefcase.React` SPA. Platform-specific concerns (camera for QR scanning, file picker, clipboard, theme, keyboard shortcuts) are abstracted behind interfaces (`IMessageService`, `IDeviceService`, `IClipboardService`, `IThemeService`, `IQrScannerService`, `IKeyboardShortcutService`, `IJumpListService`, `IFileDropService`, etc.) injected at each host's `Program.cs` / `MauiProgram.cs`. The shared `AuthService` handles token management and session restore; `AuthDelegatingHandler` transparently refreshes expired access tokens on every outbound HTTP request.
+The frontend experience is intentionally split by platform: the React + Vite app handles browser sessions, while the React Native + Expo app handles mobile device flows. Both share the same API contracts, authentication model, and SignalR event structure. Platform-specific concerns such as camera access, file pickers, clipboard handling, or secure token storage are abstracted behind native implementations in each client.
 
-### 3.7 .NET MAUI Blazor Hybrid
+### 3.7 Web App
 
-`MainPage.xaml` hosts a `BlazorWebView` that renders the shared Razor components. MAUI provides native platform APIs (camera, share sheet, background notifications, local secure storage for tokens). One project builds for Windows, Android, iOS, and macOS.
-
-Windows-specific features (compiled with `#if WINDOWS`):
-- **System tray icon** (`WindowsTrayService`) — app stays accessible from the notification area
-- **Keyboard shortcuts** (`WindowsKeyboardShortcutService`) — Ctrl+N (new message), Ctrl+Shift+V (paste & send), Delete, Ctrl+P (pin), Ctrl+F (search)
-- **Taskbar jump list** (`WindowsJumpListService`) — quick actions from the taskbar
-- **File drag-and-drop** (`WindowsFileDropService`) — drop files directly onto the window
-
-### 3.8 Blazor WebAssembly PWA
-
-A standard Blazor WASM project that references the shared component library. Configured as a PWA so it can be installed from the browser on any platform. Used on devices where installing a native app is impractical (work laptops, car head units, tablets).
+The browser client is a standalone SPA that connects to the same API and SignalR hub as the mobile app. It is optimized for quick browser-based access on work laptops, tablets, headless devices, and transfer flows where no app installation is required.
 
 ---
 
@@ -477,7 +412,7 @@ ShareLink
 - Share links whose parent message is in Trash are treated as revoked until the message is restored.
 - All message list queries filter on `IsDeleted = false` by default; the Trash endpoint explicitly filters on `IsDeleted = true`.
 - File messages shared via link are streamed through the API on each view — the slug itself does not embed storage credentials.
-- JWTs are short-lived (15 min access token + 365 day refresh token by default, configurable via `Jwt:AccessTokenMinutes` / `Jwt:RefreshTokenDays`). Tokens are stored in secure storage on MAUI and `localStorage` on web (WASM). Refresh tokens are rotated on each use and revoked on logout.
+- JWTs are short-lived (15 min access token + 365 day refresh token by default, configurable via `Jwt:AccessTokenMinutes` / `Jwt:RefreshTokenDays`). Tokens are stored in secure storage on mobile and `localStorage` on web. Refresh tokens are rotated on each use and revoked on logout.
 - File uploads are limited to **100 MB** per file (enforced at the API layer).
 - OAuth flows use PKCE. State parameter prevents CSRF.
 - File downloads are streamed through the API (never expose the raw S3/MinIO credentials or presigned URLs to clients).
@@ -528,7 +463,7 @@ ShareLink
 
 - **API**: Azure Container Apps (auto-scales to zero when idle, cost-efficient).
 - **Web frontend**: Azure Static Web Apps (free tier eligible, global CDN).
-- **MAUI apps**: distributed via Microsoft Store (Windows), Google Play (Android), App Store (iOS/macOS).
+- **Mobile app**: distributed via Google Play and the App Store.
 - **CI/CD**: GitHub Actions — build, test, push container image, deploy to Container Apps.
 
 ---
@@ -640,13 +575,12 @@ Spins up the real API, an in-process SQL Server (or Testcontainers PostgreSQL), 
 
 ## 10. Technology Decision Notes
 
-### Why .NET MAUI + Blazor Hybrid for native apps?
-- One codebase builds for Windows, Android, iOS, and macOS.
-- Blazor Hybrid shares UI components directly with the Blazor WASM web app — no duplication.
-- The whole stack stays in .NET, reducing context switching.
-- MAUI gives access to native APIs (camera for QR, push notifications, secure credential storage, share sheet).
+### Why React Native + Expo for mobile?
+- One shared JS/TS codebase supports Android and iOS with platform-native UX.
+- It is a good fit for device features like camera, file access, secure storage, and app notifications.
+- The same API and SignalR contracts are shared with the browser client without duplicating backend logic.
 
-### Why Blazor WebAssembly (not server-side Blazor) for the web?
+### Why React + Vite for the web?
 - Works offline as a PWA once loaded — important for the "open a page to receive a transfer" use case where connectivity may be intermittent.
 - No persistent server-side circuit needed for the web client; SignalR is used only for the real-time push channel.
 

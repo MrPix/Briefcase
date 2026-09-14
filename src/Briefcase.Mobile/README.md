@@ -2,7 +2,7 @@
 
 Cross-platform (Android / iOS) client for the Briefcase API, built with **Expo** and
 **expo-router**. It talks to the same ASP.NET Core backend as the web app
-(`Briefcase.React`) and the MAUI app.
+(`Briefcase.React`).
 
 ## Feature scope (MVP)
 

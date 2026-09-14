@@ -27,11 +27,8 @@ Briefcase is a focused, self-hosted-friendly service that does one thing well: m
 
 ## Supported Platforms
 
-- **Windows** — native WinUI application (.NET MAUI)
-- **Android** — phones and tablets (.NET MAUI)
-- **iOS / iPhone** — native app (.NET MAUI)
-- **macOS / MacBook** — native app (.NET MAUI)
-- **Web** — Blazor WebAssembly PWA, works in any browser (no install required — ideal for work laptops, car head units, smart TVs)
+- **Android / iPhone / iPad** — React Native + Expo mobile app
+- **Web** — React + Vite app, works in any browser (ideal for work laptops, car head units, smart TVs)
 
 ## Technology Stack
 
@@ -41,11 +38,11 @@ Briefcase is a focused, self-hosted-friendly service that does one thing well: m
 | Orchestration | .NET Aspire |
 | Real-time | ASP.NET Core SignalR → Azure SignalR Service (prod) |
 | Auth | ASP.NET Core Identity + OAuth 2.0 / OIDC (Google, Facebook, Apple, Microsoft) |
-| Database | Entity Framework Core + Azure SQL Database |
-| File storage | Azure Blob Storage |
-| Native apps | .NET MAUI + Blazor Hybrid |
-| Web app | Blazor WebAssembly (PWA) |
-| Shared UI | Razor Component Library (shared between MAUI and WASM) |
+| Database | Entity Framework Core + PostgreSQL in local dev / Azure SQL in production |
+| File storage | Azure Blob Storage + MinIO in local dev |
+| Mobile app | React Native + Expo |
+| Web app | React + Vite |
+| Shared UI | Razor component library for shared browser/mobile views |
 | Cloud | Microsoft Azure |
 | Secrets | Azure Key Vault |
 
@@ -58,13 +55,16 @@ Briefcase/
 │   ├── Briefcase.ServiceDefaults/  # Aspire shared defaults (telemetry, health checks)
 │   ├── Briefcase.ApiService/       # ASP.NET Core Web API
 │   ├── Briefcase.Domain/           # Domain models, interfaces
-│   ├── Briefcase.Infrastructure/   # EF Core, Azure integrations
-│   ├── Briefcase.Components/       # Shared Razor component library (MAUI)
-│   ├── Briefcase.React/            # React + Vite web PWA (lightweight SPA)
-│   └── Briefcase.Maui/             # .NET MAUI + Blazor Hybrid (Win/Android/iOS/macOS)
-└── docs/
-    └── ARCHITECTURE.md
-    └── GOOGLE-LOGIN-SETUP.md
+│   ├── Briefcase.Infrastructure/   # EF Core and storage integrations
+│   ├── Briefcase.Components/       # Shared Razor component library
+│   ├── Briefcase.Mobile/           # React Native + Expo mobile client
+│   ├── Briefcase.React/            # React + Vite web frontend
+│   └── Briefcase.ServiceDefaults/  # Shared Aspire defaults
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── GOOGLE-LOGIN-SETUP.md
+└── tests/
+    └── ...
 ```
 
 ## Getting Started

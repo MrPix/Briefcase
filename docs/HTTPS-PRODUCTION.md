@@ -382,7 +382,7 @@ The platform handles issuance and renewal automatically.
 
 ### 6.3 Azure Front Door (CDN + WAF + TLS)
 
-Front Door manages certificates and adds a global CDN and WAF layer — useful when MAUI clients across different regions need low-latency API access:
+Front Door manages certificates and adds a global CDN and WAF layer — useful when clients across different regions need low-latency API access:
 
 ```bash
 az afd custom-domain create \
@@ -494,7 +494,7 @@ ssl_prefer_server_ciphers off;
 
 ### HSTS (HTTP Strict Transport Security)
 
-Instruct browsers and MAUI WebViews to only connect over HTTPS:
+Instruct browsers and embedded web views to only connect over HTTPS:
 
 **Caddy** (automatic, added in response headers):
 ```caddyfile

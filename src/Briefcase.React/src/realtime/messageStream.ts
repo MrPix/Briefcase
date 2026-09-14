@@ -8,8 +8,7 @@ type VoidHandler = () => void
 
 /**
  * Single authenticated SignalR connection to /hubs/messages that fans out
- * server-pushed message changes to subscribers. Mirrors the Blazor/MAUI
- * IMessageStreamService behaviour.
+ * server-pushed message changes to subscribers.
  */
 class MessageStreamService {
     private connection: HubConnection | null = null

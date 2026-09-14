@@ -1,6 +1,6 @@
 // Persistent token storage (localStorage). The React web client sends the
-// refresh token in the request body (like the MAUI client) to avoid relying on
-// cross-origin cookies during development.
+// refresh token in the request body to avoid relying on cross-origin cookies
+// during development.
 
 const ACCESS_TOKEN_KEY = 'briefcase_access_token'
 const REFRESH_TOKEN_KEY = 'briefcase_refresh_token'

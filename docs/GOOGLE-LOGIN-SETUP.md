@@ -2,7 +2,7 @@
 
 This guide explains how to enable **Sign in with Google** (Google OAuth 2.0 / OIDC) for the
 Briefcase API. Once configured, users can authenticate with their Google account from the
-Web, MAUI, and desktop clients — no password required.
+web and mobile clients — no password required.
 
 The API already ships with Google's endpoints pre-filled in
 [src/Briefcase.ApiService/appsettings.json](../src/Briefcase.ApiService/appsettings.json).
@@ -109,9 +109,9 @@ but do **not** commit the `ClientSecret` there:
 
 ## 4. Allow client redirect URIs (multi-app / cross-origin clients)
 
-After a successful login the API can redirect back to a client app (e.g. the MAUI app or a Web app
-hosted on a different origin) with the tokens in the URL fragment. Any client redirect URI whose
-host differs from the API host must be allowlisted in `OAuth:AllowedClientRedirectUris`:
+After a successful login the API can redirect back to a client app (for example a web app hosted on
+a different origin) with the tokens in the URL fragment. Any client redirect URI whose host differs
+from the API host must be allowlisted in `OAuth:AllowedClientRedirectUris`:
 
 ```json
 {
